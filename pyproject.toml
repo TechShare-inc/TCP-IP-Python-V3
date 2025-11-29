@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dobot-api"
+version = "1.0.0"
+description = "Python API for TCP/IP communication with Dobot CR-V3 robot arms"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Dobot", email = "support@dobot.cc"}
+]
+keywords = ["dobot", "robot", "tcp", "automation", "robotics", "CR-V3"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Interface Engine/Protocol Translator",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "numpy>=1.24.0",
+    "loguru>=0.7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/Dobot-Arm/TCP-IP-Python-V3"
+Documentation = "https://github.com/Dobot-Arm/TCP-IP-Protocol-6AXis"
+Repository = "https://github.com/Dobot-Arm/TCP-IP-Python-V3"
+
+[tool.setuptools.packages.find]
+include = ["dobot_api*"]
+exclude = ["tests*", "examples*"]
+
+[tool.setuptools.package-data]
+dobot_api = ["py.typed"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4"]
+ignore = [
+    "E501",  # Line too long (handled by formatter)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"examples/*" = ["D", "N"]  # Relax docstring and naming rules for examples
+"dobot_api/alarms/*" = ["E501"]  # Generated alarm data files can be long
