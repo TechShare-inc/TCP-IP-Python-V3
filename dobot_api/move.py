@@ -1,6 +1,7 @@
 """Motion API for Dobot robot movement commands."""
 
 from __future__ import annotations
+from typing import overload
 
 from dobot_api.base import DobotApi
 
@@ -403,6 +404,16 @@ class DobotApiMove(DobotApi):
 
     # ==================== Servo Control ====================
 
+    @overload
+    def ServoJ(
+        self,
+        joint_angles: list[float],
+        t: float = 0.1,
+        lookahead_time: float = 50,
+        gain: float = 500,
+    ) -> str: ...
+
+    @overload
     def ServoJ(
         self,
         j1: float,
@@ -414,7 +425,9 @@ class DobotApiMove(DobotApi):
         t: float = 0.1,
         lookahead_time: float = 50,
         gain: float = 500,
-    ) -> str:
+    ) -> str: ...
+
+    def ServoJ(self, *args, **kwargs) -> str:
         """Dynamic servo control in joint space.
 
         Args:
@@ -424,9 +437,17 @@ class DobotApiMove(DobotApi):
             gain: Position proportional gain, similar to PID P-term (200.0-1000.0, default 500)
 
         """
-        cmd = f"ServoJ({j1:f},{j2:f},{j3:f},{j4:f},{j5:f},{j6:f},t={t:f},lookahead_time={lookahead_time:f},gain={gain:f})"
+        cmd = "ServoJ("
+
+        if len(args) == 1 and isinstance(args[0], list):
+            cmd += ",".join(f"{angle:f}" for angle in args[0])
+        else:
+            cmd += ",".join(f"{arg:f}" for arg in args)
+        cmd += f",{kwargs.get('t', 0.1):f},{kwargs.get('lookahead_time', 50):f},{kwargs.get('gain', 500):f})"
+
         return self.sendRecvMsg(cmd)
 
+    @overload
     def ServoJS(
         self,
         j1: float,
@@ -435,14 +456,23 @@ class DobotApiMove(DobotApi):
         j4: float,
         j5: float,
         j6: float,
-    ) -> str:
+    ) -> str: ...
+
+    @overload
+    def ServoJS(self, joint_angles: list[float]) -> str: ...
+
+    def ServoJS(self, *args, **kwargs) -> str:
         """Dynamic servo control in joint space (simple version).
 
         Args:
-            j1-j6: Joint position values
+            j1-j6: Joint position values, or
+            joint_angles: List of joint angle values
 
         """
-        cmd = f"ServoJS({j1:f},{j2:f},{j3:f},{j4:f},{j5:f},{j6:f})"
+        if len(args) == 1 and isinstance(args[0], list):
+            cmd = f"ServoJS({','.join(f'{angle:f}' for angle in args[0])})"
+        else:
+            cmd = f"ServoJS({','.join(f'{arg:f}' for arg in args)})"
         return self.sendRecvMsg(cmd)
 
     def ServoP(
