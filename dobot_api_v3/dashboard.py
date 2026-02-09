@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from loguru import logger
+
 from .base import DobotApi
 
 
@@ -345,7 +347,7 @@ class DobotApiDashboard(DobotApi):
             offset1, offset2, offset3, offset4, offset5, offset6, user, tool
         )
         for params in dynParams:
-            print(type(params), params)
+            logger.debug(f"InverseSolution params: type={type(params)}, value={params}")
             string = string + repr(params)
         string = string + ")"
         return self.sendRecvMsg(string)
@@ -436,7 +438,7 @@ class DobotApiDashboard(DobotApi):
     def GetInRegs(self, offset1, offset2, offset3, *dynParams):
         string = "GetInRegs({:d},{:d},{:d}".format(offset1, offset2, offset3)
         for params in dynParams:
-            print(type(params), params)
+            logger.debug(f"GetInRegs params: type={type(params)}, value={params}")
             string = string + params[0]
         string = string + ")"
         return self.sendRecvMsg(string)
@@ -452,7 +454,7 @@ class DobotApiDashboard(DobotApi):
             + repr(offset4)
             + ")"
         )
-        print(str(offset4))
+        logger.debug(f"SetCoils offset4 value: {offset4}")
         return self.sendRecvMsg(string)
 
     def DI(self, offset1):
@@ -468,7 +470,7 @@ class DobotApiDashboard(DobotApi):
         for params in dynParams:
             string = string + str(params) + ","
         string = string + ")"
-        print(string)
+        logger.debug(f"DOGroup command: {string}")
         return self.wait_reply()
 
     def BrakeControl(self, offset1, offset2):

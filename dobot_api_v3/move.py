@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from loguru import logger
+
 from .base import DobotApi
 
 
@@ -22,7 +24,7 @@ class DobotApiMove(DobotApi):
         for params in dynParams:
             string = string + "," + str(params)
         string = string + ")"
-        print(string)
+        logger.debug(f"MovJ command: {string}")
         return self.sendRecvMsg(string)
 
     def MovL(self, x, y, z, rx, ry, rz, *dynParams):
@@ -39,7 +41,7 @@ class DobotApiMove(DobotApi):
         for params in dynParams:
             string = string + "," + str(params)
         string = string + ")"
-        print(string)
+        logger.debug(f"MovL command: {string}")
         return self.sendRecvMsg(string)
 
     def JointMovJ(self, j1, j2, j3, j4, j5, j6, *dynParams):
@@ -56,7 +58,7 @@ class DobotApiMove(DobotApi):
         return self.sendRecvMsg(string)
 
     def Jump(self):
-        print("待定")
+        logger.warning("Jump method not yet implemented (待定)")
 
     def RelMovJ(self, offset1, offset2, offset3, offset4, offset5, offset6, *dynParams):
         """
@@ -289,7 +291,7 @@ class DobotApiMove(DobotApi):
             offset_x, offset_y, offset_z, offset_rx, offset_ry, offset_rz, tool
         )
         for params in dynParams:
-            print(type(params), params)
+            logger.debug(f"RelMovJTool params: type={type(params)}, value={params}")
             string = string + ", SpeedJ={:d}, AccJ={:d}, User={:d}".format(
                 params[0], params[1], params[2]
             )
@@ -325,7 +327,7 @@ class DobotApiMove(DobotApi):
             offset_x, offset_y, offset_z, offset_rx, offset_ry, offset_rz, tool
         )
         for params in dynParams:
-            print(type(params), params)
+            logger.debug(f"RelMovLTool params: type={type(params)}, value={params}")
             string = string + ", SpeedJ={:d}, AccJ={:d}, User={:d}".format(
                 params[0], params[1], params[2]
             )
