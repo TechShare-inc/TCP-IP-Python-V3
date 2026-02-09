@@ -1,18 +1,18 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "dobot_api"
-version = "3.0.1"
-description = "Dobot Robot API for TCP/IP communication"
+name = "dobot_api_v3"
+version = "3.0.0"
+description = "Dobot Robot API with V3-style modular architecture and V3 protocol semantics"
 readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "MIT"}
 authors = [
     {name = "Dobot", email = "support@dobot.cc"},
 ]
-keywords = ["dobot", "robot", "tcp-ip", "api", "automation", "robotics"]
+keywords = ["dobot", "robot", "tcp-ip", "api", "automation", "robotics", "i18n"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -26,17 +26,25 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "numpy",
+    "numpy>=1.20.0",
+    "loguru>=0.7.0",
+    "python-i18n>=0.3.9",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/haoyan-ts/TCP-IP-Python-V3"
-Repository = "https://github.com/haoyan-ts/TCP-IP-Python-V3"
-Documentation = "https://github.com/haoyan-ts/TCP-IP-Python-V3#readme"
-"Bug Tracker" = "https://github.com/haoyan-ts/TCP-IP-Python-V3/issues"
+Homepage = "https://github.com/TechShare-inc/TCP-IP-Python-V3"
+Repository = "https://github.com/TechShare-inc/TCP-IP-Python-V3"
+Documentation = "https://github.com/TechShare-inc/TCP-IP-Python-V3#readme"
+"Bug Tracker" = "https://github.com/TechShare-inc/TCP-IP-Python-V3/issues"
 
 [tool.setuptools.packages.find]
-include = ["dobot_api*"]
+include = ["dobot_api*", "dobot_api_v3*"]
 
 [tool.setuptools.package-data]
-dobot_api = ["files/*"]
+dobot_api = ["files/*", "locales/*.yml"]
