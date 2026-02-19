@@ -115,7 +115,7 @@ class DobotApi:
                 f"Unable to establish socket connection to {self.ip}:{self.port}"
             ) from exc
 
-    def reConnect(self) -> None:
+    def reconnect(self) -> None:
         """Reconnect the socket on the original endpoint."""
         self.close()
         self._connect()
@@ -141,7 +141,7 @@ class DobotApi:
         self.log(f"Receive from {self.ip}:{self.port}: {data_str}")
         return data_str
 
-    def sendRecvMsg(self, string: str) -> str:
+    def send_recv_msg(self, string: str) -> str:
         with self._global_lock:
             self.send_data(string)
             return self.wait_reply()

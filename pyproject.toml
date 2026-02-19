@@ -44,7 +44,22 @@ Documentation = "https://github.com/TechShare-inc/TCP-IP-Python-V3#readme"
 "Bug Tracker" = "https://github.com/TechShare-inc/TCP-IP-Python-V3/issues"
 
 [tool.setuptools.packages.find]
-include = ["dobot_api*", "dobot_api_v3*"]
+include = ["dobot_api_v3*"]
 
 [tool.setuptools.package-data]
-dobot_api = ["files/*", "locales/*.yml"]
+dobot_api_v3 = ["py.typed", "locales/*.yml"]
+
+[tool.mypy]
+python_version = "3.9"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+warn_unused_ignores = true
+no_implicit_reexport = true
+
+[[tool.mypy.overrides]]
+module = "numpy.*"
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

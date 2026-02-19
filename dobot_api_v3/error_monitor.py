@@ -14,7 +14,7 @@ from .i18n_manager import AlarmI18n
 
 
 class RobotErrorMonitor:
-    def __init__(self, robot_ip: str = "192.168.200.1", dashboard_port: int = 29999):
+    def __init__(self, robot_ip: str = "192.168.200.1", dashboard_port: int = 29999) -> None:
         self.robot_ip = robot_ip
         self.dashboard_port = dashboard_port
         self.dashboard: Optional[DobotApiDashboard] = None
