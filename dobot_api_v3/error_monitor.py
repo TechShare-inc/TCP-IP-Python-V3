@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 import time
+import warnings
 from typing import Any, Dict, List, Optional
 
 from loguru import logger
@@ -13,38 +14,92 @@ from .dashboard import DobotApiDashboard
 from .i18n_manager import AlarmI18n
 
 
-# TODO: pass dashboard instance from outside instead of creating a new one inside this class, to avoid multiple connections if both DobotApi and RobotErrorMonitor are used together.
 class RobotErrorMonitor:
-    def __init__(
-        self, robot_ip: str = "192.168.200.1", dashboard_port: int = 29999
-    ) -> None:
-        self.robot_ip = robot_ip
-        self.dashboard_port = dashboard_port
-        self.dashboard: Optional[DobotApiDashboard] = None
-        self.i18n = AlarmI18n(default_language="en")
+    """Alarm monitor backed by an externally-supplied :class:`DobotApiDashboard`.
+
+    The caller is responsible for the dashboard's lifecycle (opening and
+    closing the connection).  ``RobotErrorMonitor`` never closes the dashboard
+    it receives.
+
+    Example::
+
+        dashboard = DobotApiDashboard("192.168.5.1", 29999)
+        monitor = RobotErrorMonitor(dashboard)
+        monitor.check_errors(language="en")
+        dashboard.close()
+    """
+
+    def __init__(self, dashboard: DobotApiDashboard, *, language: str = "en") -> None:
+        self.dashboard = dashboard
+        self.i18n = AlarmI18n(default_language=language)
+
+    # ------------------------------------------------------------------
+    # Deprecated factory — kept for backward compatibility
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def from_connection(
+        cls,
+        robot_ip: str = "192.168.200.1",
+        dashboard_port: int = 29999,
+    ) -> "RobotErrorMonitor":
+        """Create a monitor by opening a new dashboard connection.
+
+        .. deprecated::
+            Prefer creating a :class:`~dobot_api_v3.DobotApiDashboard`
+            yourself and passing it to :class:`RobotErrorMonitor` directly
+            so that the same connection can be shared with other API objects.
+        """
+        warnings.warn(
+            "RobotErrorMonitor.from_connection() is deprecated. "
+            "Create a DobotApiDashboard instance and pass it to "
+            "RobotErrorMonitor(dashboard) instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        dashboard = DobotApiDashboard(robot_ip, dashboard_port)
+        return cls(dashboard)
+
+    # ------------------------------------------------------------------
+    # Deprecated lifecycle helpers — kept for backward compatibility
+    # ------------------------------------------------------------------
 
     def connect(self) -> bool:
-        try:
-            self.dashboard = DobotApiDashboard(self.robot_ip, self.dashboard_port)
-            logger.info(
-                f"Connected to robot dashboard {self.robot_ip}:{self.dashboard_port}"
-            )
-            return True
-        except Exception as exc:
-            logger.error(f"Failed to connect: {exc}")
-            return False
+        """No-op kept for backward compatibility.
+
+        .. deprecated::
+            Lifecycle is now the caller's responsibility.  Manage the
+            :class:`DobotApiDashboard` connection yourself.
+        """
+        warnings.warn(
+            "RobotErrorMonitor.connect() is deprecated and is now a no-op. "
+            "Manage the DobotApiDashboard connection yourself.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return True
 
     def disconnect(self) -> None:
-        if self.dashboard is not None:
-            self.dashboard.close()
+        """No-op kept for backward compatibility.
+
+        .. deprecated::
+            Lifecycle is now the caller's responsibility.  Close the
+            :class:`DobotApiDashboard` yourself when done.
+        """
+        warnings.warn(
+            "RobotErrorMonitor.disconnect() is deprecated and is now a no-op. "
+            "Close the DobotApiDashboard yourself when done.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+    # ------------------------------------------------------------------
+    # Core API
+    # ------------------------------------------------------------------
 
     def get_error_info(self, language: str = "zh_CN") -> Optional[Dict[str, Any]]:
-        """Get error information using dashboard.GetErrorID()."""
+        """Get error information using dashboard.get_error_id()."""
         try:
-            if self.dashboard is None:
-                logger.error("Dashboard not connected")
-                return None
-
             self.i18n.set_language(language)
 
             # Get error ID string from dashboard
@@ -121,10 +176,6 @@ class RobotErrorMonitor:
             bool: True if errors were found and cleared, False otherwise
         """
         try:
-            if self.dashboard is None:
-                logger.error("Dashboard not connected")
-                return False
-
             # Get current error information
             info = self.get_error_info(language)
             if not info or "errMsg" not in info:

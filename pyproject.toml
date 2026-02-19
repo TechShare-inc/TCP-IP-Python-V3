@@ -51,6 +51,11 @@ include = ["dobot_api_v3*"]
 [tool.setuptools.package-data]
 dobot_api_v3 = ["py.typed", "locales/*.yml"]
 
+[tool.ruff]
+ignore = [
+    "F541",  # f-string with backslash is not a syntax error but Ruff doesn't know that yet
+]
+
 [tool.mypy]
 python_version = "3.9"
 strict = true

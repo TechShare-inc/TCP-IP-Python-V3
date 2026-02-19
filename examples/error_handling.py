@@ -1,16 +1,14 @@
-"""Error monitor demo using dashboard.GetErrorID()."""
+"""Error monitor demo using dashboard.get_error_id()."""
 
 from dobot_api_v3 import RobotErrorMonitor
+from dobot_api_v3.dashboard import DobotApiDashboard
 
 
 def main() -> None:
-    # Create monitor instance
-    monitor = RobotErrorMonitor("192.168.5.1")
-
-    # Connect to robot dashboard
-    if not monitor.connect():
-        print("Failed to connect to robot")
-        return
+    # Create a shared dashboard connection — pass it to RobotErrorMonitor so
+    # that the same TCP socket can be reused by other API objects if needed.
+    dashboard = DobotApiDashboard("192.168.5.1", 29999)
+    monitor = RobotErrorMonitor(dashboard)
 
     try:
         # Get error information
@@ -30,8 +28,8 @@ def main() -> None:
             print("No errors found")
 
     finally:
-        # Disconnect
-        monitor.disconnect()
+        # The caller owns the dashboard — close it here.
+        dashboard.close()
 
 
 if __name__ == "__main__":

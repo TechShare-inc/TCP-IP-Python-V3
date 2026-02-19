@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time as time_mod
+import warnings
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -19,53 +20,42 @@ pytestmark = pytest.mark.unit
 
 @pytest.fixture
 def monitor() -> RobotErrorMonitor:
-    """RobotErrorMonitor with no active connection."""
-    return RobotErrorMonitor(robot_ip="192.168.1.1", dashboard_port=29999)
-
-
-@pytest.fixture
-def connected_monitor(
-    monitor: RobotErrorMonitor,
-) -> RobotErrorMonitor:
-    """RobotErrorMonitor with a mock dashboard already injected."""
-    mock_db = MagicMock()
-    monitor.dashboard = mock_db
-    return monitor
+    """RobotErrorMonitor with a mock dashboard injected."""
+    return RobotErrorMonitor(dashboard=MagicMock())
 
 
 # ---------------------------------------------------------------------------
-# connect / disconnect
+# Deprecated helpers: connect / disconnect / from_connection
 # ---------------------------------------------------------------------------
 
 
-class TestConnect:
-    def test_connect_creates_dashboard(
-        self, monitor: RobotErrorMonitor, monkeypatch: pytest.MonkeyPatch
+class TestDeprecatedHelpers:
+    def test_connect_is_noop_and_warns(self, monitor: RobotErrorMonitor) -> None:
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            result = monitor.connect()
+        assert result is True
+        assert any(issubclass(w.category, DeprecationWarning) for w in caught)
+
+    def test_disconnect_is_noop_and_warns(self, monitor: RobotErrorMonitor) -> None:
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            monitor.disconnect()
+        assert any(issubclass(w.category, DeprecationWarning) for w in caught)
+        # Dashboard must NOT have been closed — caller owns lifecycle.
+        monitor.dashboard.close.assert_not_called()  # type: ignore[union-attr]
+
+    def test_from_connection_warns_and_returns_monitor(
+        self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         mock_cls = MagicMock()
-        monkeypatch.setattr(
-            "dobot_api_v3.error_monitor.DobotApiDashboard", mock_cls
-        )
-        result = monitor.connect()
-        assert result is True
+        monkeypatch.setattr("dobot_api_v3.error_monitor.DobotApiDashboard", mock_cls)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            m = RobotErrorMonitor.from_connection("192.168.1.1", 29999)
         mock_cls.assert_called_once_with("192.168.1.1", 29999)
-        assert monitor.dashboard is not None
-
-    def test_connect_returns_false_on_exception(
-        self, monitor: RobotErrorMonitor, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        monkeypatch.setattr(
-            "dobot_api_v3.error_monitor.DobotApiDashboard",
-            MagicMock(side_effect=ConnectionError("refused")),
-        )
-        result = monitor.connect()
-        assert result is False
-
-    def test_disconnect_calls_close_on_dashboard(
-        self, connected_monitor: RobotErrorMonitor
-    ) -> None:
-        connected_monitor.disconnect()
-        connected_monitor.dashboard.close.assert_called_once()  # type: ignore[union-attr]
+        assert isinstance(m, RobotErrorMonitor)
+        assert any(issubclass(w.category, DeprecationWarning) for w in caught)
 
 
 # ---------------------------------------------------------------------------
@@ -88,28 +78,24 @@ class TestGetErrorInfo:
     )
     def test_error_code_extraction(
         self,
-        connected_monitor: RobotErrorMonitor,
+        monitor: RobotErrorMonitor,
         response: str,
         expected_ids: list,
     ) -> None:
-        connected_monitor.dashboard.get_error_id.return_value = response  # type: ignore[union-attr]
-        result = connected_monitor.get_error_info("en")
+        monitor.dashboard.get_error_id.return_value = response  # type: ignore[union-attr]
+        result = monitor.get_error_info("en")
         assert result is not None
         ids = [e["id"] for e in result["errMsg"]]
         assert ids == expected_ids
 
-    def test_returns_none_when_not_connected(self, monitor: RobotErrorMonitor) -> None:
-        result = monitor.get_error_info()
-        assert result is None
-
     def test_uses_snake_case_get_error_id(
-        self, connected_monitor: RobotErrorMonitor
+        self, monitor: RobotErrorMonitor
     ) -> None:
         """Must call get_error_id() not the deprecated GetErrorID()."""
-        connected_monitor.dashboard.get_error_id.return_value = "0,{0};"  # type: ignore[union-attr]
-        connected_monitor.get_error_info("en")
-        connected_monitor.dashboard.get_error_id.assert_called_once()  # type: ignore[union-attr]
-        connected_monitor.dashboard.GetErrorID.assert_not_called()  # type: ignore[union-attr]
+        monitor.dashboard.get_error_id.return_value = "0,{0};"  # type: ignore[union-attr]
+        monitor.get_error_info("en")
+        monitor.dashboard.get_error_id.assert_called_once()  # type: ignore[union-attr]
+        monitor.dashboard.GetErrorID.assert_not_called()  # type: ignore[union-attr]
 
 
 # ---------------------------------------------------------------------------
@@ -119,23 +105,20 @@ class TestGetErrorInfo:
 
 class TestClearRobotError:
     def test_calls_snake_case_clear_error(
-        self, connected_monitor: RobotErrorMonitor
+        self, monitor: RobotErrorMonitor
     ) -> None:
         """Must call clear_error() not the deprecated ClearError()."""
-        connected_monitor.dashboard.get_error_id.return_value = "0,{1001};"  # type: ignore[union-attr]
-        connected_monitor.dashboard.clear_error.return_value = "0,0,ok;"  # type: ignore[union-attr]
-        connected_monitor.clear_robot_error("en")
-        connected_monitor.dashboard.clear_error.assert_called()  # type: ignore[union-attr]
-        connected_monitor.dashboard.ClearError.assert_not_called()  # type: ignore[union-attr]
-
-    def test_returns_false_when_not_connected(self, monitor: RobotErrorMonitor) -> None:
-        assert monitor.clear_robot_error() is False
+        monitor.dashboard.get_error_id.return_value = "0,{1001};"  # type: ignore[union-attr]
+        monitor.dashboard.clear_error.return_value = "0,0,ok;"  # type: ignore[union-attr]
+        monitor.clear_robot_error("en")
+        monitor.dashboard.clear_error.assert_called()  # type: ignore[union-attr]
+        monitor.dashboard.ClearError.assert_not_called()  # type: ignore[union-attr]
 
     def test_returns_false_when_no_errors(
-        self, connected_monitor: RobotErrorMonitor
+        self, monitor: RobotErrorMonitor
     ) -> None:
-        connected_monitor.dashboard.get_error_id.return_value = "0,{0};"  # type: ignore[union-attr]
-        result = connected_monitor.clear_robot_error("en")
+        monitor.dashboard.get_error_id.return_value = "0,{0};"  # type: ignore[union-attr]
+        result = monitor.clear_robot_error("en")
         assert result is False
 
 
@@ -146,16 +129,16 @@ class TestClearRobotError:
 
 class TestCheckErrors:
     def test_returns_false_when_no_errors(
-        self, connected_monitor: RobotErrorMonitor
+        self, monitor: RobotErrorMonitor
     ) -> None:
-        connected_monitor.dashboard.get_error_id.return_value = "0,{0};"  # type: ignore[union-attr]
-        assert connected_monitor.check_errors("en") is False
+        monitor.dashboard.get_error_id.return_value = "0,{0};"  # type: ignore[union-attr]
+        assert monitor.check_errors("en") is False
 
     def test_returns_true_when_errors_present(
-        self, connected_monitor: RobotErrorMonitor
+        self, monitor: RobotErrorMonitor
     ) -> None:
-        connected_monitor.dashboard.get_error_id.return_value = "0,{1001};"  # type: ignore[union-attr]
-        assert connected_monitor.check_errors("en") is True
+        monitor.dashboard.get_error_id.return_value = "0,{1001};"  # type: ignore[union-attr]
+        assert monitor.check_errors("en") is True
 
 
 # ---------------------------------------------------------------------------
@@ -165,9 +148,9 @@ class TestCheckErrors:
 
 class TestMonitorErrors:
     def test_loops_until_keyboard_interrupt(
-        self, connected_monitor: RobotErrorMonitor, monkeypatch: pytest.MonkeyPatch
+        self, monitor: RobotErrorMonitor, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        connected_monitor.dashboard.get_error_id.return_value = "0,{0};"  # type: ignore[union-attr]
+        monitor.dashboard.get_error_id.return_value = "0,{0};"  # type: ignore[union-attr]
         call_count = 0
 
         def fake_sleep(interval: float) -> None:
@@ -177,5 +160,5 @@ class TestMonitorErrors:
                 raise KeyboardInterrupt
 
         monkeypatch.setattr(time_mod, "sleep", fake_sleep)
-        connected_monitor.monitor_errors(interval=1, language="en")
+        monitor.monitor_errors(interval=1, language="en")
         assert call_count == 3
