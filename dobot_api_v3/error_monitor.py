@@ -13,8 +13,11 @@ from .dashboard import DobotApiDashboard
 from .i18n_manager import AlarmI18n
 
 
+# TODO: pass dashboard instance from outside instead of creating a new one inside this class, to avoid multiple connections if both DobotApi and RobotErrorMonitor are used together.
 class RobotErrorMonitor:
-    def __init__(self, robot_ip: str = "192.168.200.1", dashboard_port: int = 29999) -> None:
+    def __init__(
+        self, robot_ip: str = "192.168.200.1", dashboard_port: int = 29999
+    ) -> None:
         self.robot_ip = robot_ip
         self.dashboard_port = dashboard_port
         self.dashboard: Optional[DobotApiDashboard] = None
@@ -45,7 +48,7 @@ class RobotErrorMonitor:
             self.i18n.set_language(language)
 
             # Get error ID string from dashboard
-            error_response = self.dashboard.GetErrorID()
+            error_response = self.dashboard.get_error_id()
             if not error_response:
                 return {"errMsg": []}
 
@@ -146,7 +149,7 @@ class RobotErrorMonitor:
                 )
 
             # Clear the errors
-            clear_result = self.dashboard.ClearError()
+            clear_result = self.dashboard.clear_error()
             logger.info(f"Clear error command sent: {clear_result}")
             return True
 

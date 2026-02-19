@@ -35,6 +35,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "pytest-mock>=3.10",
 ]
 
 [project.urls]
@@ -63,3 +65,17 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "--strict-markers"
+markers = [
+    "unit: fast unit tests (no network, no hardware)",
+    "integration: loopback integration tests using a local TCP stub server",
+    "hil: hardware-in-the-loop tests (requires a real Dobot robot; set DOBOT_TEST_IP)",
+]
+
+[tool.coverage.run]
+source = ["dobot_api_v3"]
+omit = ["dobot_api_v3/__pycache__/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
