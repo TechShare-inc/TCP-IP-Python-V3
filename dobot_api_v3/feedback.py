@@ -7,18 +7,39 @@ from typing import Optional
 
 import numpy as np
 
-from .base import DobotApi, MyType
+from .base import DobotApi, FeedbackDtype
+from .utils import deprecated_alias
 
 
-class DobotApiFeedBack(DobotApi):
+class DobotApiFeedback(DobotApi):
     """Feedback interface for reading 1440-byte robot status packets."""
 
-    def __init__(self, ip: str, port: int, *args) -> None:
-        super().__init__(ip, port, *args)
-        self.__MyType: Optional[np.ndarray] = None
+    def __init__(self, ip: str, port: int) -> None:
+        """Initialize the feedback socket client.
+
+        Args:
+            ip: Robot controller IP address.
+            port: Feedback TCP port, usually ``30004``.
+
+        Raises:
+            ValueError: If ``port`` is unsupported.
+            ConnectionError: If the socket connection fails.
+        """
+        super().__init__(ip, port)
+        self._feedback_dtype: Optional[np.ndarray] = None
         self.last_recv_time = time.perf_counter()
 
-    def feedBackData(self) -> Optional[np.ndarray]:
+    def feedback_data(self) -> Optional[np.ndarray]:
+        """Read one feedback frame and parse it with ``FeedbackDtype``.
+
+        Returns:
+            A NumPy structured array of length 1 when a valid 1440-byte frame
+            is parsed, otherwise ``None``.
+
+        Raises:
+            RuntimeError: If the socket is not connected.
+            RuntimeError: If repeated short reads indicate packet loss.
+        """
         if self.socket_dobot is None:
             raise RuntimeError(
                 "Socket connection is not established. Please connect first."
@@ -45,7 +66,22 @@ class DobotApiFeedBack(DobotApi):
         self.last_recv_time = time.perf_counter()
 
         data = temp[0:1440]
-        self.__MyType = None
+        self._feedback_dtype = None
         if len(data) == 1440:
-            self.__MyType = np.frombuffer(data, dtype=MyType)
-        return self.__MyType
+            self._feedback_dtype = np.frombuffer(data, dtype=FeedbackDtype)
+        return self._feedback_dtype
+
+    @deprecated_alias("feedback_data")
+    def feedBackData(self) -> Optional[np.ndarray]:
+        """Deprecated alias for :meth:`feedback_data`.
+
+        Returns:
+            Same value as :meth:`feedback_data`.
+        """
+        return self.feedback_data()
+
+
+# ---------------------------------------------------------------------------
+# Deprecated class alias — preserved for backward compatibility.
+# ---------------------------------------------------------------------------
+DobotApiFeedBack = DobotApiFeedback  # deprecated: use DobotApiFeedback
