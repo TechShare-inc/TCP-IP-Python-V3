@@ -1,15 +1,16 @@
 """Dobot API (modular V4-style architecture for V3 protocol semantics)."""
 
-from .base import DobotApi, MyType
-from .dashboard import DobotApiDashboard
-from .move import DobotApiMove
-from .feedback import DobotApiFeedBack
-from .error_monitor import RobotErrorMonitor
-from .i18n_manager import AlarmI18n
-
 import os
 import sys
+
 from loguru import logger
+
+from .base import PROTOCOL_FIELD_MAP, DobotApi, FeedbackDtype, MyType
+from .dashboard import DobotApiDashboard
+from .error_monitor import RobotErrorMonitor
+from .feedback import DobotApiFeedBack, DobotApiFeedback
+from .i18n_manager import AlarmI18n
+from .move import DobotApiMove
 
 logger.remove()
 logger.add(
@@ -22,12 +23,17 @@ logger.add(
 __version__ = "3.0.0"
 
 __all__ = [
+    # Primary names — use these in new code.
     "DobotApi",
     "DobotApiDashboard",
     "DobotApiMove",
-    "DobotApiFeedBack",
+    "DobotApiFeedback",
     "RobotErrorMonitor",
-    "MyType",
+    "FeedbackDtype",
+    "PROTOCOL_FIELD_MAP",
     "AlarmI18n",
     "logger",
+    # Deprecated aliases — kept for backward compatibility.
+    "DobotApiFeedBack",  # deprecated: use DobotApiFeedback
+    "MyType",  # deprecated: use FeedbackDtype
 ]

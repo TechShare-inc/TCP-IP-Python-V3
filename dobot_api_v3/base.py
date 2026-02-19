@@ -4,15 +4,19 @@ from __future__ import annotations
 
 import socket
 import threading
-from datetime import datetime
-from tkinter import END, Text
+import warnings
 from typing import Optional
 
 import numpy as np
 from loguru import logger
 
+# ---------------------------------------------------------------------------
+# Feedback packet dtype.
+# All field names use snake_case.  The original Dobot protocol documentation
+# names are available via PROTOCOL_FIELD_MAP below.
+# ---------------------------------------------------------------------------
 
-MyType = np.dtype(
+FeedbackDtype = np.dtype(
     [
         ("len", np.int64),
         ("digital_input_bits", np.uint64),
@@ -40,12 +44,12 @@ MyType = np.dtype(
         ("q_actual", np.float64, (6,)),
         ("qd_actual", np.float64, (6,)),
         ("i_actual", np.float64, (6,)),
-        ("actual_TCP_force", np.float64, (6,)),
+        ("actual_tcp_force", np.float64, (6,)),
         ("tool_vector_actual", np.float64, (6,)),
-        ("TCP_speed_actual", np.float64, (6,)),
-        ("TCP_force", np.float64, (6,)),
-        ("Tool_vector_target", np.float64, (6,)),
-        ("TCP_speed_target", np.float64, (6,)),
+        ("tcp_speed_actual", np.float64, (6,)),
+        ("tcp_force", np.float64, (6,)),
+        ("tool_vector_target", np.float64, (6,)),
+        ("tcp_speed_target", np.float64, (6,)),
         ("motor_temperatures", np.float64, (6,)),
         ("joint_modes", np.float64, (6,)),
         ("v_actual", np.float64, (6,)),
@@ -82,8 +86,8 @@ MyType = np.dtype(
         ("center_x", np.float64),
         ("center_y", np.float64),
         ("center_z", np.float64),
-        ("user[6]", np.float64, (6,)),
-        ("tool[6]", np.float64, (6,)),
+        ("user_coords", np.float64, (6,)),
+        ("tool_coords", np.float64, (6,)),
         ("trace_index", np.float64),
         ("six_force_value", np.float64, (6,)),
         ("target_quaternion", np.float64, (4,)),
@@ -92,19 +96,80 @@ MyType = np.dtype(
     ]
 )
 
+# ---------------------------------------------------------------------------
+# Protocol field name mapping — maps snake_case field names used in
+# FeedbackDtype to the original names from the Dobot protocol documentation.
+# ---------------------------------------------------------------------------
+PROTOCOL_FIELD_MAP: dict[str, str] = {
+    "actual_tcp_force": "actual_TCP_force",
+    "tcp_speed_actual": "TCP_speed_actual",
+    "tcp_force": "TCP_force",
+    "tool_vector_target": "Tool_vector_target",
+    "tcp_speed_target": "TCP_speed_target",
+    "user_coords": "user[6]",
+    "tool_coords": "tool[6]",
+}
+
+
+# ---------------------------------------------------------------------------
+# Deprecated alias — kept for backward compatibility.
+# ---------------------------------------------------------------------------
+def _warn_mytype() -> None:
+    warnings.warn(
+        "MyType is deprecated, use FeedbackDtype instead.",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+
+
+class _DeprecatedMyType:
+    """Transparent proxy that issues a DeprecationWarning on first access."""
+
+    def __getattr__(self, name: str) -> object:  # noqa: ANN001
+        _warn_mytype()
+        return getattr(FeedbackDtype, name)
+
+    def __repr__(self) -> str:
+        _warn_mytype()
+        return repr(FeedbackDtype)
+
+
+MyType = FeedbackDtype  # deprecated — use FeedbackDtype
+
 
 class DobotApi:
-    """Base TCP communication class for Dobot dashboard/move/feedback ports."""
+    """Base TCP communication class for Dobot TCP API ports.
 
-    def __init__(self, ip: str, port: int, *args: Text) -> None:
+    This class provides connection lifecycle management, message send/receive
+    helpers, and thread-safe request/response behavior for the dashboard,
+    movement, and feedback sockets.
+    """
+
+    def __init__(self, ip: str, port: int) -> None:
+        """Initialize and connect a Dobot TCP socket.
+
+        Args:
+            ip: Robot controller IP address.
+            port: Robot TCP port. Supported ports are 29999, 30003, 30004,
+                30005, and 30006.
+
+        Raises:
+            ValueError: If ``port`` is not a supported Dobot TCP port.
+            ConnectionError: If the socket connection fails.
+        """
         self.ip = ip
         self.port = port
         self.socket_dobot: Optional[socket.socket] = None
         self._global_lock = threading.Lock()
-        self.text_log: Optional[Text] = args[0] if args else None
         self._connect()
 
     def _connect(self) -> None:
+        """Open a socket connection to the configured endpoint.
+
+        Raises:
+            ValueError: If ``self.port`` is not a supported Dobot TCP port.
+            ConnectionError: If the socket connection cannot be established.
+        """
         if self.port not in (29999, 30003, 30004, 30005, 30006):
             raise ValueError(f"Unsupported Dobot TCP port: {self.port}")
         try:
@@ -115,25 +180,48 @@ class DobotApi:
                 f"Unable to establish socket connection to {self.ip}:{self.port}"
             ) from exc
 
-    def reConnect(self) -> None:
-        """Reconnect the socket on the original endpoint."""
+    def reconnect(self) -> None:
+        """Reconnect the socket to the original endpoint.
+
+        Raises:
+            ValueError: If ``self.port`` is invalid.
+            ConnectionError: If reconnection fails.
+        """
         self.close()
         self._connect()
 
     def log(self, text: str) -> None:
-        if self.text_log is not None:
-            date = datetime.now().strftime("%Y-%m-%d %H:%M:%S ")
-            self.text_log.insert(END, date + text + "\n")
-        else:
-            logger.info(text)
+        """Write a log message using the project logger.
+
+        Args:
+            text: Message to emit.
+        """
+        logger.info(text)
 
     def send_data(self, string: str) -> None:
+        """Send a UTF-8 command string to the robot.
+
+        Args:
+            string: Command string to send.
+
+        Raises:
+            RuntimeError: If the socket is not connected.
+        """
         if self.socket_dobot is None:
             raise RuntimeError("Socket connection is not established")
         self.log(f"Send to {self.ip}:{self.port}: {string}")
         self.socket_dobot.send(string.encode("utf-8"))
 
     def wait_reply(self) -> str:
+        """Receive and decode one robot reply frame.
+
+        Returns:
+            UTF-8 decoded response string, or an empty string if the socket
+            returns zero bytes.
+
+        Raises:
+            RuntimeError: If the socket is not connected.
+        """
         if self.socket_dobot is None:
             raise RuntimeError("Socket connection is not established")
         data = self.socket_dobot.recv(1024)
@@ -141,12 +229,24 @@ class DobotApi:
         self.log(f"Receive from {self.ip}:{self.port}: {data_str}")
         return data_str
 
-    def sendRecvMsg(self, string: str) -> str:
+    def send_recv_msg(self, string: str) -> str:
+        """Send one command and wait for one reply atomically.
+
+        Args:
+            string: Command string to send.
+
+        Returns:
+            Decoded robot response string.
+
+        Raises:
+            RuntimeError: If the socket is not connected.
+        """
         with self._global_lock:
             self.send_data(string)
             return self.wait_reply()
 
     def close(self) -> None:
+        """Close the socket if connected."""
         if self.socket_dobot is not None:
             self.socket_dobot.close()
             self.socket_dobot = None
