@@ -30,6 +30,12 @@ class RobotErrorMonitor:
     """
 
     def __init__(self, dashboard: DobotApiDashboard, *, language: str = "en") -> None:
+        """Initialize the error monitor.
+
+        Args:
+            dashboard: Shared dashboard client used for alarm queries and clear.
+            language: Default alarm translation language.
+        """
         self.dashboard = dashboard
         self.i18n = AlarmI18n(default_language=language)
 
@@ -44,6 +50,13 @@ class RobotErrorMonitor:
         dashboard_port: int = 29999,
     ) -> "RobotErrorMonitor":
         """Create a monitor by opening a new dashboard connection.
+
+        Args:
+            robot_ip: Robot controller IP address.
+            dashboard_port: Dashboard TCP port.
+
+        Returns:
+            New monitor instance bound to a newly created dashboard client.
 
         .. deprecated::
             Prefer creating a :class:`~dobot_api_v3.DobotApiDashboard`
@@ -66,6 +79,9 @@ class RobotErrorMonitor:
 
     def connect(self) -> bool:
         """No-op kept for backward compatibility.
+
+        Returns:
+            Always ``True``.
 
         .. deprecated::
             Lifecycle is now the caller's responsibility.  Manage the
@@ -98,7 +114,15 @@ class RobotErrorMonitor:
     # ------------------------------------------------------------------
 
     def get_error_info(self, language: str = "zh_CN") -> Optional[Dict[str, Any]]:
-        """Get error information using dashboard.get_error_id()."""
+        """Get current robot alarm information.
+
+        Args:
+            language: Alarm translation language.
+
+        Returns:
+            Dictionary in the format ``{"errMsg": [...]}``, or ``None`` when
+            an unexpected exception occurs.
+        """
         try:
             self.i18n.set_language(language)
 
@@ -129,6 +153,14 @@ class RobotErrorMonitor:
             return None
 
     def check_errors(self, language: str = "zh_cn") -> bool:
+        """Query and log all current alarms.
+
+        Args:
+            language: Alarm translation language.
+
+        Returns:
+            ``True`` if alarms are present, otherwise ``False``.
+        """
         info = self.get_error_info(language)
         if not info or "errMsg" not in info:
             logger.warning("Failed to fetch error information")
@@ -145,6 +177,12 @@ class RobotErrorMonitor:
         return True
 
     def monitor_errors(self, interval: int = 5, language: str = "zh_cn") -> None:
+        """Continuously poll and log robot alarms.
+
+        Args:
+            interval: Polling interval in seconds.
+            language: Alarm translation language.
+        """
         logger.info(f"Monitoring errors every {interval}s")
         try:
             while True:
@@ -156,6 +194,13 @@ class RobotErrorMonitor:
     def save_error_log(
         self, filename: Optional[str] = None, language: str = "zh_cn"
     ) -> None:
+        """Persist current alarm payload to a JSON file.
+
+        Args:
+            filename: Output file path. If omitted, a timestamped filename is
+                generated.
+            language: Alarm translation language.
+        """
         if filename is None:
             filename = f"robot_errors_{time.strftime('%Y%m%d_%H%M%S')}.json"
         info = self.get_error_info(language)
@@ -173,7 +218,8 @@ class RobotErrorMonitor:
             language: Language for error messages (default: "zh_CN")
 
         Returns:
-            bool: True if errors were found and cleared, False otherwise
+            ``True`` if errors were found and a clear command was sent,
+            otherwise ``False``.
         """
         try:
             # Get current error information

@@ -70,6 +70,9 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/_autogen/
+docs/.vitepress/dist/
+docs/node_modules/
 
 # PyBuilder
 .pybuilder/
@@ -180,3 +183,17 @@ Desktop.ini
 # Backup files
 *.bak
 *.backup
+docs/.vitepress/cache/deps/_metadata.json
+docs/.vitepress/cache/deps/@theme_index.js
+docs/.vitepress/cache/deps/@theme_index.js.map
+docs/.vitepress/cache/deps/chunk-3LS5XF22.js
+docs/.vitepress/cache/deps/chunk-3LS5XF22.js.map
+docs/.vitepress/cache/deps/chunk-4X5TYTPO.js
+docs/.vitepress/cache/deps/chunk-4X5TYTPO.js.map
+docs/.vitepress/cache/deps/package.json
+docs/.vitepress/cache/deps/vitepress___@vue_devtools-api.js
+docs/.vitepress/cache/deps/vitepress___@vue_devtools-api.js.map
+docs/.vitepress/cache/deps/vitepress___@vueuse_core.js
+docs/.vitepress/cache/deps/vitepress___@vueuse_core.js.map
+docs/.vitepress/cache/deps/vue.js
+docs/.vitepress/cache/deps/vue.js.map

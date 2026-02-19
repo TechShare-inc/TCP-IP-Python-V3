@@ -15,12 +15,31 @@ class DobotApiFeedback(DobotApi):
     """Feedback interface for reading 1440-byte robot status packets."""
 
     def __init__(self, ip: str, port: int) -> None:
+        """Initialize the feedback socket client.
+
+        Args:
+            ip: Robot controller IP address.
+            port: Feedback TCP port, usually ``30004``.
+
+        Raises:
+            ValueError: If ``port`` is unsupported.
+            ConnectionError: If the socket connection fails.
+        """
         super().__init__(ip, port)
         self._feedback_dtype: Optional[np.ndarray] = None
         self.last_recv_time = time.perf_counter()
 
     def feedback_data(self) -> Optional[np.ndarray]:
-        """Read one 1440-byte robot status packet and return it as a numpy array."""
+        """Read one feedback frame and parse it with ``FeedbackDtype``.
+
+        Returns:
+            A NumPy structured array of length 1 when a valid 1440-byte frame
+            is parsed, otherwise ``None``.
+
+        Raises:
+            RuntimeError: If the socket is not connected.
+            RuntimeError: If repeated short reads indicate packet loss.
+        """
         if self.socket_dobot is None:
             raise RuntimeError(
                 "Socket connection is not established. Please connect first."
@@ -54,7 +73,11 @@ class DobotApiFeedback(DobotApi):
 
     @deprecated_alias("feedback_data")
     def feedBackData(self) -> Optional[np.ndarray]:
-        """Deprecated — use :meth:`feedback_data` instead."""
+        """Deprecated alias for :meth:`feedback_data`.
+
+        Returns:
+            Same value as :meth:`feedback_data`.
+        """
         return self.feedback_data()
 
 

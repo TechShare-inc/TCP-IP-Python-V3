@@ -9,7 +9,11 @@ from .utils import DynParam, ToolDynParam, deprecated_alias
 
 
 class DobotApiMove(DobotApi):
-    """Movement class for robot motion commands. Connects to move port (30003)."""
+    """Movement command client for Dobot motion APIs.
+
+    This class sends trajectory and servo commands to the move TCP port
+    (usually ``30003``).
+    """
 
     # ------------------------------------------------------------------
     # Protocol command methods (snake_case — primary implementation).
@@ -27,7 +31,21 @@ class DobotApiMove(DobotApi):
     ) -> str:
         """Joint motion interface (point-to-point motion mode).
 
-        x/y/z/rx/ry/rz: Target Cartesian pose
+        Args:
+            x: Target X coordinate.
+            y: Target Y coordinate.
+            z: Target Z coordinate.
+            rx: Target RX rotation.
+            ry: Target RY rotation.
+            rz: Target RZ rotation.
+            *dyn_params: Optional motion parameters.
+
+        Returns:
+            Robot response string.
+
+        Example:
+            >>> move.mov_j(200, 0, 200, 0, 0, 0)
+            >>> move.mov_j(220, 20, 180, 0, 0, 0, "SpeedJ=40", "AccJ=40")
         """
         string = "MovJ({:f},{:f},{:f},{:f},{:f},{:f}".format(x, y, z, rx, ry, rz)
         for params in dyn_params:
@@ -48,7 +66,21 @@ class DobotApiMove(DobotApi):
     ) -> str:
         """Linear motion interface.
 
-        x/y/z/rx/ry/rz: Target Cartesian pose
+        Args:
+            x: Target X coordinate.
+            y: Target Y coordinate.
+            z: Target Z coordinate.
+            rx: Target RX rotation.
+            ry: Target RY rotation.
+            rz: Target RZ rotation.
+            *dyn_params: Optional motion parameters.
+
+        Returns:
+            Robot response string.
+
+        Example:
+            >>> move.mov_l(250, 0, 180, 0, 0, 0)
+            >>> move.mov_l(250, 30, 180, 0, 0, 0, "SpeedL=30", "AccL=30")
         """
         string = "MovL({:f},{:f},{:f},{:f},{:f},{:f}".format(x, y, z, rx, ry, rz)
         for params in dyn_params:
@@ -69,7 +101,17 @@ class DobotApiMove(DobotApi):
     ) -> str:
         """Joint motion interface (joint target).
 
-        j1–j6: Target joint angles
+        Args:
+            j1: Target joint 1 angle.
+            j2: Target joint 2 angle.
+            j3: Target joint 3 angle.
+            j4: Target joint 4 angle.
+            j5: Target joint 5 angle.
+            j6: Target joint 6 angle.
+            *dyn_params: Optional motion parameters.
+
+        Returns:
+            Robot response string.
         """
         string = "JointMovJ({:f},{:f},{:f},{:f},{:f},{:f}".format(
             j1, j2, j3, j4, j5, j6
@@ -80,7 +122,10 @@ class DobotApiMove(DobotApi):
         return self.send_recv_msg(string)
 
     def jump(self) -> None:
-        """TODO: Jump method not yet implemented."""
+        """Placeholder for Jump command.
+
+        This method is intentionally not implemented in the current version.
+        """
         logger.warning("TODO: Jump method not yet implemented.")
 
     def rel_mov_j(
@@ -95,7 +140,17 @@ class DobotApiMove(DobotApi):
     ) -> str:
         """Relative joint offset motion (point-to-point mode).
 
-        offset1–offset6: Joint offset values
+        Args:
+            offset1: Joint 1 offset.
+            offset2: Joint 2 offset.
+            offset3: Joint 3 offset.
+            offset4: Joint 4 offset.
+            offset5: Joint 5 offset.
+            offset6: Joint 6 offset.
+            *dyn_params: Optional motion parameters.
+
+        Returns:
+            Robot response string.
         """
         string = "RelMovJ({:f},{:f},{:f},{:f},{:f},{:f}".format(
             offset1, offset2, offset3, offset4, offset5, offset6
@@ -110,7 +165,14 @@ class DobotApiMove(DobotApi):
     ) -> str:
         """Relative Cartesian offset motion (linear mode).
 
-        offset_x/offset_y/offset_z: Cartesian offsets
+        Args:
+            offset_x: X-axis offset.
+            offset_y: Y-axis offset.
+            offset_z: Z-axis offset.
+            *dyn_params: Optional motion parameters.
+
+        Returns:
+            Robot response string.
         """
         string = "RelMovL({:f},{:f},{:f}".format(offset_x, offset_y, offset_z)
         for params in dyn_params:
@@ -130,8 +192,17 @@ class DobotApiMove(DobotApi):
     ) -> str:
         """Linear motion with parallel digital output control.
 
-        x/y/z/a/b/c: Target Cartesian pose
-        *dyn_params: (Mode, Distance, Index, Status) tuples
+        Args:
+            x: Target X coordinate.
+            y: Target Y coordinate.
+            z: Target Z coordinate.
+            a: Target A rotation.
+            b: Target B rotation.
+            c: Target C rotation.
+            *dyn_params: Parallel I/O tuples ``(mode, distance, index, status)``.
+
+        Returns:
+            Robot response string.
         """
         string = "MovLIO({:f},{:f},{:f},{:f},{:f},{:f}".format(x, y, z, a, b, c)
         for params in dyn_params:
@@ -151,8 +222,17 @@ class DobotApiMove(DobotApi):
     ) -> str:
         """Point-to-point motion with parallel digital output control.
 
-        x/y/z/a/b/c: Target Cartesian pose
-        *dyn_params: (Mode, Distance, Index, Status) tuples
+        Args:
+            x: Target X coordinate.
+            y: Target Y coordinate.
+            z: Target Z coordinate.
+            a: Target A rotation.
+            b: Target B rotation.
+            c: Target C rotation.
+            *dyn_params: Parallel I/O tuples ``(mode, distance, index, status)``.
+
+        Returns:
+            Robot response string.
         """
         string = "MovJIO({:f},{:f},{:f},{:f},{:f},{:f}".format(x, y, z, a, b, c)
         logger.debug(f"MovJIO command: {string}")
@@ -179,8 +259,23 @@ class DobotApiMove(DobotApi):
     ) -> str:
         """Circular motion through an intermediate point.
 
-        x1/y1/z1/a1/b1/c1: Intermediate point
-        x2/y2/z2/a2/b2/c2: End point
+        Args:
+            x1: Intermediate point X.
+            y1: Intermediate point Y.
+            z1: Intermediate point Z.
+            a1: Intermediate point A.
+            b1: Intermediate point B.
+            c1: Intermediate point C.
+            x2: End point X.
+            y2: End point Y.
+            z2: End point Z.
+            a2: End point A.
+            b2: End point B.
+            c2: End point C.
+            *dyn_params: Optional motion parameters.
+
+        Returns:
+            Robot response string.
         """
         string = (
             "Arc({:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f}".format(
@@ -211,9 +306,24 @@ class DobotApiMove(DobotApi):
     ) -> str:
         """Full-circle motion command.
 
-        x1/y1/z1/a1/b1/c1: Intermediate point
-        x2/y2/z2/a2/b2/c2: End point
-        count: Number of full rotations
+        Args:
+            x1: Intermediate point X.
+            y1: Intermediate point Y.
+            z1: Intermediate point Z.
+            a1: Intermediate point A.
+            b1: Intermediate point B.
+            c1: Intermediate point C.
+            x2: End point X.
+            y2: End point Y.
+            z2: End point Z.
+            a2: End point A.
+            b2: End point B.
+            c2: End point C.
+            count: Number of full rotations.
+            *dyn_params: Optional motion parameters.
+
+        Returns:
+            Robot response string.
         """
         string = "Circle3({:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f},{:d}".format(
             x1, y1, z1, a1, b1, c1, x2, y2, z2, a2, b2, c2, count
@@ -237,10 +347,19 @@ class DobotApiMove(DobotApi):
     ) -> str:
         """Dynamic following in joint space.
 
-        j1–j6: Target joint angles
-        t: Point run time in seconds (0.02–3600.0, default 0.1)
-        lookahead_time: D-term equivalent (20.0–100.0, default 50.0)
-        gain: P-term equivalent (200.0–1000.0, default 500.0)
+        Args:
+            j1: Target joint 1 angle.
+            j2: Target joint 2 angle.
+            j3: Target joint 3 angle.
+            j4: Target joint 4 angle.
+            j5: Target joint 5 angle.
+            j6: Target joint 6 angle.
+            t: Point run time in seconds.
+            lookahead_time: Feed-forward smoothing parameter.
+            gain: Servo gain parameter.
+
+        Returns:
+            Robot response string.
         """
         string = "ServoJ({:f},{:f},{:f},{:f},{:f},{:f},t={:f},lookahead_time={:f},gain={:f})".format(
             j1, j2, j3, j4, j5, j6, t, lookahead_time, gain
@@ -252,7 +371,16 @@ class DobotApiMove(DobotApi):
     ) -> str:
         """Dynamic following in joint space (simplified form).
 
-        j1–j6: Target joint angles
+        Args:
+            j1: Target joint 1 angle.
+            j2: Target joint 2 angle.
+            j3: Target joint 3 angle.
+            j4: Target joint 4 angle.
+            j5: Target joint 5 angle.
+            j6: Target joint 6 angle.
+
+        Returns:
+            Robot response string.
         """
         string = "ServoJS({:f},{:f},{:f},{:f},{:f},{:f})".format(j1, j2, j3, j4, j5, j6)
         return self.send_recv_msg(string)
@@ -262,7 +390,16 @@ class DobotApiMove(DobotApi):
     ) -> str:
         """Dynamic following in Cartesian space.
 
-        x/y/z/a/b/c: Target Cartesian pose
+        Args:
+            x: Target X coordinate.
+            y: Target Y coordinate.
+            z: Target Z coordinate.
+            a: Target A rotation.
+            b: Target B rotation.
+            c: Target C rotation.
+
+        Returns:
+            Robot response string.
         """
         string = "ServoP({:f},{:f},{:f},{:f},{:f},{:f})".format(x, y, z, a, b, c)
         return self.send_recv_msg(string)
@@ -270,8 +407,16 @@ class DobotApiMove(DobotApi):
     def move_jog(self, axis_id: str, *dyn_params: DynParam) -> str:
         """Jog motion along a single axis.
 
-        axis_id: e.g. "J1+", "X-", "Rz+"
-        *dyn_params: Optional (coord_type, user_index, tool_index)
+        Args:
+            axis_id: Axis command such as ``"J1+"`` or ``"X-"``.
+            *dyn_params: Optional jog parameters ``(coord_type, user, tool)``.
+
+        Returns:
+            Robot response string.
+
+        Example:
+            >>> move.move_jog("J1+")
+            >>> move.move_jog("")
         """
         string = "MoveJog({:s}".format(axis_id)
         for params in dyn_params:
@@ -282,29 +427,49 @@ class DobotApiMove(DobotApi):
     def start_trace(self, trace_name: str) -> str:
         """Execute a trajectory file (Cartesian points).
 
-        trace_name: File name including suffix (stored in
-            /dobot/userdata/project/process/trajectory/)
+        Args:
+            trace_name: Trajectory file name including suffix.
+
+        Returns:
+            Robot response string.
         """
         return self.send_recv_msg(f"StartTrace({trace_name})")
 
     def start_path(self, trace_name: str, const: int, cart: int) -> str:
         """Replay a trajectory file (joint points).
 
-        trace_name: File name including suffix
-        const: 1 = constant speed (removes pause/dead zones); 0 = original speed
-        cart: 1 = Cartesian path; 0 = joint path
+        Args:
+            trace_name: Trajectory file name including suffix.
+            const: Constant-speed mode flag.
+            cart: Cartesian/joint path flag.
+
+        Returns:
+            Robot response string.
         """
         return self.send_recv_msg(f"StartPath({trace_name}, {const}, {cart})")
 
     def start_fc_trace(self, trace_name: str) -> str:
         """Execute a trajectory file with force control (Cartesian points).
 
-        trace_name: File name including suffix
+        Args:
+            trace_name: Trajectory file name including suffix.
+
+        Returns:
+            Robot response string.
         """
         return self.send_recv_msg(f"StartFCTrace({trace_name})")
 
     def sync(self) -> str:
-        """Block until all queued commands have been executed."""
+        """Block until all queued commands have been executed.
+
+        Returns:
+            Robot response string.
+
+        Example:
+            >>> move.mov_j(200, 0, 200, 0, 0, 0)
+            >>> move.mov_l(220, 20, 180, 0, 0, 0)
+            >>> move.sync()
+        """
         return self.send_recv_msg("Sync()")
 
     def rel_mov_j_tool(
@@ -320,9 +485,18 @@ class DobotApiMove(DobotApi):
     ) -> str:
         """Relative joint motion along the tool coordinate system.
 
-        offset_x/y/z/rx/ry/rz: Offsets in tool frame
-        tool: Tool coordinate system index (0–9)
-        *dyn_params: Optional (speed_j, acc_j, user) tuples
+        Args:
+            offset_x: X offset in tool frame.
+            offset_y: Y offset in tool frame.
+            offset_z: Z offset in tool frame.
+            offset_rx: RX offset in tool frame.
+            offset_ry: RY offset in tool frame.
+            offset_rz: RZ offset in tool frame.
+            tool: Tool coordinate index.
+            *dyn_params: Optional tuples ``(speed_j, acc_j, user)``.
+
+        Returns:
+            Robot response string.
         """
         string = "RelMovJTool({:f},{:f},{:f},{:f},{:f},{:f}, {:d}".format(
             offset_x, offset_y, offset_z, offset_rx, offset_ry, offset_rz, tool
@@ -348,9 +522,18 @@ class DobotApiMove(DobotApi):
     ) -> str:
         """Relative linear motion along the tool coordinate system.
 
-        offset_x/y/z/rx/ry/rz: Offsets in tool frame
-        tool: Tool coordinate system index (0–9)
-        *dyn_params: Optional (speed_l, acc_l, user) tuples
+        Args:
+            offset_x: X offset in tool frame.
+            offset_y: Y offset in tool frame.
+            offset_z: Z offset in tool frame.
+            offset_rx: RX offset in tool frame.
+            offset_ry: RY offset in tool frame.
+            offset_rz: RZ offset in tool frame.
+            tool: Tool coordinate index.
+            *dyn_params: Optional tuples ``(speed_l, acc_l, user)``.
+
+        Returns:
+            Robot response string.
         """
         string = "RelMovLTool({:f},{:f},{:f},{:f},{:f},{:f}, {:d}".format(
             offset_x, offset_y, offset_z, offset_rx, offset_ry, offset_rz, tool
@@ -376,9 +559,18 @@ class DobotApiMove(DobotApi):
     ) -> str:
         """Relative joint motion along the user coordinate system.
 
-        offset_x/y/z/rx/ry/rz: Offsets in user frame
-        user: User coordinate system index (0–9)
-        *dyn_params: Optional (speed_j, acc_j, tool) tuples
+        Args:
+            offset_x: X offset in user frame.
+            offset_y: Y offset in user frame.
+            offset_z: Z offset in user frame.
+            offset_rx: RX offset in user frame.
+            offset_ry: RY offset in user frame.
+            offset_rz: RZ offset in user frame.
+            user: User coordinate index.
+            *dyn_params: Optional tuples ``(speed_j, acc_j, tool)``.
+
+        Returns:
+            Robot response string.
         """
         string = "RelMovJUser({:f},{:f},{:f},{:f},{:f},{:f}, {:d}".format(
             offset_x, offset_y, offset_z, offset_rx, offset_ry, offset_rz, user
@@ -401,9 +593,18 @@ class DobotApiMove(DobotApi):
     ) -> str:
         """Relative linear motion along the user coordinate system.
 
-        offset_x/y/z/rx/ry/rz: Offsets in user frame
-        user: User coordinate system index (0–9)
-        *dyn_params: Optional (speed_l, acc_l, tool) tuples
+        Args:
+            offset_x: X offset in user frame.
+            offset_y: Y offset in user frame.
+            offset_z: Z offset in user frame.
+            offset_rx: RX offset in user frame.
+            offset_ry: RY offset in user frame.
+            offset_rz: RZ offset in user frame.
+            user: User coordinate index.
+            *dyn_params: Optional tuples ``(speed_l, acc_l, tool)``.
+
+        Returns:
+            Robot response string.
         """
         string = "RelMovLUser({:f},{:f},{:f},{:f},{:f},{:f}, {:d}".format(
             offset_x, offset_y, offset_z, offset_rx, offset_ry, offset_rz, user
@@ -425,8 +626,17 @@ class DobotApiMove(DobotApi):
     ) -> str:
         """Relative motion along each joint axis (joint motion mode).
 
-        offset1–offset6: Per-axis joint offsets
-        *dyn_params: Optional (speed_j, acc_j) pairs
+        Args:
+            offset1: Joint 1 offset.
+            offset2: Joint 2 offset.
+            offset3: Joint 3 offset.
+            offset4: Joint 4 offset.
+            offset5: Joint 5 offset.
+            offset6: Joint 6 offset.
+            *dyn_params: Optional tuples such as ``(speed_j, acc_j)``.
+
+        Returns:
+            Robot response string.
         """
         string = "RelJointMovJ({:f},{:f},{:f},{:f},{:f},{:f}".format(
             offset1, offset2, offset3, offset4, offset5, offset6
