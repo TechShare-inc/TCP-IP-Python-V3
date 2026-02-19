@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import warnings
+
 from loguru import logger
 
 from .base import DobotApi
-from .utils import DynParam
+from .utils import DynParam, deprecated_alias
 
 
 class DobotApiDashboard(DobotApi):
@@ -27,287 +29,236 @@ class DobotApiDashboard(DobotApi):
         parts.extend(f"{k}={self._fmt(v)}" for k, v in kwargs.items())
         return f"{name}(" + ",".join(parts) + ")"
 
-    # V4-style method aliases for consistent naming.
-    def VelJ(self, speed: int) -> str:
-        return self.SpeedJ(speed)
+    # ------------------------------------------------------------------
+    # Protocol command methods (snake_case — primary implementation).
+    # ------------------------------------------------------------------
 
-    def VelL(self, speed: int) -> str:
-        return self.SpeedL(speed)
-
-    def Pause(self) -> str:
-        return self.pause()
-
-    def Stop(self) -> str:
-        return self.ResetRobot()
-
-    def EnableRobot(
+    def enable_robot(
         self,
         load: float = 0.0,
-        centerX: float = 0.0,
-        centerY: float = 0.0,
-        centerZ: float = 0.0,
+        center_x: float = 0.0,
+        center_y: float = 0.0,
+        center_z: float = 0.0,
     ) -> str:
         string = "EnableRobot("
         if load != 0:
             string = string + "{:f}".format(load)
-            if centerX != 0 or centerY != 0 or centerZ != 0:
-                string = string + ",{:f},{:f},{:f}".format(centerX, centerY, centerZ)
+            if center_x != 0 or center_y != 0 or center_z != 0:
+                string = string + ",{:f},{:f},{:f}".format(
+                    center_x, center_y, center_z
+                )
         string = string + ")"
         return self.send_recv_msg(string)
 
-    def DisableRobot(self) -> str:
-        """
-        Disabled the robot
-        """
-        string = "DisableRobot()"
-        return self.send_recv_msg(string)
+    def disable_robot(self) -> str:
+        """Disable the robot."""
+        return self.send_recv_msg("DisableRobot()")
 
-    def ClearError(self) -> str:
-        """
-        Clear controller alarm information
-        """
-        string = "ClearError()"
-        return self.send_recv_msg(string)
+    def clear_error(self) -> str:
+        """Clear controller alarm information."""
+        return self.send_recv_msg("ClearError()")
 
-    def ResetRobot(self) -> str:
-        """
-        Robot stop
-        """
-        string = "ResetRobot()"
-        return self.send_recv_msg(string)
+    def reset_robot(self) -> str:
+        """Stop the robot."""
+        return self.send_recv_msg("ResetRobot()")
 
-    def SpeedFactor(self, speed: int) -> str:
-        """
-        Setting the Global rate
-        speed:Rate value(Value range:1~100)
-        """
-        string = "SpeedFactor({:d})".format(speed)
-        return self.send_recv_msg(string)
+    def speed_factor(self, speed: int) -> str:
+        """Set global speed factor.
 
-    def User(self, index: int) -> str:
+        speed: Rate value (1–100)
         """
-        Select the calibrated user coordinate system
-        index : Calibrated index of user coordinates
-        """
-        string = "User({:d})".format(index)
-        return self.send_recv_msg(string)
+        return self.send_recv_msg("SpeedFactor({:d})".format(speed))
 
-    def Tool(self, index: int) -> str:
-        """
-        Select the calibrated tool coordinate system
-        index : Calibrated index of tool coordinates
-        """
-        string = "Tool({:d})".format(index)
-        return self.send_recv_msg(string)
+    def set_user(self, index: int) -> str:
+        """Select the calibrated user coordinate system.
 
-    def RobotMode(self) -> str:
+        index: Calibrated index of user coordinates
         """
-        View the robot status
-        """
-        string = "RobotMode()"
-        return self.send_recv_msg(string)
+        return self.send_recv_msg("User({:d})".format(index))
 
-    def PayLoad(self, weight: float, inertia: float) -> str:
+    def set_tool(self, index: int) -> str:
+        """Select the calibrated tool coordinate system.
+
+        index: Calibrated index of tool coordinates
         """
-        Setting robot load
-        weight : The load weight
+        return self.send_recv_msg("Tool({:d})".format(index))
+
+    def robot_mode(self) -> str:
+        """View the robot status."""
+        return self.send_recv_msg("RobotMode()")
+
+    def payload(self, weight: float, inertia: float) -> str:
+        """Set robot load.
+
+        weight: The load weight
         inertia: The load moment of inertia
         """
-        string = "PayLoad({:f},{:f})".format(weight, inertia)
-        return self.send_recv_msg(string)
+        return self.send_recv_msg("PayLoad({:f},{:f})".format(weight, inertia))
 
-    def DO(self, index: int, status: int) -> str:
-        """
-        Set digital signal output (Queue instruction)
-        index : Digital output index (Value range:1~24)
-        status : Status of digital signal output port(0:Low level,1:High level
-        """
-        string = "DO({:d},{:d})".format(index, status)
-        return self.send_recv_msg(string)
+    def do_output(self, index: int, status: int) -> str:
+        """Set digital signal output (queued).
 
-    def DOExecute(self, index: int, status: int) -> str:
+        index: Digital output index (1–24)
+        status: Output port state (0: Low, 1: High)
         """
-        Set digital signal output (Instructions immediately)
-        index : Digital output index (Value range:1~24)
-        status : Status of digital signal output port(0:Low level,1:High level)
-        """
-        string = "DOExecute({:d},{:d})".format(index, status)
-        return self.send_recv_msg(string)
+        return self.send_recv_msg("DO({:d},{:d})".format(index, status))
 
-    def ToolDO(self, index: int, status: int) -> str:
-        """
-        Set terminal signal output (Queue instruction)
-        index : Terminal output index (Value range:1~2)
-        status : Status of digital signal output port(0:Low level,1:High level)
-        """
-        string = "ToolDO({:d},{:d})".format(index, status)
-        return self.send_recv_msg(string)
+    def do_execute(self, index: int, status: int) -> str:
+        """Set digital signal output (immediate).
 
-    def ToolDOExecute(self, index: int, status: int) -> str:
+        index: Digital output index (1–24)
+        status: Output port state (0: Low, 1: High)
         """
-        Set terminal signal output (Instructions immediately)
-        index : Terminal output index (Value range:1~2)
-        status : Status of digital signal output port(0:Low level,1:High level)
-        """
-        string = "ToolDOExecute({:d},{:d})".format(index, status)
-        return self.send_recv_msg(string)
+        return self.send_recv_msg("DOExecute({:d},{:d})".format(index, status))
 
-    def AO(self, index: int, val: float) -> str:
-        """
-        Set analog signal output (Queue instruction)
-        index : Analog output index (Value range:1~2)
-        val : Voltage value (0~10)
-        """
-        string = "AO({:d},{:f})".format(index, val)
-        return self.send_recv_msg(string)
+    def tool_do(self, index: int, status: int) -> str:
+        """Set terminal signal output (queued).
 
-    def AOExecute(self, index: int, val: float) -> str:
+        index: Terminal output index (1–2)
+        status: Output port state (0: Low, 1: High)
         """
-        Set analog signal output (Instructions immediately)
-        index : Analog output index (Value range:1~2)
-        val : Voltage value (0~10)
-        """
-        string = "AOExecute({:d},{:f})".format(index, val)
-        return self.send_recv_msg(string)
+        return self.send_recv_msg("ToolDO({:d},{:d})".format(index, status))
 
-    def AccJ(self, speed: int) -> str:
-        """
-        Set joint acceleration ratio (Only for MovJ, MovJIO, MovJR, JointMovJ commands)
-        speed : Joint acceleration ratio (Value range:1~100)
-        """
-        string = "AccJ({:d})".format(speed)
-        return self.send_recv_msg(string)
+    def tool_do_execute(self, index: int, status: int) -> str:
+        """Set terminal signal output (immediate).
 
-    def AccL(self, speed: int) -> str:
+        index: Terminal output index (1–2)
+        status: Output port state (0: Low, 1: High)
         """
-        Set the coordinate system acceleration ratio (Only for MovL, MovLIO, MovLR, Jump, Arc, Circle commands)
-        speed : Cartesian acceleration ratio (Value range:1~100)
-        """
-        string = "AccL({:d})".format(speed)
-        return self.send_recv_msg(string)
+        return self.send_recv_msg("ToolDOExecute({:d},{:d})".format(index, status))
 
-    def SpeedJ(self, speed: int) -> str:
-        """
-        Set joint speed ratio (Only for MovJ, MovJIO, MovJR, JointMovJ commands)
-        speed : Joint velocity ratio (Value range:1~100)
-        """
-        string = "SpeedJ({:d})".format(speed)
-        return self.send_recv_msg(string)
+    def ao(self, index: int, val: float) -> str:
+        """Set analog signal output (queued).
 
-    def SpeedL(self, speed: int) -> str:
+        index: Analog output index (1–2)
+        val: Voltage value (0–10)
         """
-        Set the cartesian acceleration ratio (Only for MovL, MovLIO, MovLR, Jump, Arc, Circle commands)
-        speed : Cartesian acceleration ratio (Value range:1~100)
-        """
-        string = "SpeedL({:d})".format(speed)
-        return self.send_recv_msg(string)
+        return self.send_recv_msg("AO({:d},{:f})".format(index, val))
 
-    def Arch(self, index: int) -> str:
-        """
-        Set the Jump gate parameter index (This index contains: start point lift height, maximum lift height, end point drop height)
-        index : Parameter index (Value range:0~9)
-        """
-        string = "Arch({:d})".format(index)
-        return self.send_recv_msg(string)
+    def ao_execute(self, index: int, val: float) -> str:
+        """Set analog signal output (immediate).
 
-    def CP(self, ratio: int) -> str:
+        index: Analog output index (1–2)
+        val: Voltage value (0–10)
         """
-        Set smooth transition ratio
-        ratio : Smooth transition ratio (Value range:1~100)
-        """
-        string = "CP({:d})".format(ratio)
-        return self.send_recv_msg(string)
+        return self.send_recv_msg("AOExecute({:d},{:f})".format(index, val))
 
-    def LimZ(self, value: int) -> str:
-        """
-        Set the maximum lifting height of door type parameters
-        value : Maximum lifting height (Highly restricted:Do not exceed the limit position of the z-axis of the manipulator)
-        """
-        string = "LimZ({:d})".format(value)
-        return self.send_recv_msg(string)
+    def acc_j(self, speed: int) -> str:
+        """Set joint acceleration ratio (MovJ / MovJIO / MovJR / JointMovJ).
 
-    def SetArmOrientation(self, r: int, d: int, n: int, cfg: int) -> str:
+        speed: Joint acceleration ratio (1–100)
         """
-        Set the hand command
-        r : Mechanical arm direction, forward/backward (1:forward -1:backward)
-        d : Mechanical arm direction, up elbow/down elbow (1:up elbow -1:down elbow)
-        n : Whether the wrist of the mechanical arm is flipped (1:The wrist does not flip -1:The wrist flip)
-        cfg :Sixth axis Angle identification
-            (1, - 2... : Axis 6 Angle is [0,-90] is -1; [90, 180] - 2; And so on
-            1, 2... : axis 6 Angle is [0,90] is 1; [90180] 2; And so on)
-        """
-        string = "SetArmOrientation({:d},{:d},{:d},{:d})".format(r, d, n, cfg)
-        return self.send_recv_msg(string)
+        return self.send_recv_msg("AccJ({:d})".format(speed))
 
-    def PowerOn(self) -> str:
-        """
-        Powering on the robot
-        Note: It takes about 10 seconds for the robot to be enabled after it is powered on.
-        """
-        string = "PowerOn()"
-        return self.send_recv_msg(string)
+    def acc_l(self, speed: int) -> str:
+        """Set Cartesian acceleration ratio (MovL / MovLIO / MovLR / Jump / Arc / Circle).
 
-    def RunScript(self, project_name: str) -> str:
+        speed: Cartesian acceleration ratio (1–100)
         """
-        Run the script file
-        project_name :Script file name
-        """
-        string = "RunScript({:s})".format(project_name)
-        return self.send_recv_msg(string)
+        return self.send_recv_msg("AccL({:d})".format(speed))
 
-    def StopScript(self) -> str:
-        """
-        Stop scripts
-        """
-        string = "StopScript()"
-        return self.send_recv_msg(string)
+    def speed_j(self, speed: int) -> str:
+        """Set joint speed ratio (MovJ / MovJIO / MovJR / JointMovJ).
 
-    def PauseScript(self) -> str:
+        speed: Joint velocity ratio (1–100)
         """
-        Pause the script
-        """
-        string = "PauseScript()"
-        return self.send_recv_msg(string)
+        return self.send_recv_msg("SpeedJ({:d})".format(speed))
 
-    def ContinueScript(self) -> str:
-        """
-        Continue running the script
-        """
-        string = "ContinueScript()"
-        return self.send_recv_msg(string)
+    def speed_l(self, speed: int) -> str:
+        """Set Cartesian speed ratio (MovL / MovLIO / MovLR / Jump / Arc / Circle).
 
-    def GetHoldRegs(self, id: int, addr: int, count: int, type_: str) -> str:
+        speed: Cartesian velocity ratio (1–100)
         """
-        Read hold register
-        id :Secondary device NUMBER (A maximum of five devices can be supported. The value ranges from 0 to 4
-            Set to 0 when accessing the internal slave of the controller)
-        addr :Hold the starting address of the register (Value range:3095~4095)
-        count :Reads the specified number of types of data (Value range:1~16)
-        type_ :The data type
-            If null, the 16-bit unsigned integer (2 bytes, occupying 1 register) is read by default
-            "U16" : reads 16-bit unsigned integers (2 bytes, occupying 1 register)
-            "U32" : reads 32-bit unsigned integers (4 bytes, occupying 2 registers)
-            "F32" : reads 32-bit single-precision floating-point number (4 bytes, occupying 2 registers)
-            "F64" : reads 64-bit double precision floating point number (8 bytes, occupying 4 registers)
-        """
-        string = "GetHoldRegs({:d},{:d},{:d},{:s})".format(id, addr, count, type_)
-        return self.send_recv_msg(string)
+        return self.send_recv_msg("SpeedL({:d})".format(speed))
 
-    def SetHoldRegs(
+    def vel_j(self, speed: int) -> str:
+        """Alias for :meth:`speed_j` (V4-style name)."""
+        return self.speed_j(speed)
+
+    def vel_l(self, speed: int) -> str:
+        """Alias for :meth:`speed_l` (V4-style name)."""
+        return self.speed_l(speed)
+
+    def arch(self, index: int) -> str:
+        """Set Jump gate parameter index (start lift height, max lift, end drop).
+
+        index: Parameter index (0–9)
+        """
+        return self.send_recv_msg("Arch({:d})".format(index))
+
+    def cp(self, ratio: int) -> str:
+        """Set smooth transition ratio.
+
+        ratio: Smooth transition ratio (1–100)
+        """
+        return self.send_recv_msg("CP({:d})".format(ratio))
+
+    def lim_z(self, value: int) -> str:
+        """Set maximum lifting height for door-type parameters.
+
+        value: Maximum lifting height (must not exceed Z-axis limit)
+        """
+        return self.send_recv_msg("LimZ({:d})".format(value))
+
+    def set_arm_orientation(self, r: int, d: int, n: int, cfg: int) -> str:
+        """Set the hand command.
+
+        r: Forward/backward (1: forward, -1: backward)
+        d: Up elbow / down elbow (1: up, -1: down)
+        n: Wrist flip (1: no flip, -1: flip)
+        cfg: Sixth-axis angle identification
+        """
+        return self.send_recv_msg(
+            "SetArmOrientation({:d},{:d},{:d},{:d})".format(r, d, n, cfg)
+        )
+
+    def power_on(self) -> str:
+        """Power on the robot.
+
+        Note: Takes ~10 s before the robot is enabled after power-on.
+        """
+        return self.send_recv_msg("PowerOn()")
+
+    def run_script(self, project_name: str) -> str:
+        """Run a script file.
+
+        project_name: Script file name
+        """
+        return self.send_recv_msg("RunScript({:s})".format(project_name))
+
+    def stop_script(self) -> str:
+        """Stop scripts."""
+        return self.send_recv_msg("StopScript()")
+
+    def pause_script(self) -> str:
+        """Pause the script."""
+        return self.send_recv_msg("PauseScript()")
+
+    def continue_script(self) -> str:
+        """Continue running the script."""
+        return self.send_recv_msg("ContinueScript()")
+
+    def get_hold_regs(self, id: int, addr: int, count: int, type_: str) -> str:
+        """Read hold register.
+
+        id: Secondary device number (0–4; 0 = internal controller slave)
+        addr: Starting address of hold register (3095–4095)
+        count: Number of data items to read (1–16)
+        type_: Data type — "U16", "U32", "F32", or "F64"
+        """
+        return self.send_recv_msg(
+            "GetHoldRegs({:d},{:d},{:d},{:s})".format(id, addr, count, type_)
+        )
+
+    def set_hold_regs(
         self, id: int, addr: int, count: int, table: str, type_: str | None = None
     ) -> str:
-        """
-        Write hold register
-        id :Secondary device NUMBER (A maximum of five devices can be supported. The value ranges from 0 to 4
-            Set to 0 when accessing the internal slave of the controller)
-        addr :Hold the starting address of the register (Value range:3095~4095)
-        count :Writes the specified number of types of data (Value range:1~16)
-        type_ :The data type
-            If null, the 16-bit unsigned integer (2 bytes, occupying 1 register) is read by default
-            "U16" : reads 16-bit unsigned integers (2 bytes, occupying 1 register)
-            "U32" : reads 32-bit unsigned integers (4 bytes, occupying 2 registers)
-            "F32" : reads 32-bit single-precision floating-point number (4 bytes, occupying 2 registers)
-            "F64" : reads 64-bit double precision floating point number (8 bytes, occupying 4 registers)
+        """Write hold register.
+
+        id: Secondary device number (0–4; 0 = internal controller slave)
+        addr: Starting address of hold register (3095–4095)
+        count: Number of data items to write (1–16)
+        type_: Data type — "U16", "U32", "F32", or "F64" (optional)
         """
         if type_ is not None:
             string = "SetHoldRegs({:d},{:d},{:d},{:s},{:s})".format(
@@ -317,20 +268,381 @@ class DobotApiDashboard(DobotApi):
             string = "SetHoldRegs({:d},{:d},{:d},{:s})".format(id, addr, count, table)
         return self.send_recv_msg(string)
 
-    def GetErrorID(self) -> str:
-        """
-        Get robot error code
-        """
-        string = "GetErrorID()"
-        return self.send_recv_msg(string)
+    def get_error_id(self) -> str:
+        """Get robot error code."""
+        return self.send_recv_msg("GetErrorID()")
 
-    def SetPayload(self, offset1: float, *dynParams: DynParam) -> str:
+    def set_payload(self, offset1: float, *dyn_params: DynParam) -> str:
+        """Set payload parameters."""
         string = "SetPayload({:f}".format(offset1)
-        for params in dynParams:
+        for params in dyn_params:
             string = string + str(params) + ","
         string = string + ")"
         return self.send_recv_msg(string)
 
+    def positive_solution(
+        self,
+        offset1: float,
+        offset2: float,
+        offset3: float,
+        offset4: float,
+        offset5: float,
+        offset6: float,
+        user: int,
+        tool: int,
+    ) -> str:
+        """Forward kinematics: joint angles → Cartesian pose."""
+        string = (
+            "PositiveSolution({:f},{:f},{:f},{:f},{:f},{:f},{:d},{:d}".format(
+                offset1, offset2, offset3, offset4, offset5, offset6, user, tool
+            )
+            + ")"
+        )
+        return self.send_recv_msg(string)
+
+    def inverse_solution(
+        self,
+        offset1: float,
+        offset2: float,
+        offset3: float,
+        offset4: float,
+        offset5: float,
+        offset6: float,
+        user: int,
+        tool: int,
+        *dyn_params: DynParam,
+    ) -> str:
+        """Inverse kinematics: Cartesian pose → joint angles."""
+        string = "InverseSolution({:f},{:f},{:f},{:f},{:f},{:f},{:d},{:d}".format(
+            offset1, offset2, offset3, offset4, offset5, offset6, user, tool
+        )
+        for params in dyn_params:
+            logger.debug(
+                f"InverseSolution params: type={type(params)}, value={params}"
+            )
+            string = string + repr(params)
+        string = string + ")"
+        return self.send_recv_msg(string)
+
+    def set_collision_level(self, offset1: int) -> str:
+        """Set collision detection level."""
+        return self.send_recv_msg("SetCollisionLevel({:d})".format(offset1))
+
+    def get_angle(self) -> str:
+        """Get current joint angles."""
+        return self.send_recv_msg("GetAngle()")
+
+    def get_pose(self) -> str:
+        """Get current Cartesian pose."""
+        return self.send_recv_msg("GetPose()")
+
+    def emergency_stop(self) -> str:
+        """Trigger emergency stop."""
+        return self.send_recv_msg("EmergencyStop()")
+
+    def modbus_create(self, ip: str, port: int, slave_id: int, is_rtu: int) -> str:
+        """Create a Modbus connection.
+
+        ip: Modbus device IP address
+        port: Modbus device port
+        slave_id: Slave device ID
+        is_rtu: 0 = TCP mode, 1 = RTU mode
+        """
+        return self.send_recv_msg(
+            "ModbusCreate({:s},{:d},{:d},{:d})".format(ip, port, slave_id, is_rtu)
+        )
+
+    def modbus_close(self, offset1: int) -> str:
+        """Close a Modbus connection."""
+        return self.send_recv_msg("ModbusClose({:d})".format(offset1))
+
+    def set_safe_skin(self, offset1: int) -> str:
+        """Configure safe-skin feature."""
+        return self.send_recv_msg("SetSafeSkin({:d})".format(offset1))
+
+    def set_obstacle_avoid(self, offset1: int) -> str:
+        """Configure obstacle avoidance feature."""
+        return self.send_recv_msg("SetObstacleAvoid({:d})".format(offset1))
+
+    def get_trace_start_pose(self, offset1: str) -> str:
+        """Get the starting pose of a trajectory (Cartesian points)."""
+        return self.send_recv_msg("GetTraceStartPose({:s})".format(offset1))
+
+    def get_path_start_pose(self, offset1: str) -> str:
+        """Get the starting pose of a path (joint points)."""
+        return self.send_recv_msg("GetPathStartPose({:s})".format(offset1))
+
+    def handle_traj_points(self, offset1: str) -> str:
+        """Process trajectory points file."""
+        return self.send_recv_msg("HandleTrajPoints({:s})".format(offset1))
+
+    def get_six_force_data(self) -> str:
+        """Read six-axis force sensor data."""
+        return self.send_recv_msg("GetSixForceData()")
+
+    def set_collide_drag(self, offset1: int) -> str:
+        """Configure collision drag mode."""
+        return self.send_recv_msg("SetCollideDrag({:d})".format(offset1))
+
+    def set_terminal_keys(self, offset1: int) -> str:
+        """Configure terminal key behaviour."""
+        return self.send_recv_msg("SetTerminalKeys({:d})".format(offset1))
+
+    def set_terminal_485(
+        self, offset1: int, offset2: int, offset3: str, offset4: int
+    ) -> str:
+        """Set terminal RS-485 parameters."""
+        return self.send_recv_msg(
+            "SetTerminal485({:d},{:d},{:s},{:d})".format(
+                offset1, offset2, offset3, offset4
+            )
+        )
+
+    def get_terminal_485(self) -> str:
+        """Get terminal RS-485 configuration."""
+        return self.send_recv_msg("GetTerminal485()")
+
+    def tcp_speed(self, offset1: int) -> str:
+        """Set TCP speed."""
+        return self.send_recv_msg("TCPSpeed({:d})".format(offset1))
+
+    def tcp_speed_end(self) -> str:
+        """End TCP speed mode."""
+        return self.send_recv_msg("TCPSpeedEnd()")
+
+    def get_in_bits(self, offset1: int, offset2: int, offset3: int) -> str:
+        """Read digital input bits."""
+        return self.send_recv_msg(
+            "GetInBits({:d},{:d},{:d})".format(offset1, offset2, offset3)
+        )
+
+    def get_in_regs(
+        self, offset1: int, offset2: int, offset3: int, *dyn_params: DynParam
+    ) -> str:
+        """Read input registers."""
+        string = "GetInRegs({:d},{:d},{:d}".format(offset1, offset2, offset3)
+        for params in dyn_params:
+            logger.debug(f"GetInRegs params: type={type(params)}, value={params}")
+            string = string + "," + str(params)
+        string = string + ")"
+        return self.send_recv_msg(string)
+
+    def get_coils(self, offset1: int, offset2: int, offset3: int) -> str:
+        """Read coil values."""
+        return self.send_recv_msg(
+            "GetCoils({:d},{:d},{:d})".format(offset1, offset2, offset3)
+        )
+
+    def set_coils(
+        self, offset1: int, offset2: int, offset3: int, offset4: int
+    ) -> str:
+        """Write coil values."""
+        string = (
+            "SetCoils({:d},{:d},{:d}".format(offset1, offset2, offset3)
+            + ","
+            + repr(offset4)
+            + ")"
+        )
+        logger.debug(f"SetCoils offset4 value: {offset4}")
+        return self.send_recv_msg(string)
+
+    def di(self, offset1: int) -> str:
+        """Read a digital input port."""
+        return self.send_recv_msg("DI({:d})".format(offset1))
+
+    def tool_di(self, offset1: int) -> str:
+        """Read a terminal digital input port."""
+        return self.send_recv_msg("ToolDI({:d})".format(offset1))
+
+    def do_group(self, *dyn_params: DynParam) -> str:
+        """Set multiple digital outputs in one command."""
+        string = "DOGroup("
+        for params in dyn_params:
+            string = string + str(params) + ","
+        string = string + ")"
+        logger.debug(f"DOGroup command: {string}")
+        return self.send_recv_msg(string)
+
+    def brake_control(self, offset1: int, offset2: int) -> str:
+        """Control joint brakes."""
+        return self.send_recv_msg(
+            "BrakeControl({:d},{:d})".format(offset1, offset2)
+        )
+
+    def start_drag(self) -> str:
+        """Enable drag mode."""
+        return self.send_recv_msg("StartDrag()")
+
+    def stop_drag(self) -> str:
+        """Disable drag mode."""
+        return self.send_recv_msg("StopDrag()")
+
+    def load_switch(self, offset1: int) -> str:
+        """Switch load configuration."""
+        return self.send_recv_msg("LoadSwitch({:d})".format(offset1))
+
+    def wait(self, t: float) -> str:
+        """Wait for specified time (queued command).
+
+        t: Wait duration in milliseconds
+        """
+        return self.send_recv_msg("wait({:d})".format(t))
+
+    def pause(self) -> str:
+        """Pause queued motion execution."""
+        return self.send_recv_msg("pause()")
+
+    def resume(self) -> str:
+        """Resume paused motion execution.
+
+        Note: maps to the ``continue()`` protocol command; ``continue`` is a
+        Python keyword so the method is named ``resume``.
+        """
+        return self.send_recv_msg("continue()")
+
+    # ------------------------------------------------------------------
+    # Deprecated PascalCase aliases — do not use in new code.
+    # ------------------------------------------------------------------
+
+    @deprecated_alias("enable_robot")
+    def EnableRobot(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
+        return self.enable_robot(*args, **kwargs)
+
+    @deprecated_alias("disable_robot")
+    def DisableRobot(self) -> str:
+        return self.disable_robot()
+
+    @deprecated_alias("clear_error")
+    def ClearError(self) -> str:
+        return self.clear_error()
+
+    @deprecated_alias("reset_robot")
+    def ResetRobot(self) -> str:
+        return self.reset_robot()
+
+    @deprecated_alias("speed_factor")
+    def SpeedFactor(self, speed: int) -> str:
+        return self.speed_factor(speed)
+
+    @deprecated_alias("set_user")
+    def User(self, index: int) -> str:
+        return self.set_user(index)
+
+    @deprecated_alias("set_tool")
+    def Tool(self, index: int) -> str:
+        return self.set_tool(index)
+
+    @deprecated_alias("robot_mode")
+    def RobotMode(self) -> str:
+        return self.robot_mode()
+
+    @deprecated_alias("payload")
+    def PayLoad(self, weight: float, inertia: float) -> str:
+        return self.payload(weight, inertia)
+
+    @deprecated_alias("do_output")
+    def DO(self, index: int, status: int) -> str:
+        return self.do_output(index, status)
+
+    @deprecated_alias("do_execute")
+    def DOExecute(self, index: int, status: int) -> str:
+        return self.do_execute(index, status)
+
+    @deprecated_alias("tool_do")
+    def ToolDO(self, index: int, status: int) -> str:
+        return self.tool_do(index, status)
+
+    @deprecated_alias("tool_do_execute")
+    def ToolDOExecute(self, index: int, status: int) -> str:
+        return self.tool_do_execute(index, status)
+
+    @deprecated_alias("ao")
+    def AO(self, index: int, val: float) -> str:
+        return self.ao(index, val)
+
+    @deprecated_alias("ao_execute")
+    def AOExecute(self, index: int, val: float) -> str:
+        return self.ao_execute(index, val)
+
+    @deprecated_alias("acc_j")
+    def AccJ(self, speed: int) -> str:
+        return self.acc_j(speed)
+
+    @deprecated_alias("acc_l")
+    def AccL(self, speed: int) -> str:
+        return self.acc_l(speed)
+
+    @deprecated_alias("speed_j")
+    def SpeedJ(self, speed: int) -> str:
+        return self.speed_j(speed)
+
+    @deprecated_alias("speed_l")
+    def SpeedL(self, speed: int) -> str:
+        return self.speed_l(speed)
+
+    @deprecated_alias("vel_j")
+    def VelJ(self, speed: int) -> str:
+        return self.vel_j(speed)
+
+    @deprecated_alias("vel_l")
+    def VelL(self, speed: int) -> str:
+        return self.vel_l(speed)
+
+    @deprecated_alias("arch")
+    def Arch(self, index: int) -> str:
+        return self.arch(index)
+
+    @deprecated_alias("cp")
+    def CP(self, ratio: int) -> str:
+        return self.cp(ratio)
+
+    @deprecated_alias("lim_z")
+    def LimZ(self, value: int) -> str:
+        return self.lim_z(value)
+
+    @deprecated_alias("set_arm_orientation")
+    def SetArmOrientation(self, r: int, d: int, n: int, cfg: int) -> str:
+        return self.set_arm_orientation(r, d, n, cfg)
+
+    @deprecated_alias("power_on")
+    def PowerOn(self) -> str:
+        return self.power_on()
+
+    @deprecated_alias("run_script")
+    def RunScript(self, project_name: str) -> str:
+        return self.run_script(project_name)
+
+    @deprecated_alias("stop_script")
+    def StopScript(self) -> str:
+        return self.stop_script()
+
+    @deprecated_alias("pause_script")
+    def PauseScript(self) -> str:
+        return self.pause_script()
+
+    @deprecated_alias("continue_script")
+    def ContinueScript(self) -> str:
+        return self.continue_script()
+
+    @deprecated_alias("get_hold_regs")
+    def GetHoldRegs(self, id: int, addr: int, count: int, type_: str) -> str:
+        return self.get_hold_regs(id, addr, count, type_)
+
+    @deprecated_alias("set_hold_regs")
+    def SetHoldRegs(
+        self, id: int, addr: int, count: int, table: str, type_: str | None = None
+    ) -> str:
+        return self.set_hold_regs(id, addr, count, table, type_)
+
+    @deprecated_alias("get_error_id")
+    def GetErrorID(self) -> str:
+        return self.get_error_id()
+
+    @deprecated_alias("set_payload")
+    def SetPayload(self, offset1: float, *dyn_params: DynParam) -> str:
+        return self.set_payload(offset1, *dyn_params)
+
+    @deprecated_alias("positive_solution")
     def PositiveSolution(
         self,
         offset1: float,
@@ -342,14 +654,11 @@ class DobotApiDashboard(DobotApi):
         user: int,
         tool: int,
     ) -> str:
-        string = (
-            "PositiveSolution({:f},{:f},{:f},{:f},{:f},{:f},{:d},{:d}".format(
-                offset1, offset2, offset3, offset4, offset5, offset6, user, tool
-            )
-            + ")"
+        return self.positive_solution(
+            offset1, offset2, offset3, offset4, offset5, offset6, user, tool
         )
-        return self.send_recv_msg(string)
 
+    @deprecated_alias("inverse_solution")
     def InverseSolution(
         self,
         offset1: float,
@@ -360,166 +669,140 @@ class DobotApiDashboard(DobotApi):
         offset6: float,
         user: int,
         tool: int,
-        *dynParams: DynParam,
+        *dyn_params: DynParam,
     ) -> str:
-        string = "InverseSolution({:f},{:f},{:f},{:f},{:f},{:f},{:d},{:d}".format(
-            offset1, offset2, offset3, offset4, offset5, offset6, user, tool
+        return self.inverse_solution(
+            offset1, offset2, offset3, offset4, offset5, offset6, user, tool, *dyn_params
         )
-        for params in dynParams:
-            logger.debug(f"InverseSolution params: type={type(params)}, value={params}")
-            string = string + repr(params)
-        string = string + ")"
-        return self.send_recv_msg(string)
 
+    @deprecated_alias("set_collision_level")
     def SetCollisionLevel(self, offset1: int) -> str:
-        string = "SetCollisionLevel({:d}".format(offset1) + ")"
-        return self.send_recv_msg(string)
+        return self.set_collision_level(offset1)
 
+    @deprecated_alias("get_angle")
     def GetAngle(self) -> str:
-        string = "GetAngle()"
-        return self.send_recv_msg(string)
+        return self.get_angle()
 
+    @deprecated_alias("get_pose")
     def GetPose(self) -> str:
-        string = "GetPose()"
-        return self.send_recv_msg(string)
+        return self.get_pose()
 
+    @deprecated_alias("emergency_stop")
     def EmergencyStop(self) -> str:
-        string = "EmergencyStop()"
-        return self.send_recv_msg(string)
+        return self.emergency_stop()
 
+    @deprecated_alias("modbus_create")
     def ModbusCreate(self, ip: str, port: int, slave_id: int, isRTU: int) -> str:
-        string = (
-            "ModbusCreate({:s},{:d},{:d},{:d}".format(ip, port, slave_id, isRTU) + ")"
-        )
-        return self.send_recv_msg(string)
+        return self.modbus_create(ip, port, slave_id, isRTU)
 
+    @deprecated_alias("modbus_close")
     def ModbusClose(self, offset1: int) -> str:
-        string = "ModbusClose({:d}".format(offset1) + ")"
-        return self.send_recv_msg(string)
+        return self.modbus_close(offset1)
 
+    @deprecated_alias("set_safe_skin")
     def SetSafeSkin(self, offset1: int) -> str:
-        string = "SetSafeSkin({:d}".format(offset1) + ")"
-        return self.send_recv_msg(string)
+        return self.set_safe_skin(offset1)
 
+    @deprecated_alias("set_obstacle_avoid")
     def SetObstacleAvoid(self, offset1: int) -> str:
-        string = "SetObstacleAvoid({:d}".format(offset1) + ")"
-        return self.send_recv_msg(string)
+        return self.set_obstacle_avoid(offset1)
 
+    @deprecated_alias("get_trace_start_pose")
     def GetTraceStartPose(self, offset1: str) -> str:
-        string = "GetTraceStartPose({:s}".format(offset1) + ")"
-        return self.send_recv_msg(string)
+        return self.get_trace_start_pose(offset1)
 
+    @deprecated_alias("get_path_start_pose")
     def GetPathStartPose(self, offset1: str) -> str:
-        string = "GetPathStartPose({:s}".format(offset1) + ")"
-        return self.send_recv_msg(string)
+        return self.get_path_start_pose(offset1)
 
+    @deprecated_alias("handle_traj_points")
     def HandleTrajPoints(self, offset1: str) -> str:
-        string = "HandleTrajPoints({:s}".format(offset1) + ")"
-        return self.send_recv_msg(string)
+        return self.handle_traj_points(offset1)
 
+    @deprecated_alias("get_six_force_data")
     def GetSixForceData(self) -> str:
-        string = "GetSixForceData()"
-        return self.send_recv_msg(string)
+        return self.get_six_force_data()
 
+    @deprecated_alias("set_collide_drag")
     def SetCollideDrag(self, offset1: int) -> str:
-        string = "SetCollideDrag({:d}".format(offset1) + ")"
-        return self.send_recv_msg(string)
+        return self.set_collide_drag(offset1)
 
+    @deprecated_alias("set_terminal_keys")
     def SetTerminalKeys(self, offset1: int) -> str:
-        string = "SetTerminalKeys({:d}".format(offset1) + ")"
-        return self.send_recv_msg(string)
+        return self.set_terminal_keys(offset1)
 
+    @deprecated_alias("set_terminal_485")
     def SetTerminal485(
         self, offset1: int, offset2: int, offset3: str, offset4: int
     ) -> str:
-        string = (
-            "SetTerminal485({:d},{:d},{:s},{:d}".format(
-                offset1, offset2, offset3, offset4
-            )
-            + ")"
-        )
-        return self.send_recv_msg(string)
+        return self.set_terminal_485(offset1, offset2, offset3, offset4)
 
+    @deprecated_alias("get_terminal_485")
     def GetTerminal485(self) -> str:
-        string = "GetTerminal485()"
-        return self.send_recv_msg(string)
+        return self.get_terminal_485()
 
+    @deprecated_alias("tcp_speed")
     def TCPSpeed(self, offset1: int) -> str:
-        string = "TCPSpeed({:d}".format(offset1) + ")"
-        return self.send_recv_msg(string)
+        return self.tcp_speed(offset1)
 
+    @deprecated_alias("tcp_speed_end")
     def TCPSpeedEnd(self) -> str:
-        string = "TCPSpeedEnd()"
-        return self.send_recv_msg(string)
+        return self.tcp_speed_end()
 
+    @deprecated_alias("get_in_bits")
     def GetInBits(self, offset1: int, offset2: int, offset3: int) -> str:
-        string = "GetInBits({:d},{:d},{:d}".format(offset1, offset2, offset3) + ")"
-        return self.send_recv_msg(string)
+        return self.get_in_bits(offset1, offset2, offset3)
 
+    @deprecated_alias("get_in_regs")
     def GetInRegs(
-        self, offset1: int, offset2: int, offset3: int, *dynParams: DynParam
+        self, offset1: int, offset2: int, offset3: int, *dyn_params: DynParam
     ) -> str:
-        string = "GetInRegs({:d},{:d},{:d}".format(offset1, offset2, offset3)
-        for params in dynParams:
-            logger.debug(f"GetInRegs params: type={type(params)}, value={params}")
-            string = string + "," + str(params)
-        string = string + ")"
-        return self.send_recv_msg(string)
+        return self.get_in_regs(offset1, offset2, offset3, *dyn_params)
 
+    @deprecated_alias("get_coils")
     def GetCoils(self, offset1: int, offset2: int, offset3: int) -> str:
-        string = "GetCoils({:d},{:d},{:d}".format(offset1, offset2, offset3) + ")"
-        return self.send_recv_msg(string)
+        return self.get_coils(offset1, offset2, offset3)
 
+    @deprecated_alias("set_coils")
     def SetCoils(self, offset1: int, offset2: int, offset3: int, offset4: int) -> str:
-        string = (
-            "SetCoils({:d},{:d},{:d}".format(offset1, offset2, offset3)
-            + ","
-            + repr(offset4)
-            + ")"
-        )
-        logger.debug(f"SetCoils offset4 value: {offset4}")
-        return self.send_recv_msg(string)
+        return self.set_coils(offset1, offset2, offset3, offset4)
 
+    @deprecated_alias("di")
     def DI(self, offset1: int) -> str:
-        string = "DI({:d}".format(offset1) + ")"
-        return self.send_recv_msg(string)
+        return self.di(offset1)
 
+    @deprecated_alias("tool_di")
     def ToolDI(self, offset1: int) -> str:
-        string = "ToolDI({:d}".format(offset1) + ")"
-        return self.send_recv_msg(string)
+        return self.tool_di(offset1)
 
-    def DOGroup(self, *dynParams: DynParam) -> str:
-        string = "DOGroup("
-        for params in dynParams:
-            string = string + str(params) + ","
-        string = string + ")"
-        logger.debug(f"DOGroup command: {string}")
-        return self.send_recv_msg(string)
+    @deprecated_alias("do_group")
+    def DOGroup(self, *dyn_params: DynParam) -> str:
+        return self.do_group(*dyn_params)
 
+    @deprecated_alias("brake_control")
     def BrakeControl(self, offset1: int, offset2: int) -> str:
-        string = "BrakeControl({:d},{:d}".format(offset1, offset2) + ")"
-        return self.send_recv_msg(string)
+        return self.brake_control(offset1, offset2)
 
+    @deprecated_alias("start_drag")
     def StartDrag(self) -> str:
-        string = "StartDrag()"
-        return self.send_recv_msg(string)
+        return self.start_drag()
 
+    @deprecated_alias("stop_drag")
     def StopDrag(self) -> str:
-        string = "StopDrag()"
-        return self.send_recv_msg(string)
+        return self.stop_drag()
 
+    @deprecated_alias("load_switch")
     def LoadSwitch(self, offset1: int) -> str:
-        string = "LoadSwitch({:d}".format(offset1) + ")"
-        return self.send_recv_msg(string)
+        return self.load_switch(offset1)
 
-    def wait(self, t: float) -> str:
-        string = "wait({:d})".format(t)
-        return self.send_recv_msg(string)
-
-    def pause(self) -> str:
-        string = "pause()"
-        return self.send_recv_msg(string)
-
+    @deprecated_alias("resume")
     def Continue(self) -> str:
-        string = "continue()"
-        return self.send_recv_msg(string)
+        return self.resume()
+
+    @deprecated_alias("pause")
+    def Pause(self) -> str:
+        return self.pause()
+
+    @deprecated_alias("reset_robot")
+    def Stop(self) -> str:
+        return self.reset_robot()

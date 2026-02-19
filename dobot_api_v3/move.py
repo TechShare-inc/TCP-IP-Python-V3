@@ -5,13 +5,17 @@ from __future__ import annotations
 from loguru import logger
 
 from .base import DobotApi
-from .utils import DynParam, ToolDynParam
+from .utils import DynParam, ToolDynParam, deprecated_alias
 
 
 class DobotApiMove(DobotApi):
     """Movement class for robot motion commands. Connects to move port (30003)."""
 
-    def MovJ(
+    # ------------------------------------------------------------------
+    # Protocol command methods (snake_case — primary implementation).
+    # ------------------------------------------------------------------
+
+    def mov_j(
         self,
         x: float,
         y: float,
@@ -19,25 +23,20 @@ class DobotApiMove(DobotApi):
         rx: float,
         ry: float,
         rz: float,
-        *dynParams: DynParam,
+        *dyn_params: DynParam,
     ) -> str:
-        """
-        Joint motion interface (point-to-point motion mode)
-        x: A number in the Cartesian coordinate system x
-        y: A number in the Cartesian coordinate system y
-        z: A number in the Cartesian coordinate system z
-        rx: Position of Rx axis in Cartesian coordinate system
-        ry: Position of Ry axis in Cartesian coordinate system
-        rz: Position of Rz axis in Cartesian coordinate system
+        """Joint motion interface (point-to-point motion mode).
+
+        x/y/z/rx/ry/rz: Target Cartesian pose
         """
         string = "MovJ({:f},{:f},{:f},{:f},{:f},{:f}".format(x, y, z, rx, ry, rz)
-        for params in dynParams:
+        for params in dyn_params:
             string = string + "," + str(params)
         string = string + ")"
         logger.debug(f"MovJ command: {string}")
         return self.send_recv_msg(string)
 
-    def MovL(
+    def mov_l(
         self,
         x: float,
         y: float,
@@ -45,25 +44,20 @@ class DobotApiMove(DobotApi):
         rx: float,
         ry: float,
         rz: float,
-        *dynParams: DynParam,
+        *dyn_params: DynParam,
     ) -> str:
-        """
-        Coordinate system motion interface (linear motion mode)
-        x: A number in the Cartesian coordinate system x
-        y: A number in the Cartesian coordinate system y
-        z: A number in the Cartesian coordinate system z
-        rx: Position of Rx axis in Cartesian coordinate system
-        ry: Position of Ry axis in Cartesian coordinate system
-        rz: Position of Rz axis in Cartesian coordinate system
+        """Linear motion interface.
+
+        x/y/z/rx/ry/rz: Target Cartesian pose
         """
         string = "MovL({:f},{:f},{:f},{:f},{:f},{:f}".format(x, y, z, rx, ry, rz)
-        for params in dynParams:
+        for params in dyn_params:
             string = string + "," + str(params)
         string = string + ")"
         logger.debug(f"MovL command: {string}")
         return self.send_recv_msg(string)
 
-    def JointMovJ(
+    def joint_mov_j(
         self,
         j1: float,
         j2: float,
@@ -71,24 +65,25 @@ class DobotApiMove(DobotApi):
         j4: float,
         j5: float,
         j6: float,
-        *dynParams: DynParam,
+        *dyn_params: DynParam,
     ) -> str:
-        """
-        Joint motion interface (linear motion mode)
-        j1~j6:Point position values on each joint
+        """Joint motion interface (joint target).
+
+        j1–j6: Target joint angles
         """
         string = "JointMovJ({:f},{:f},{:f},{:f},{:f},{:f}".format(
             j1, j2, j3, j4, j5, j6
         )
-        for params in dynParams:
+        for params in dyn_params:
             string = string + "," + str(params)
         string = string + ")"
         return self.send_recv_msg(string)
 
-    def Jump(self) -> None:
+    def jump(self) -> None:
+        """TODO: Jump method not yet implemented."""
         logger.warning("TODO: Jump method not yet implemented.")
 
-    def RelMovJ(
+    def rel_mov_j(
         self,
         offset1: float,
         offset2: float,
@@ -96,36 +91,34 @@ class DobotApiMove(DobotApi):
         offset4: float,
         offset5: float,
         offset6: float,
-        *dynParams: DynParam,
+        *dyn_params: DynParam,
     ) -> str:
-        """
-        Offset motion interface (point-to-point motion mode)
-        j1~j6:Point position values on each joint
+        """Relative joint offset motion (point-to-point mode).
+
+        offset1–offset6: Joint offset values
         """
         string = "RelMovJ({:f},{:f},{:f},{:f},{:f},{:f}".format(
             offset1, offset2, offset3, offset4, offset5, offset6
         )
-        for params in dynParams:
+        for params in dyn_params:
             string = string + "," + str(params)
         string = string + ")"
         return self.send_recv_msg(string)
 
-    def RelMovL(
-        self, offsetX: float, offsetY: float, offsetZ: float, *dynParams: DynParam
+    def rel_mov_l(
+        self, offset_x: float, offset_y: float, offset_z: float, *dyn_params: DynParam
     ) -> str:
+        """Relative Cartesian offset motion (linear mode).
+
+        offset_x/offset_y/offset_z: Cartesian offsets
         """
-        Offset motion interface (point-to-point motion mode)
-        x: Offset in the Cartesian coordinate system x
-        y: offset in the Cartesian coordinate system y
-        z: Offset in the Cartesian coordinate system Z
-        """
-        string = "RelMovL({:f},{:f},{:f}".format(offsetX, offsetY, offsetZ)
-        for params in dynParams:
+        string = "RelMovL({:f},{:f},{:f}".format(offset_x, offset_y, offset_z)
+        for params in dyn_params:
             string = string + "," + str(params)
         string = string + ")"
         return self.send_recv_msg(string)
 
-    def MovLIO(
+    def mov_l_io(
         self,
         x: float,
         y: float,
@@ -133,31 +126,20 @@ class DobotApiMove(DobotApi):
         a: float,
         b: float,
         c: float,
-        *dynParams: DynParam,
+        *dyn_params: DynParam,
     ) -> str:
+        """Linear motion with parallel digital output control.
+
+        x/y/z/a/b/c: Target Cartesian pose
+        *dyn_params: (Mode, Distance, Index, Status) tuples
         """
-        Set the digital output port state in parallel while moving in a straight line
-        x: A number in the Cartesian coordinate system x
-        y: A number in the Cartesian coordinate system y
-        z: A number in the Cartesian coordinate system z
-        a: A number in the Cartesian coordinate system a
-        b: A number in the Cartesian coordinate system b
-        c: a number in the Cartesian coordinate system c
-        *dynParams :Parameter Settings（Mode、Distance、Index、Status）
-                    Mode :Set Distance mode (0: Distance percentage; 1: distance from starting point or target point)
-                    Distance :Runs the specified distance（If Mode is 0, the value ranges from 0 to 100；When Mode is 1, if the value is positive,
-                             it indicates the distance from the starting point. If the value of Distance is negative, it represents the Distance from the target point）
-                    Index :Digital output index （Value range:1~24）
-                    Status :Digital output state（Value range:0/1）
-        """
-        # example: MovLIO(0,50,0,0,0,0,(0,50,1,0),(1,1,2,1))
         string = "MovLIO({:f},{:f},{:f},{:f},{:f},{:f}".format(x, y, z, a, b, c)
-        for params in dynParams:
+        for params in dyn_params:
             string = string + "," + str(params)
         string = string + ")"
         return self.send_recv_msg(string)
 
-    def MovJIO(
+    def mov_j_io(
         self,
         x: float,
         y: float,
@@ -165,32 +147,21 @@ class DobotApiMove(DobotApi):
         a: float,
         b: float,
         c: float,
-        *dynParams: DynParam,
+        *dyn_params: DynParam,
     ) -> str:
+        """Point-to-point motion with parallel digital output control.
+
+        x/y/z/a/b/c: Target Cartesian pose
+        *dyn_params: (Mode, Distance, Index, Status) tuples
         """
-        Set the digital output port state in parallel during point-to-point motion
-        x: A number in the Cartesian coordinate system x
-        y: A number in the Cartesian coordinate system y
-        z: A number in the Cartesian coordinate system z
-        a: A number in the Cartesian coordinate system a
-        b: A number in the Cartesian coordinate system b
-        c: a number in the Cartesian coordinate system c
-        *dynParams :Parameter Settings（Mode、Distance、Index、Status）
-                    Mode :Set Distance mode (0: Distance percentage; 1: distance from starting point or target point)
-                    Distance :Runs the specified distance（If Mode is 0, the value ranges from 0 to 100；When Mode is 1, if the value is positive,
-                             it indicates the distance from the starting point. If the value of Distance is negative, it represents the Distance from the target point）
-                    Index :Digital output index （Value range:1~24）
-                    Status :Digital output state（Value range:0/1）
-        """
-        # example: MovJIO(0,50,0,0,0,0,(0,50,1,0),(1,1,2,1))
         string = "MovJIO({:f},{:f},{:f},{:f},{:f},{:f}".format(x, y, z, a, b, c)
         logger.debug(f"MovJIO command: {string}")
-        for params in dynParams:
+        for params in dyn_params:
             string = string + "," + str(params)
         string = string + ")"
         return self.send_recv_msg(string)
 
-    def Arc(
+    def arc(
         self,
         x1: float,
         y1: float,
@@ -204,25 +175,24 @@ class DobotApiMove(DobotApi):
         a2: float,
         b2: float,
         c2: float,
-        *dynParams: DynParam,
+        *dyn_params: DynParam,
     ) -> str:
-        """
-        Circular motion instruction
-        x1, y1, z1, a1, b1, c1 :Is the point value of intermediate point coordinates
-        x2, y2, z2, a2, b2, c2 :Is the value of the end point coordinates
-        Note: This instruction should be used together with other movement instructions
+        """Circular motion through an intermediate point.
+
+        x1/y1/z1/a1/b1/c1: Intermediate point
+        x2/y2/z2/a2/b2/c2: End point
         """
         string = (
             "Arc({:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f}".format(
                 x1, y1, z1, a1, b1, c1, x2, y2, z2, a2, b2, c2
             )
         )
-        for params in dynParams:
+        for params in dyn_params:
             string = string + "," + str(params)
         string = string + ")"
         return self.send_recv_msg(string)
 
-    def Circle3(
+    def circle3(
         self,
         x1: float,
         y1: float,
@@ -237,24 +207,23 @@ class DobotApiMove(DobotApi):
         b2: float,
         c2: float,
         count: int,
-        *dynParams: DynParam,
+        *dyn_params: DynParam,
     ) -> str:
-        """
-        Full circle motion command
-        count:Run laps
-        x1, y1, z1, r1 :Is the point value of intermediate point coordinates
-        x2, y2, z2, r2 :Is the value of the end point coordinates
-        Note: This instruction should be used together with other movement instructions
+        """Full-circle motion command.
+
+        x1/y1/z1/a1/b1/c1: Intermediate point
+        x2/y2/z2/a2/b2/c2: End point
+        count: Number of full rotations
         """
         string = "Circle3({:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f},{:f},{:d}".format(
             x1, y1, z1, a1, b1, c1, x2, y2, z2, a2, b2, c2, count
         )
-        for params in dynParams:
+        for params in dyn_params:
             string = string + "," + str(params)
         string = string + ")"
         return self.send_recv_msg(string)
 
-    def ServoJ(
+    def servo_j(
         self,
         j1: float,
         j2: float,
@@ -266,102 +235,79 @@ class DobotApiMove(DobotApi):
         lookahead_time: float = 50.0,
         gain: float = 500.0,
     ) -> str:
-        """
-        Dynamic follow command based on joint space
-        j1~j6:Point position values on each joint
+        """Dynamic following in joint space.
 
-        可选参数:t、lookahead_time、gain
-        t float 该点位的运行时间,默认0.1,单位:s  取值范围:[0.02,3600.0]
-        lookahead_time   float 作用类似于PID的D项,默认50,标量,无单位 取值范围:[20.0,100.0]
-        gain float   目标位置的比例放大器,作用类似于PID的P项,  默认500,标量,无单位   取值范围:[200.0,1000.0]
+        j1–j6: Target joint angles
+        t: Point run time in seconds (0.02–3600.0, default 0.1)
+        lookahead_time: D-term equivalent (20.0–100.0, default 50.0)
+        gain: P-term equivalent (200.0–1000.0, default 500.0)
         """
         string = "ServoJ({:f},{:f},{:f},{:f},{:f},{:f},t={:f},lookahead_time={:f},gain={:f})".format(
             j1, j2, j3, j4, j5, j6, t, lookahead_time, gain
         )
         return self.send_recv_msg(string)
 
-    def ServoJS(
+    def servo_js(
         self, j1: float, j2: float, j3: float, j4: float, j5: float, j6: float
     ) -> str:
-        """
-        功能:基于关节空间的动态跟随运动。
-        格式:ServoJS(J1,J2,J3,J4,J5,J6)
+        """Dynamic following in joint space (simplified form).
+
+        j1–j6: Target joint angles
         """
         string = "ServoJS({:f},{:f},{:f},{:f},{:f},{:f})".format(j1, j2, j3, j4, j5, j6)
         return self.send_recv_msg(string)
 
-    def ServoP(self, x: float, y: float, z: float, a: float, b: float, c: float) -> str:
-        """
-        Dynamic following command based on Cartesian space
-        x, y, z, a, b, c :Cartesian coordinate point value
+    def servo_p(
+        self, x: float, y: float, z: float, a: float, b: float, c: float
+    ) -> str:
+        """Dynamic following in Cartesian space.
+
+        x/y/z/a/b/c: Target Cartesian pose
         """
         string = "ServoP({:f},{:f},{:f},{:f},{:f},{:f})".format(x, y, z, a, b, c)
         return self.send_recv_msg(string)
 
-    def MoveJog(self, axis_id: str, *dynParams: DynParam) -> str:
-        """
-        Joint motion
-        axis_id: Joint motion axis, optional string value:
-            J1+ J2+ J3+ J4+ J5+ J6+
-            J1- J2- J3- J4- J5- J6-
-            X+ Y+ Z+ Rx+ Ry+ Rz+
-            X- Y- Z- Rx- Ry- Rz-
-        *dynParams: Parameter Settings（coord_type, user_index, tool_index）
-                    coord_type: 1: User coordinate 2: tool coordinate (default value is 1)
-                    user_index: user index is 0 ~ 9 (default value is 0)
-                    tool_index: tool index is 0 ~ 9 (default value is 0)
+    def move_jog(self, axis_id: str, *dyn_params: DynParam) -> str:
+        """Jog motion along a single axis.
+
+        axis_id: e.g. "J1+", "X-", "Rz+"
+        *dyn_params: Optional (coord_type, user_index, tool_index)
         """
         string = "MoveJog({:s}".format(axis_id)
-        for params in dynParams:
+        for params in dyn_params:
             string = string + "," + str(params)
         string = string + ")"
         return self.send_recv_msg(string)
 
-    def StartTrace(self, trace_name: str) -> str:
-        """
-        Trajectory fitting (track file Cartesian points)
-        trace_name: track file name (including suffix)
-        (The track path is stored in /dobot/userdata/project/process/trajectory/)
+    def start_trace(self, trace_name: str) -> str:
+        """Execute a trajectory file (Cartesian points).
 
-        It needs to be used together with `GetTraceStartPose(recv_string.json)` interface
+        trace_name: File name including suffix (stored in
+            /dobot/userdata/project/process/trajectory/)
         """
-        string = f"StartTrace({trace_name})"
-        return self.send_recv_msg(string)
+        return self.send_recv_msg(f"StartTrace({trace_name})")
 
-    def StartPath(self, trace_name: str, const: int, cart: int) -> str:
-        """
-        Track reproduction. (track file joint points)
-        trace_name: track file name (including suffix)
-        (The track path is stored in /dobot/userdata/project/process/trajectory/)
-        const: When const = 1, it repeats at a constant speed, and the pause and dead zone in the track will be removed;
-               When const = 0, reproduce according to the original speed;
-        cart: When cart = 1, reproduce according to Cartesian path;
-              When cart = 0, reproduce according to the joint path;
+    def start_path(self, trace_name: str, const: int, cart: int) -> str:
+        """Replay a trajectory file (joint points).
 
-        It needs to be used together with `GetTraceStartPose(recv_string.json)` interface
+        trace_name: File name including suffix
+        const: 1 = constant speed (removes pause/dead zones); 0 = original speed
+        cart: 1 = Cartesian path; 0 = joint path
         """
-        string = f"StartPath({trace_name}, {const}, {cart})"
-        return self.send_recv_msg(string)
+        return self.send_recv_msg(f"StartPath({trace_name}, {const}, {cart})")
 
-    def StartFCTrace(self, trace_name: str) -> str:
-        """
-        Trajectory fitting with force control. (track file Cartesian points)
-        trace_name: track file name (including suffix)
-        (The track path is stored in /dobot/userdata/project/process/trajectory/)
+    def start_fc_trace(self, trace_name: str) -> str:
+        """Execute a trajectory file with force control (Cartesian points).
 
-        It needs to be used together with `GetTraceStartPose(recv_string.json)` interface
+        trace_name: File name including suffix
         """
-        string = f"StartFCTrace({trace_name})"
-        return self.send_recv_msg(string)
+        return self.send_recv_msg(f"StartFCTrace({trace_name})")
 
-    def Sync(self) -> str:
-        """
-        The blocking program executes the queue instruction and returns after all the queue instructions are executed
-        """
-        string = "Sync()"
-        return self.send_recv_msg(string)
+    def sync(self) -> str:
+        """Block until all queued commands have been executed."""
+        return self.send_recv_msg("Sync()")
 
-    def RelMovJTool(
+    def rel_mov_j_tool(
         self,
         offset_x: float,
         offset_y: float,
@@ -370,26 +316,18 @@ class DobotApiMove(DobotApi):
         offset_ry: float,
         offset_rz: float,
         tool: int,
-        *dynParams: ToolDynParam,
+        *dyn_params: ToolDynParam,
     ) -> str:
-        """
-        The relative motion command is carried out along the tool coordinate system, and the end motion mode is joint motion
-        offset_x: X-axis direction offset
-        offset_y: Y-axis direction offset
-        offset_z: Z-axis direction offset
-        offset_rx: Rx axis position
-        offset_ry: Ry axis position
-        offset_rz: Rz axis position
-        tool: Select the calibrated tool coordinate system, value range: 0 ~ 9
-        *dynParams: parameter Settings（speed_j, acc_j, user）
-                    speed_j: Set joint speed scale, value range: 1 ~ 100
-                    acc_j: Set acceleration scale value, value range: 1 ~ 100
-                    user: Set user coordinate system index
+        """Relative joint motion along the tool coordinate system.
+
+        offset_x/y/z/rx/ry/rz: Offsets in tool frame
+        tool: Tool coordinate system index (0–9)
+        *dyn_params: Optional (speed_j, acc_j, user) tuples
         """
         string = "RelMovJTool({:f},{:f},{:f},{:f},{:f},{:f}, {:d}".format(
             offset_x, offset_y, offset_z, offset_rx, offset_ry, offset_rz, tool
         )
-        for params in dynParams:
+        for params in dyn_params:
             logger.debug(f"RelMovJTool params: type={type(params)}, value={params}")
             string = string + ", SpeedJ={:d}, AccJ={:d}, User={:d}".format(
                 params[0], params[1], params[2]
@@ -397,7 +335,7 @@ class DobotApiMove(DobotApi):
         string = string + ")"
         return self.send_recv_msg(string)
 
-    def RelMovLTool(
+    def rel_mov_l_tool(
         self,
         offset_x: float,
         offset_y: float,
@@ -406,26 +344,18 @@ class DobotApiMove(DobotApi):
         offset_ry: float,
         offset_rz: float,
         tool: int,
-        *dynParams: ToolDynParam,
+        *dyn_params: ToolDynParam,
     ) -> str:
-        """
-        Carry out relative motion command along the tool coordinate system, and the end motion mode is linear motion
-        offset_x: X-axis direction offset
-        offset_y: Y-axis direction offset
-        offset_z: Z-axis direction offset
-        offset_rx: Rx axis position
-        offset_ry: Ry axis position
-        offset_rz: Rz axis position
-        tool: Select the calibrated tool coordinate system, value range: 0 ~ 9
-        *dynParams: parameter Settings（speed_l, acc_l, user）
-                    speed_l: Set Cartesian speed scale, value range: 1 ~ 100
-                    acc_l: Set acceleration scale value, value range: 1 ~ 100
-                    user: Set user coordinate system index
+        """Relative linear motion along the tool coordinate system.
+
+        offset_x/y/z/rx/ry/rz: Offsets in tool frame
+        tool: Tool coordinate system index (0–9)
+        *dyn_params: Optional (speed_l, acc_l, user) tuples
         """
         string = "RelMovLTool({:f},{:f},{:f},{:f},{:f},{:f}, {:d}".format(
             offset_x, offset_y, offset_z, offset_rx, offset_ry, offset_rz, tool
         )
-        for params in dynParams:
+        for params in dyn_params:
             logger.debug(f"RelMovLTool params: type={type(params)}, value={params}")
             string = string + ", SpeedJ={:d}, AccJ={:d}, User={:d}".format(
                 params[0], params[1], params[2]
@@ -433,7 +363,7 @@ class DobotApiMove(DobotApi):
         string = string + ")"
         return self.send_recv_msg(string)
 
-    def RelMovJUser(
+    def rel_mov_j_user(
         self,
         offset_x: float,
         offset_y: float,
@@ -442,32 +372,23 @@ class DobotApiMove(DobotApi):
         offset_ry: float,
         offset_rz: float,
         user: int,
-        *dynParams: DynParam,
+        *dyn_params: DynParam,
     ) -> str:
-        """
-        The relative motion command is carried out along the user coordinate system, and the end motion mode is joint motion
-        offset_x: X-axis direction offset
-        offset_y: Y-axis direction offset
-        offset_z: Z-axis direction offset
-        offset_rx: Rx axis position
-        offset_ry: Ry axis position
-        offset_rz: Rz axis position
+        """Relative joint motion along the user coordinate system.
 
-        user: Select the calibrated user coordinate system, value range: 0 ~ 9
-        *dynParams: parameter Settings（speed_j, acc_j, tool）
-                    speed_j: Set joint speed scale, value range: 1 ~ 100
-                    acc_j: Set acceleration scale value, value range: 1 ~ 100
-                    tool: Set tool coordinate system index
+        offset_x/y/z/rx/ry/rz: Offsets in user frame
+        user: User coordinate system index (0–9)
+        *dyn_params: Optional (speed_j, acc_j, tool) tuples
         """
         string = "RelMovJUser({:f},{:f},{:f},{:f},{:f},{:f}, {:d}".format(
             offset_x, offset_y, offset_z, offset_rx, offset_ry, offset_rz, user
         )
-        for params in dynParams:
+        for params in dyn_params:
             string = string + "," + str(params)
         string = string + ")"
         return self.send_recv_msg(string)
 
-    def RelMovLUser(
+    def rel_mov_l_user(
         self,
         offset_x: float,
         offset_y: float,
@@ -476,31 +397,23 @@ class DobotApiMove(DobotApi):
         offset_ry: float,
         offset_rz: float,
         user: int,
-        *dynParams: DynParam,
+        *dyn_params: DynParam,
     ) -> str:
-        """
-        The relative motion command is carried out along the user coordinate system, and the end motion mode is linear motion
-        offset_x: X-axis direction offset
-        offset_y: Y-axis direction offset
-        offset_z: Z-axis direction offset
-        offset_rx: Rx axis position
-        offset_ry: Ry axis position
-        offset_rz: Rz axis position
-        user: Select the calibrated user coordinate system, value range: 0 ~ 9
-        *dynParams: parameter Settings（speed_l, acc_l, tool）
-                    speed_l: Set Cartesian speed scale, value range: 1 ~ 100
-                    acc_l: Set acceleration scale value, value range: 1 ~ 100
-                    tool: Set tool coordinate system index
+        """Relative linear motion along the user coordinate system.
+
+        offset_x/y/z/rx/ry/rz: Offsets in user frame
+        user: User coordinate system index (0–9)
+        *dyn_params: Optional (speed_l, acc_l, tool) tuples
         """
         string = "RelMovLUser({:f},{:f},{:f},{:f},{:f},{:f}, {:d}".format(
             offset_x, offset_y, offset_z, offset_rx, offset_ry, offset_rz, user
         )
-        for params in dynParams:
+        for params in dyn_params:
             string = string + "," + str(params)
         string = string + ")"
         return self.send_recv_msg(string)
 
-    def RelJointMovJ(
+    def rel_joint_mov_j(
         self,
         offset1: float,
         offset2: float,
@@ -508,20 +421,115 @@ class DobotApiMove(DobotApi):
         offset4: float,
         offset5: float,
         offset6: float,
-        *dynParams: DynParam,
+        *dyn_params: DynParam,
     ) -> str:
-        """
-        The relative motion command is carried out along the joint coordinate system of each axis, and the end motion mode is joint motion
-        Offset motion interface (point-to-point motion mode)
-        j1~j6:Point position values on each joint
-        *dynParams: parameter Settings（speed_j, acc_j, user）
-                    speed_j: Set Cartesian speed scale, value range: 1 ~ 100
-                    acc_j: Set acceleration scale value, value range: 1 ~ 100
+        """Relative motion along each joint axis (joint motion mode).
+
+        offset1–offset6: Per-axis joint offsets
+        *dyn_params: Optional (speed_j, acc_j) pairs
         """
         string = "RelJointMovJ({:f},{:f},{:f},{:f},{:f},{:f}".format(
             offset1, offset2, offset3, offset4, offset5, offset6
         )
-        for params in dynParams:
+        for params in dyn_params:
             string = string + "," + str(params)
         string = string + ")"
         return self.send_recv_msg(string)
+
+    # ------------------------------------------------------------------
+    # Deprecated PascalCase aliases — do not use in new code.
+    # ------------------------------------------------------------------
+
+    @deprecated_alias("mov_j")
+    def MovJ(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
+        return self.mov_j(*args, **kwargs)
+
+    @deprecated_alias("mov_l")
+    def MovL(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
+        return self.mov_l(*args, **kwargs)
+
+    @deprecated_alias("joint_mov_j")
+    def JointMovJ(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
+        return self.joint_mov_j(*args, **kwargs)
+
+    @deprecated_alias("jump")
+    def Jump(self) -> None:
+        return self.jump()
+
+    @deprecated_alias("rel_mov_j")
+    def RelMovJ(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
+        return self.rel_mov_j(*args, **kwargs)
+
+    @deprecated_alias("rel_mov_l")
+    def RelMovL(
+        self, offsetX: float, offsetY: float, offsetZ: float, *dyn_params: DynParam
+    ) -> str:
+        return self.rel_mov_l(offsetX, offsetY, offsetZ, *dyn_params)
+
+    @deprecated_alias("mov_l_io")
+    def MovLIO(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
+        return self.mov_l_io(*args, **kwargs)
+
+    @deprecated_alias("mov_j_io")
+    def MovJIO(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
+        return self.mov_j_io(*args, **kwargs)
+
+    @deprecated_alias("arc")
+    def Arc(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
+        return self.arc(*args, **kwargs)
+
+    @deprecated_alias("circle3")
+    def Circle3(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
+        return self.circle3(*args, **kwargs)
+
+    @deprecated_alias("servo_j")
+    def ServoJ(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
+        return self.servo_j(*args, **kwargs)
+
+    @deprecated_alias("servo_js")
+    def ServoJS(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
+        return self.servo_js(*args, **kwargs)
+
+    @deprecated_alias("servo_p")
+    def ServoP(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
+        return self.servo_p(*args, **kwargs)
+
+    @deprecated_alias("move_jog")
+    def MoveJog(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
+        return self.move_jog(*args, **kwargs)
+
+    @deprecated_alias("start_trace")
+    def StartTrace(self, trace_name: str) -> str:
+        return self.start_trace(trace_name)
+
+    @deprecated_alias("start_path")
+    def StartPath(self, trace_name: str, const: int, cart: int) -> str:
+        return self.start_path(trace_name, const, cart)
+
+    @deprecated_alias("start_fc_trace")
+    def StartFCTrace(self, trace_name: str) -> str:
+        return self.start_fc_trace(trace_name)
+
+    @deprecated_alias("sync")
+    def Sync(self) -> str:
+        return self.sync()
+
+    @deprecated_alias("rel_mov_j_tool")
+    def RelMovJTool(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
+        return self.rel_mov_j_tool(*args, **kwargs)
+
+    @deprecated_alias("rel_mov_l_tool")
+    def RelMovLTool(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
+        return self.rel_mov_l_tool(*args, **kwargs)
+
+    @deprecated_alias("rel_mov_j_user")
+    def RelMovJUser(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
+        return self.rel_mov_j_user(*args, **kwargs)
+
+    @deprecated_alias("rel_mov_l_user")
+    def RelMovLUser(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
+        return self.rel_mov_l_user(*args, **kwargs)
+
+    @deprecated_alias("rel_joint_mov_j")
+    def RelJointMovJ(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
+        return self.rel_joint_mov_j(*args, **kwargs)

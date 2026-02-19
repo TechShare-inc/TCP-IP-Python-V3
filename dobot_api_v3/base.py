@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import socket
 import threading
+import warnings
 from datetime import datetime
 from tkinter import END, Text
 from typing import Optional
@@ -12,7 +13,13 @@ import numpy as np
 from loguru import logger
 
 
-MyType = np.dtype(
+# ---------------------------------------------------------------------------
+# Feedback packet dtype.
+# All field names use snake_case.  The original Dobot protocol documentation
+# names are available via PROTOCOL_FIELD_MAP below.
+# ---------------------------------------------------------------------------
+
+FeedbackDtype = np.dtype(
     [
         ("len", np.int64),
         ("digital_input_bits", np.uint64),
@@ -40,12 +47,12 @@ MyType = np.dtype(
         ("q_actual", np.float64, (6,)),
         ("qd_actual", np.float64, (6,)),
         ("i_actual", np.float64, (6,)),
-        ("actual_TCP_force", np.float64, (6,)),
+        ("actual_tcp_force", np.float64, (6,)),
         ("tool_vector_actual", np.float64, (6,)),
-        ("TCP_speed_actual", np.float64, (6,)),
-        ("TCP_force", np.float64, (6,)),
-        ("Tool_vector_target", np.float64, (6,)),
-        ("TCP_speed_target", np.float64, (6,)),
+        ("tcp_speed_actual", np.float64, (6,)),
+        ("tcp_force", np.float64, (6,)),
+        ("tool_vector_target", np.float64, (6,)),
+        ("tcp_speed_target", np.float64, (6,)),
         ("motor_temperatures", np.float64, (6,)),
         ("joint_modes", np.float64, (6,)),
         ("v_actual", np.float64, (6,)),
@@ -82,8 +89,8 @@ MyType = np.dtype(
         ("center_x", np.float64),
         ("center_y", np.float64),
         ("center_z", np.float64),
-        ("user[6]", np.float64, (6,)),
-        ("tool[6]", np.float64, (6,)),
+        ("user_coords", np.float64, (6,)),
+        ("tool_coords", np.float64, (6,)),
         ("trace_index", np.float64),
         ("six_force_value", np.float64, (6,)),
         ("target_quaternion", np.float64, (4,)),
@@ -91,6 +98,46 @@ MyType = np.dtype(
         ("reserve3", np.byte, (24,)),
     ]
 )
+
+# ---------------------------------------------------------------------------
+# Protocol field name mapping — maps snake_case field names used in
+# FeedbackDtype to the original names from the Dobot protocol documentation.
+# ---------------------------------------------------------------------------
+PROTOCOL_FIELD_MAP: dict[str, str] = {
+    "actual_tcp_force": "actual_TCP_force",
+    "tcp_speed_actual": "TCP_speed_actual",
+    "tcp_force": "TCP_force",
+    "tool_vector_target": "Tool_vector_target",
+    "tcp_speed_target": "TCP_speed_target",
+    "user_coords": "user[6]",
+    "tool_coords": "tool[6]",
+}
+
+
+# ---------------------------------------------------------------------------
+# Deprecated alias — kept for backward compatibility.
+# ---------------------------------------------------------------------------
+def _warn_mytype() -> None:
+    warnings.warn(
+        "MyType is deprecated, use FeedbackDtype instead.",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+
+
+class _DeprecatedMyType:
+    """Transparent proxy that issues a DeprecationWarning on first access."""
+
+    def __getattr__(self, name: str) -> object:  # noqa: ANN001
+        _warn_mytype()
+        return getattr(FeedbackDtype, name)
+
+    def __repr__(self) -> str:
+        _warn_mytype()
+        return repr(FeedbackDtype)
+
+
+MyType = FeedbackDtype  # deprecated — use FeedbackDtype
 
 
 class DobotApi:
