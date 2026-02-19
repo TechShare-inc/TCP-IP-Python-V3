@@ -3,10 +3,10 @@
 This module is intentionally non-primary. Use top-level imports from `dobot_api`.
 """
 
-from .base import DobotApi, FeedbackDtype, MyType, PROTOCOL_FIELD_MAP
+from .base import PROTOCOL_FIELD_MAP, DobotApi, FeedbackDtype, MyType
 from .dashboard import DobotApiDashboard
-from .feedback import DobotApiFeedBack, DobotApiFeedback
 from .error_monitor import RobotErrorMonitor
+from .feedback import DobotApiFeedBack, DobotApiFeedback
 from .i18n_manager import AlarmI18n
 
 __all__ = [

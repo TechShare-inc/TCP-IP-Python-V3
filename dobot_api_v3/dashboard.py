@@ -44,9 +44,7 @@ class DobotApiDashboard(DobotApi):
         if load != 0:
             string = string + "{:f}".format(load)
             if center_x != 0 or center_y != 0 or center_z != 0:
-                string = string + ",{:f},{:f},{:f}".format(
-                    center_x, center_y, center_z
-                )
+                string = string + ",{:f},{:f},{:f}".format(center_x, center_y, center_z)
         string = string + ")"
         return self.send_recv_msg(string)
 
@@ -317,9 +315,7 @@ class DobotApiDashboard(DobotApi):
             offset1, offset2, offset3, offset4, offset5, offset6, user, tool
         )
         for params in dyn_params:
-            logger.debug(
-                f"InverseSolution params: type={type(params)}, value={params}"
-            )
+            logger.debug(f"InverseSolution params: type={type(params)}, value={params}")
             string = string + repr(params)
         string = string + ")"
         return self.send_recv_msg(string)
@@ -433,9 +429,7 @@ class DobotApiDashboard(DobotApi):
             "GetCoils({:d},{:d},{:d})".format(offset1, offset2, offset3)
         )
 
-    def set_coils(
-        self, offset1: int, offset2: int, offset3: int, offset4: int
-    ) -> str:
+    def set_coils(self, offset1: int, offset2: int, offset3: int, offset4: int) -> str:
         """Write coil values."""
         string = (
             "SetCoils({:d},{:d},{:d}".format(offset1, offset2, offset3)
@@ -465,9 +459,7 @@ class DobotApiDashboard(DobotApi):
 
     def brake_control(self, offset1: int, offset2: int) -> str:
         """Control joint brakes."""
-        return self.send_recv_msg(
-            "BrakeControl({:d},{:d})".format(offset1, offset2)
-        )
+        return self.send_recv_msg("BrakeControl({:d},{:d})".format(offset1, offset2))
 
     def start_drag(self) -> str:
         """Enable drag mode."""
@@ -672,7 +664,15 @@ class DobotApiDashboard(DobotApi):
         *dyn_params: DynParam,
     ) -> str:
         return self.inverse_solution(
-            offset1, offset2, offset3, offset4, offset5, offset6, user, tool, *dyn_params
+            offset1,
+            offset2,
+            offset3,
+            offset4,
+            offset5,
+            offset6,
+            user,
+            tool,
+            *dyn_params,
         )
 
     @deprecated_alias("set_collision_level")

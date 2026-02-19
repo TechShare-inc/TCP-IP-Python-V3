@@ -24,7 +24,10 @@ ToolDynParam = tuple[int, int, int]
 # Deprecation helper.
 # ---------------------------------------------------------------------------
 
-def deprecated_alias(new_name: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+
+def deprecated_alias(
+    new_name: str,
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Decorator that marks a method as a deprecated alias for *new_name*.
 
     Usage (inside a class body)::

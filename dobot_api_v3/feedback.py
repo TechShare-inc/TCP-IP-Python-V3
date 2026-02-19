@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import time
-import warnings
-from tkinter import Text
 from typing import Optional
 
 import numpy as np
@@ -16,8 +14,8 @@ from .utils import deprecated_alias
 class DobotApiFeedback(DobotApi):
     """Feedback interface for reading 1440-byte robot status packets."""
 
-    def __init__(self, ip: str, port: int, *args: Text) -> None:
-        super().__init__(ip, port, *args)
+    def __init__(self, ip: str, port: int) -> None:
+        super().__init__(ip, port)
         self._feedback_dtype: Optional[np.ndarray] = None
         self.last_recv_time = time.perf_counter()
 

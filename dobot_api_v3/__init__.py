@@ -5,7 +5,7 @@ import sys
 
 from loguru import logger
 
-from .base import DobotApi, FeedbackDtype, MyType, PROTOCOL_FIELD_MAP
+from .base import PROTOCOL_FIELD_MAP, DobotApi, FeedbackDtype, MyType
 from .dashboard import DobotApiDashboard
 from .error_monitor import RobotErrorMonitor
 from .feedback import DobotApiFeedBack, DobotApiFeedback

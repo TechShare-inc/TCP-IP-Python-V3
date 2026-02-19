@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Generator
+
 import pytest
 import i18n
 
@@ -16,7 +18,7 @@ pytestmark = pytest.mark.unit
 
 
 @pytest.fixture(autouse=True)
-def reset_i18n_locale() -> None:
+def reset_i18n_locale() -> Generator[None, None, None]:
     """Save and restore the i18n locale after each test."""
     saved = i18n.get("locale")
     yield

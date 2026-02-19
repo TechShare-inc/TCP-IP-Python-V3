@@ -5,13 +5,10 @@ from __future__ import annotations
 import socket
 import threading
 import warnings
-from datetime import datetime
-from tkinter import END, Text
 from typing import Optional
 
 import numpy as np
 from loguru import logger
-
 
 # ---------------------------------------------------------------------------
 # Feedback packet dtype.
@@ -143,12 +140,11 @@ MyType = FeedbackDtype  # deprecated — use FeedbackDtype
 class DobotApi:
     """Base TCP communication class for Dobot dashboard/move/feedback ports."""
 
-    def __init__(self, ip: str, port: int, *args: Text) -> None:
+    def __init__(self, ip: str, port: int) -> None:
         self.ip = ip
         self.port = port
         self.socket_dobot: Optional[socket.socket] = None
         self._global_lock = threading.Lock()
-        self.text_log: Optional[Text] = args[0] if args else None
         self._connect()
 
     def _connect(self) -> None:
@@ -168,11 +164,7 @@ class DobotApi:
         self._connect()
 
     def log(self, text: str) -> None:
-        if self.text_log is not None:
-            date = datetime.now().strftime("%Y-%m-%d %H:%M:%S ")
-            self.text_log.insert(END, date + text + "\n")
-        else:
-            logger.info(text)
+        logger.info(text)
 
     def send_data(self, string: str) -> None:
         if self.socket_dobot is None:
