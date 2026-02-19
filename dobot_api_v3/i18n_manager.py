@@ -107,5 +107,5 @@ class AlarmI18n:
     def normalize_language_code(cls, language: str) -> str:
         normalized = cls.LANGUAGE_ALIASES.get(language.lower(), language)
         if normalized not in cls.SUPPORTED_LANGUAGES:
-            raise ValueError(f"Unsupported language: {language}")
+            logger.warning(f"Unsupported language: {language}")
         return normalized
