@@ -231,7 +231,36 @@ OldClassName = NewClassName  # deprecated alias
 
 ---
 
-## 10. Quick-Check Checklist for AI Agents
+## 10. Docstring Style
+
+All new or updated public APIs must use **Google-style docstrings**.
+
+| Rule                         | Convention                                                               | Example                         |
+| ---------------------------- | ------------------------------------------------------------------------ | ------------------------------- |
+| Public classes/methods       | Google-style sections (`Args:`, `Returns:`, `Raises:` as applicable)     | `def enable_robot(...): ...`    |
+| Include usage where helpful  | Add concise `Example:` blocks for high-traffic API methods               | `mov_j`, `speed_factor`, `sync` |
+| Keep deprecated aliases lean | Deprecated alias wrappers may omit full detail and reference primary API | `EnableRobot` → `enable_robot`  |
+
+Template:
+
+```python
+def speed_factor(self, speed: int) -> str:
+    """Set global speed factor.
+
+    Args:
+        speed: Rate value in range 1-100.
+
+    Returns:
+        Robot response string.
+
+    Example:
+        >>> dashboard.speed_factor(40)
+    """
+```
+
+---
+
+## 11. Quick-Check Checklist for AI Agents
 
 Before submitting any code touching this package, verify:
 
@@ -244,3 +273,4 @@ Before submitting any code touching this package, verify:
 - [ ] Constants are `UPPER_SNAKE_CASE`
 - [ ] Type aliases are `PascalCase` and descriptive
 - [ ] Dtype field references use the snake_case names from `FeedbackDtype`
+- [ ] New/updated public APIs use Google-style docstrings (`Args:`, `Returns:`, and `Raises:` when needed)
