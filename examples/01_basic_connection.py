@@ -1,62 +1,36 @@
 """Basic connection lifecycle example.
 
-This script demonstrates how to connect to the dashboard port, enable the robot,
-query basic status, and close the connection safely.
+This script demonstrates how to connect to the robot, run the standard startup
+sequence, query basic status, and close all connections safely.
 
 See also:
 - docs/reference/command-patterns.md#pattern-1-positional-required-args
 - docs/reference/command-patterns.md#pattern-4-lifecycle--motion-ordering
 """
 
-import time
-from dobot_api_v3 import DobotApiDashboard, RobotErrorMonitor
+from dobot_api_v3 import DobotRobot
 
 
 def main() -> None:
     """Run a basic connection sequence."""
     ip = "192.168.5.1"
-    dashboard = DobotApiDashboard(ip, 29999)
-    error_monitor = RobotErrorMonitor(dashboard)
 
-    try:
-        print("Checking for errors...")
-        has_errors = error_monitor.check_errors()
-
-        if has_errors:
-            print("Errors found. Clearing existing alarms...")
-            print(dashboard.clear_error())
-
-            print("Powering on robot...")
-            print(dashboard.power_on())
-
-            time.sleep(10)  # Wait for the robot to power on
-            print("Disabling robot before enable...")
-            print(dashboard.disable_robot())
-
-            print("Enabling robot...")
-            print(dashboard.enable_robot())
-        else:
-            print("No errors found.")
-            print("Disabling robot before enable...")
-            print(dashboard.disable_robot())
-
-            print("Enabling robot...")
-            print(dashboard.enable_robot())
+    with DobotRobot(ip, language="en") as robot:
+        # startup() runs: clear_error → power_on → wait → disable → enable → speed_factor
+        robot.startup(speed=40)
 
         print("Robot mode:")
-        print(dashboard.robot_mode())
+        print(robot.robot_mode())
 
         print("Current angle:")
-        print(dashboard.get_angle())
+        print(robot.get_angle())
 
         print("Current pose:")
-        print(dashboard.get_pose())
+        print(robot.get_pose())
 
-        print("Disabling robot...")
-        print(dashboard.disable_robot())
+        robot.shutdown()
 
-    finally:
-        dashboard.close()
+    # All connections are closed automatically on exit from the ``with`` block.
 
 
 if __name__ == "__main__":
