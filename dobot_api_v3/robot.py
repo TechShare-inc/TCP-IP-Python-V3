@@ -154,13 +154,16 @@ class DobotRobot:
         center_y: float = 0.0,
         center_z: float = 0.0,
         *,
-        power_on_wait: float = 10.0,
+        power_on_wait: float = 15.0,
     ) -> None:
         """Perform the standard robot startup sequence.
 
-        Executes ``clear_error → power_on → wait → disable_robot →
-        enable_robot → speed_factor`` in order, which matches the sequence
-        used in all shipped examples.
+        First checks for controller errors.  If errors are present the
+        sequence is ``clear_error → power_on → wait → disable_robot →
+        enable_robot → speed_factor``.  If no errors are detected,
+        ``clear_error`` and ``power_on`` (and the associated wait) are
+        skipped and the sequence continues directly with
+        ``disable_robot → enable_robot → speed_factor``.
 
         Args:
             speed: Global speed factor (1-100) applied after enable.
@@ -172,16 +175,22 @@ class DobotRobot:
             center_z: Payload center Z offset forwarded to
                 :meth:`enable_robot`.
             power_on_wait: Seconds to sleep after :meth:`power_on` before
-                continuing (default ``10``).
+                continuing (default ``15``).  Only used when errors are
+                detected and ``power_on`` is called.
 
         Example:
             >>> robot.startup(speed=50, load=1.0, center_z=0.05)
         """
         logger.info("DobotRobot startup sequence starting")
-        logger.debug(self.dashboard.clear_error())
-        logger.debug(self.dashboard.power_on())
-        logger.info(f"Waiting {power_on_wait}s for controller to power on")
-        time.sleep(power_on_wait)
+        has_errors = self.errors.check_errors()
+        if has_errors:
+            logger.info("Errors detected — clearing and powering on")
+            logger.debug(self.dashboard.clear_error())
+            logger.debug(self.dashboard.power_on())
+            logger.info(f"Waiting {power_on_wait}s for controller to power on")
+            time.sleep(power_on_wait)
+        else:
+            logger.info("No errors detected — skipping clear_error and power_on")
         logger.debug(self.dashboard.disable_robot())
         logger.debug(
             self.dashboard.enable_robot(
