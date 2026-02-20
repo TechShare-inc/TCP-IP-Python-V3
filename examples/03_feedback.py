@@ -8,23 +8,24 @@ import json
 import time
 from pathlib import Path
 
-from dobot_api_v3 import DobotApiFeedback
+from dobot_api_v3 import DobotRobot
 
 
 def main() -> None:
     """Read several feedback frames and print selected fields."""
     ip = "192.168.5.1"
-    feedback = DobotApiFeedback(ip, 30004)
 
     num_cycles = 100
     cycle_time = 0.008  # 8 ms
-    
+
     recorded_data = []
     timestamps = []
 
     print(f"Starting {num_cycles} cycles of {cycle_time * 1000} ms...")
 
-    try:
+    with DobotRobot(ip) as robot:
+        # robot.feedback is lazy — port 30004 connects on first access here.
+        feedback = robot.feedback
         start_time = time.perf_counter()
         next_time = start_time
 
@@ -39,9 +40,11 @@ def main() -> None:
                     "timestamp": current_time,
                     "robot_mode": int(feedback_data["robot_mode"][0]),
                     "is_enabled": int(feedback_data["enable_status"][0]) == 1,
-                    "tool_vector_actual": feedback_data["tool_vector_actual"][0].tolist(),
+                    "tool_vector_actual": feedback_data["tool_vector_actual"][
+                        0
+                    ].tolist(),
                     "q_actual": feedback_data["q_actual"][0].tolist(),
-                    "tcp_force": feedback_data["tcp_force"][0].tolist()
+                    "tcp_force": feedback_data["tcp_force"][0].tolist(),
                 }
                 recorded_data.append(entry)
             else:
@@ -53,8 +56,7 @@ def main() -> None:
             if sleep_time > 0:
                 time.sleep(sleep_time)
 
-    finally:
-        feedback.close()
+    # All connections (dashboard, move, feedback) closed automatically on exit.
 
     # Record the data in file
     output_file = Path("feedback_data.json")
@@ -64,11 +66,13 @@ def main() -> None:
 
     # Analyze the timing related metrics
     if len(timestamps) > 1:
-        intervals = [timestamps[i] - timestamps[i-1] for i in range(1, len(timestamps))]
+        intervals = [
+            timestamps[i] - timestamps[i - 1] for i in range(1, len(timestamps))
+        ]
         avg_interval = sum(intervals) / len(intervals)
         min_interval = min(intervals)
         max_interval = max(intervals)
-        
+
         print("\nTiming Analysis:")
         print(f"  Total cycles: {len(timestamps)}")
         print(f"  Target cycle time: {cycle_time * 1000:.2f} ms")
