@@ -6,6 +6,7 @@ See also:
 - docs/reference/command-patterns.md#pattern-4-lifecycle--motion-ordering
 """
 
+import time
 from dobot_api_v3 import DobotApiDashboard, DobotApiMove
 
 
@@ -17,17 +18,27 @@ def main() -> None:
 
     try:
         print(dashboard.clear_error())
+        print(dashboard.power_on())
+        time.sleep(10)  # Wait for the robot to power on
+        print(dashboard.disable_robot())
         print(dashboard.enable_robot())
         print(dashboard.speed_factor(40))
         print(dashboard.acc_j(40))
         print(dashboard.speed_j(40))
 
-        print(move.mov_j(200, 0, 200, 0, 0, 0))
-        print(move.mov_l(230, 30, 180, 0, 0, 0))
-        print(move.joint_mov_j(0, 0, 60, 0, 60, 0))
+        # Move to home pose using joint angles
+        print(move.joint_mov_j(-11.530027, 4.636217, 87.164818, -2.841284, -77.713211, 0.010011))
+        print(move.sync())
+
+        # Small relative movement from home pose
+        print(move.rel_joint_mov_j(15, 0, 0, 0, 0, 0))
         print(move.sync())
 
         print(dashboard.disable_robot())
+
+    except KeyboardInterrupt:
+        print("Motion interrupted by user.")
+
     finally:
         move.close()
         dashboard.close()

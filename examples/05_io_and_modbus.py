@@ -5,6 +5,7 @@ See also:
 - docs/reference/command-patterns.md#pattern-4-lifecycle--motion-ordering
 """
 
+import time
 from dobot_api_v3 import DobotApiDashboard
 
 
@@ -14,6 +15,10 @@ def main() -> None:
     dashboard = DobotApiDashboard(ip, 29999)
 
     try:
+        print(dashboard.clear_error())
+        print(dashboard.power_on())
+        time.sleep(10)  # Wait for the robot to power on
+        print(dashboard.disable_robot())
         print(dashboard.enable_robot())
 
         print("Setting digital outputs...")

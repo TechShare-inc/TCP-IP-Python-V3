@@ -9,40 +9,53 @@ See also:
 """
 
 import time
-from dobot_api_v3 import DobotApiDashboard
+from dobot_api_v3 import DobotApiDashboard, RobotErrorMonitor
 
 
 def main() -> None:
     """Run a basic connection sequence."""
     ip = "192.168.5.1"
     dashboard = DobotApiDashboard(ip, 29999)
+    error_monitor = RobotErrorMonitor(dashboard)
 
     try:
-        print("Clearing existing alarms...")
-        print(dashboard.clear_error())
+        print("Checking for errors...")
+        has_errors = error_monitor.check_errors()
 
-        time.sleep(1)  # Wait for the robot to clear alarms
-        print("Enabling robot...")
-        print(dashboard.enable_robot())
+        if has_errors:
+            print("Errors found. Clearing existing alarms...")
+            print(dashboard.clear_error())
 
-        time.sleep(1)  # Wait for the robot to enable
+            print("Powering on robot...")
+            print(dashboard.power_on())
+
+            time.sleep(10)  # Wait for the robot to power on
+            print("Disabling robot before enable...")
+            print(dashboard.disable_robot())
+
+            print("Enabling robot...")
+            print(dashboard.enable_robot())
+        else:
+            print("No errors found.")
+            print("Disabling robot before enable...")
+            print(dashboard.disable_robot())
+
+            print("Enabling robot...")
+            print(dashboard.enable_robot())
+
         print("Robot mode:")
         print(dashboard.robot_mode())
 
-        time.sleep(1)  # Wait for the robot to update status
         print("Current angle:")
         print(dashboard.get_angle())
 
-        time.sleep(1)  # Wait for the robot to update status
         print("Current pose:")
         print(dashboard.get_pose())
 
-        time.sleep(1)  # Wait for the robot to update status
         print("Disabling robot...")
         print(dashboard.disable_robot())
 
     finally:
-        time.sleep(1)  # Wait for the robot to disable
         dashboard.close()
 
 
