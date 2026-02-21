@@ -113,28 +113,23 @@ PROTOCOL_FIELD_MAP: dict[str, str] = {
 
 # ---------------------------------------------------------------------------
 # Deprecated alias — kept for backward compatibility.
+# PEP 562: module __getattr__ emits DeprecationWarning on access.
 # ---------------------------------------------------------------------------
-def _warn_mytype() -> None:
-    warnings.warn(
-        "MyType is deprecated, use FeedbackDtype instead.",
-        DeprecationWarning,
-        stacklevel=3,
-    )
+_DEPRECATED_NAMES: dict[str, object] = {
+    "MyType": FeedbackDtype,
+}
 
 
-class _DeprecatedMyType:
-    """Transparent proxy that issues a DeprecationWarning on first access."""
-
-    def __getattr__(self, name: str) -> object:  # noqa: ANN001
-        _warn_mytype()
-        return getattr(FeedbackDtype, name)
-
-    def __repr__(self) -> str:
-        _warn_mytype()
-        return repr(FeedbackDtype)
-
-
-MyType = FeedbackDtype  # deprecated — use FeedbackDtype
+def __getattr__(name: str) -> object:
+    """Emit DeprecationWarning for legacy module-level names."""
+    if name in _DEPRECATED_NAMES:
+        warnings.warn(
+            f"{name} is deprecated, use FeedbackDtype instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return _DEPRECATED_NAMES[name]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 class DobotApi:

@@ -7,8 +7,8 @@ from typing import Optional
 
 import numpy as np
 
-from .base import DobotApi, FeedbackDtype
-from .utils import deprecated_alias
+from dobot_api_v3.base import DobotApi, FeedbackDtype
+from dobot_api_v3.utils import deprecated_alias
 
 
 class DobotApiFeedback(DobotApi):
@@ -83,5 +83,22 @@ class DobotApiFeedback(DobotApi):
 
 # ---------------------------------------------------------------------------
 # Deprecated class alias — preserved for backward compatibility.
+# PEP 562: module __getattr__ emits DeprecationWarning on access.
 # ---------------------------------------------------------------------------
-DobotApiFeedBack = DobotApiFeedback  # deprecated: use DobotApiFeedback
+import warnings as _warnings
+
+_DEPRECATED_NAMES: dict[str, object] = {
+    "DobotApiFeedBack": DobotApiFeedback,
+}
+
+
+def __getattr__(name: str) -> object:
+    """Emit DeprecationWarning for legacy module-level names."""
+    if name in _DEPRECATED_NAMES:
+        _warnings.warn(
+            f"{name} is deprecated, use DobotApiFeedback instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return _DEPRECATED_NAMES[name]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
