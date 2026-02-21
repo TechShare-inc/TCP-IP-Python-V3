@@ -38,13 +38,11 @@ def main() -> None:
                 entry = {
                     "index": index,
                     "timestamp": current_time,
-                    "robot_mode": int(feedback_data["robot_mode"][0]),
-                    "is_enabled": int(feedback_data["enable_status"][0]) == 1,
-                    "tool_vector_actual": feedback_data["tool_vector_actual"][
-                        0
-                    ].tolist(),
-                    "q_actual": feedback_data["q_actual"][0].tolist(),
-                    "tcp_force": feedback_data["tcp_force"][0].tolist(),
+                    "robot_mode": feedback_data.robot_mode,
+                    "is_enabled": feedback_data.enable_status == 1,
+                    "tool_vector_actual": list(feedback_data.tool_vector_actual),
+                    "q_actual": list(feedback_data.q_actual),
+                    "tcp_force": list(feedback_data.tcp_force),
                 }
                 recorded_data.append(entry)
             else:

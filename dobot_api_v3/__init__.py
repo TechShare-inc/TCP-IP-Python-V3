@@ -6,7 +6,7 @@ import warnings as _warnings
 
 from loguru import logger
 
-from .base import PROTOCOL_FIELD_MAP, DobotApi, FeedbackDtype
+from .base import PROTOCOL_FIELD_MAP, DobotApi, FeedbackData, FeedbackDtype
 from .dashboard import DobotApiDashboard
 from .error_monitor import RobotErrorMonitor
 from .feedback import DobotApiFeedback
@@ -51,6 +51,7 @@ __all__ = [
     "DobotApiMove",
     "DobotApiFeedback",
     "RobotErrorMonitor",
+    "FeedbackData",
     "FeedbackDtype",
     "PROTOCOL_FIELD_MAP",
     "AlarmI18n",

@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, call, patch
 import numpy as np
 import pytest
 
-from dobot_api_v3.base import DobotApi, FeedbackDtype
+from dobot_api_v3.base import DobotApi, FeedbackData, FeedbackDtype
 from dobot_api_v3.robot import DobotRobot
 
 pytestmark = pytest.mark.unit
@@ -19,7 +19,9 @@ pytestmark = pytest.mark.unit
 
 
 @pytest.fixture
-def mock_robot(monkeypatch: pytest.MonkeyPatch) -> tuple[DobotRobot, list[str], list[str]]:
+def mock_robot(
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[DobotRobot, list[str], list[str]]:
     """DobotRobot with all sockets mocked.
 
     Returns:
@@ -106,9 +108,7 @@ class TestContextManager:
         robot.__exit__(None, None, None)
         assert len(close_calls) == 1
 
-    def test_context_manager_protocol(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_context_manager_protocol(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(DobotApi, "_connect", lambda self: None)
         with DobotRobot("192.168.1.1") as robot:
             assert isinstance(robot, DobotRobot)
@@ -289,9 +289,7 @@ class TestReconnect:
         assert dashboard_reconnected
         assert move_reconnected
 
-    def test_reconnect_with_feedback(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_reconnect_with_feedback(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(DobotApi, "_connect", lambda self: None)
         robot = DobotRobot("192.168.1.1")
         _ = robot.feedback  # trigger lazy creation
@@ -309,9 +307,7 @@ class TestReconnect:
 
 
 class TestErrorConvenience:
-    def test_check_errors_delegates_to_error_monitor(
-        self, mock_robot: tuple
-    ) -> None:
+    def test_check_errors_delegates_to_error_monitor(self, mock_robot: tuple) -> None:
         robot, _, _ = mock_robot
         results = []
         robot.errors.check_errors = lambda language="en": results.append(language) or False  # type: ignore[method-assign]
@@ -358,17 +354,32 @@ class TestFeedbackData:
         fb_mock.feedback_data.assert_called_once()
         assert result is None
 
-    def test_feedback_data_returns_numpy_array(
+    def test_feedback_data_returns_feedback_data_instance(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(DobotApi, "_connect", lambda self: None)
+        robot = DobotRobot("192.168.1.1")
+        arr = np.zeros(1, dtype=FeedbackDtype)
+        expected = FeedbackData.from_numpy(arr)
+        fb_mock = MagicMock()
+        fb_mock.feedback_data.return_value = expected
+        robot._feedback = fb_mock  # type: ignore[assignment]
+        result = robot.feedback_data()
+        assert result is expected
+        assert isinstance(result, FeedbackData)
+
+    def test_raw_feedback_data_delegates_to_feedback(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setattr(DobotApi, "_connect", lambda self: None)
         robot = DobotRobot("192.168.1.1")
         expected = np.zeros(1, dtype=FeedbackDtype)
         fb_mock = MagicMock()
-        fb_mock.feedback_data.return_value = expected
+        fb_mock.raw_feedback_data.return_value = expected
         robot._feedback = fb_mock  # type: ignore[assignment]
-        result = robot.feedback_data()
+        result = robot.raw_feedback_data()
         assert result is expected
+        fb_mock.raw_feedback_data.assert_called_once()
 
 
 # ---------------------------------------------------------------------------

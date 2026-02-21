@@ -27,6 +27,7 @@ from typing import Optional
 import numpy as np
 from loguru import logger
 
+from .base import FeedbackData
 from .dashboard import DobotApiDashboard
 from .error_monitor import RobotErrorMonitor
 from .feedback import DobotApiFeedback
@@ -296,21 +297,42 @@ class DobotRobot:
     # Feedback convenience
     # ------------------------------------------------------------------
 
-    def feedback_data(self) -> Optional[np.ndarray]:
+    def feedback_data(self) -> Optional[FeedbackData]:
         """Read one feedback frame from the primary feedback port (30004).
 
-        Opens the feedback connection lazily on the first call.
+        Opens the feedback connection lazily on the first call.  Returns a
+        typed :class:`~dobot_api_v3.FeedbackData` for full IDE autocompletion.
+        For zero-copy NumPy access use :meth:`raw_feedback_data` instead.
 
         Returns:
-            A NumPy structured array of length 1 when a valid 1440-byte frame
-            is parsed, otherwise ``None``.
+            A :class:`~dobot_api_v3.FeedbackData` instance when a valid
+            1440-byte frame is parsed, otherwise ``None``.
 
         Example:
             >>> data = robot.feedback_data()
             >>> if data is not None:
-            ...     print(data["tool_vector_actual"][0])
+            ...     print(data.tool_vector_actual)
+            ...     print(data.robot_mode)
         """
         return self.feedback.feedback_data()
+
+    def raw_feedback_data(self) -> Optional[np.ndarray]:
+        """Read one feedback frame and return the raw NumPy structured array.
+
+        Opens the feedback connection lazily on the first call.  Use this
+        method for NumPy-native numeric pipelines; for typed access prefer
+        :meth:`feedback_data`.
+
+        Returns:
+            A NumPy structured array of length 1 (``dtype=FeedbackDtype``)
+            when a valid 1440-byte frame is parsed, otherwise ``None``.
+
+        Example:
+            >>> raw = robot.raw_feedback_data()
+            >>> if raw is not None:
+            ...     print(raw[0]["tool_vector_actual"])
+        """
+        return self.feedback.raw_feedback_data()
 
     # ------------------------------------------------------------------
     # Forwarded dashboard commands
