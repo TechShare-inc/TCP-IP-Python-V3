@@ -17,6 +17,7 @@ import pytest
 from dobot_api_v3.dashboard import DobotApiDashboard
 from dobot_api_v3.feedback import DobotApiFeedback
 from dobot_api_v3.move import DobotApiMove
+from dobot_api_v3.robot import DobotRobot
 from tests.hil.conftest import requires_hardware
 
 pytestmark = [pytest.mark.hil, requires_hardware]
@@ -118,4 +119,67 @@ class TestReconnectHIL:
         real_dashboard.socket_dobot = None
         real_dashboard.reconnect()
         response = real_dashboard.robot_mode()
+        assert isinstance(response, str)
+
+
+# ---------------------------------------------------------------------------
+# DobotRobot — unified wrapper on real hardware
+# ---------------------------------------------------------------------------
+
+
+class TestDobotRobotHIL:
+    """Hardware tests for the DobotRobot high-level wrapper."""
+
+    def test_startup_and_shutdown(self, real_robot: DobotRobot) -> None:
+        """Full startup/shutdown cycle must complete without errors."""
+        real_robot.startup(speed=30)
+        mode = real_robot.robot_mode()
+        assert isinstance(mode, str)
+        real_robot.shutdown()
+
+    def test_check_errors_returns_bool(self, real_robot: DobotRobot) -> None:
+        """check_errors() must return a boolean on real hardware."""
+        result = real_robot.check_errors(language="en")
+        assert isinstance(result, bool)
+
+    def test_get_pose_returns_string(self, real_robot: DobotRobot) -> None:
+        response = real_robot.get_pose()
+        assert isinstance(response, str)
+        assert len(response) > 0
+
+    def test_get_angle_returns_string(self, real_robot: DobotRobot) -> None:
+        response = real_robot.get_angle()
+        assert isinstance(response, str)
+        assert len(response) > 0
+
+    def test_speed_factor_accepted(self, real_robot: DobotRobot) -> None:
+        response = real_robot.speed_factor(40)
+        assert "0" in response
+
+    def test_feedback_data_returns_valid_packet(
+        self, real_robot: DobotRobot
+    ) -> None:
+        """feedback_data() should lazily connect and return a FeedbackData."""
+        from dobot_api_v3.base import FeedbackData
+
+        data = real_robot.feedback_data()
+        assert data is not None
+        assert isinstance(data, FeedbackData)
+
+    def test_raw_feedback_data_returns_numpy(self, real_robot: DobotRobot) -> None:
+        """raw_feedback_data() should return a structured NumPy array."""
+        import numpy as np
+        from dobot_api_v3.base import FeedbackDtype
+
+        raw = real_robot.raw_feedback_data()
+        assert raw is not None
+        assert raw.dtype == FeedbackDtype
+        assert raw.shape == (1,)
+
+    def test_reconnect_restores_communication(
+        self, real_robot: DobotRobot
+    ) -> None:
+        """After reconnect(), forwarded commands must still work."""
+        real_robot.reconnect()
+        response = real_robot.robot_mode()
         assert isinstance(response, str)

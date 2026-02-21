@@ -221,44 +221,82 @@ class TestClose:
 
 
 class TestStartup:
-    def test_startup_command_sequence(self, mock_robot: tuple) -> None:
+    def test_startup_command_sequence_with_errors(
+        self, mock_robot: tuple
+    ) -> None:
+        """When errors are present, startup runs the full clear→power→disable→enable→speed sequence."""
         robot, dashboard_cmds, _ = mock_robot
-        with patch("time.sleep"):
+        with (
+            patch.object(robot.errors, "check_errors", return_value=True),
+            patch("time.sleep"),
+        ):
             robot.startup(speed=50)
-        # Verify the commands appear in the correct order
         assert dashboard_cmds[0] == "ClearError()"
         assert dashboard_cmds[1] == "PowerOn()"
         assert dashboard_cmds[2] == "DisableRobot()"
         assert dashboard_cmds[3] == "EnableRobot()"
         assert dashboard_cmds[4] == "SpeedFactor(50)"
 
+    def test_startup_command_sequence_no_errors(
+        self, mock_robot: tuple
+    ) -> None:
+        """When no errors, startup skips clear_error/power_on and goes straight to disable→enable→speed."""
+        robot, dashboard_cmds, _ = mock_robot
+        with patch.object(robot.errors, "check_errors", return_value=False):
+            robot.startup(speed=50)
+        assert dashboard_cmds[0] == "DisableRobot()"
+        assert dashboard_cmds[1] == "EnableRobot()"
+        assert dashboard_cmds[2] == "SpeedFactor(50)"
+        # clear_error and power_on must NOT appear
+        assert not any("ClearError" in c for c in dashboard_cmds)
+        assert not any("PowerOn" in c for c in dashboard_cmds)
+
     def test_startup_default_speed_factor(self, mock_robot: tuple) -> None:
         robot, dashboard_cmds, _ = mock_robot
-        with patch("time.sleep"):
+        with patch.object(robot.errors, "check_errors", return_value=False):
             robot.startup()
         assert any("SpeedFactor(40)" in cmd for cmd in dashboard_cmds)
 
     def test_startup_with_load(self, mock_robot: tuple) -> None:
         robot, dashboard_cmds, _ = mock_robot
-        with patch("time.sleep"):
+        with patch.object(robot.errors, "check_errors", return_value=False):
             robot.startup(speed=30, load=1.5, center_z=0.05)
         enable_cmd = next(c for c in dashboard_cmds if c.startswith("EnableRobot"))
         assert "1.500000" in enable_cmd
         assert "0.050000" in enable_cmd
 
     def test_startup_power_on_wait(self, mock_robot: tuple) -> None:
+        """Custom power_on_wait is forwarded to time.sleep when errors are present."""
         robot, _, _ = mock_robot
         sleep_calls: list[float] = []
-        with patch("time.sleep", side_effect=lambda t: sleep_calls.append(t)):
+        with (
+            patch.object(robot.errors, "check_errors", return_value=True),
+            patch("time.sleep", side_effect=lambda t: sleep_calls.append(t)),
+        ):
             robot.startup(power_on_wait=5.0)
         assert 5.0 in sleep_calls
 
-    def test_startup_default_wait_is_10(self, mock_robot: tuple) -> None:
+    def test_startup_default_wait_is_15(self, mock_robot: tuple) -> None:
+        """Default power_on_wait (15s) is used when errors are present."""
         robot, _, _ = mock_robot
         sleep_calls: list[float] = []
-        with patch("time.sleep", side_effect=lambda t: sleep_calls.append(t)):
+        with (
+            patch.object(robot.errors, "check_errors", return_value=True),
+            patch("time.sleep", side_effect=lambda t: sleep_calls.append(t)),
+        ):
             robot.startup()
-        assert 10.0 in sleep_calls
+        assert 15.0 in sleep_calls
+
+    def test_startup_no_sleep_without_errors(self, mock_robot: tuple) -> None:
+        """When no errors are detected, time.sleep is never called."""
+        robot, _, _ = mock_robot
+        sleep_calls: list[float] = []
+        with (
+            patch.object(robot.errors, "check_errors", return_value=False),
+            patch("time.sleep", side_effect=lambda t: sleep_calls.append(t)),
+        ):
+            robot.startup()
+        assert len(sleep_calls) == 0
 
 
 # ---------------------------------------------------------------------------
