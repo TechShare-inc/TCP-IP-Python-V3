@@ -221,9 +221,7 @@ class TestClose:
 
 
 class TestStartup:
-    def test_startup_command_sequence_with_errors(
-        self, mock_robot: tuple
-    ) -> None:
+    def test_startup_command_sequence_with_errors(self, mock_robot: tuple) -> None:
         """When errors are present, startup runs the full clear→power→disable→enable→speed sequence."""
         robot, dashboard_cmds, _ = mock_robot
         with (
@@ -237,9 +235,7 @@ class TestStartup:
         assert dashboard_cmds[3] == "EnableRobot()"
         assert dashboard_cmds[4] == "SpeedFactor(50)"
 
-    def test_startup_command_sequence_no_errors(
-        self, mock_robot: tuple
-    ) -> None:
+    def test_startup_command_sequence_no_errors(self, mock_robot: tuple) -> None:
         """When no errors, startup skips clear_error/power_on and goes straight to disable→enable→speed."""
         robot, dashboard_cmds, _ = mock_robot
         with patch.object(robot.errors, "check_errors", return_value=False):

@@ -156,9 +156,7 @@ class TestDobotRobotHIL:
         response = real_robot.speed_factor(40)
         assert "0" in response
 
-    def test_feedback_data_returns_valid_packet(
-        self, real_robot: DobotRobot
-    ) -> None:
+    def test_feedback_data_returns_valid_packet(self, real_robot: DobotRobot) -> None:
         """feedback_data() should lazily connect and return a FeedbackData."""
         from dobot_api_v3.base import FeedbackData
 
@@ -176,9 +174,7 @@ class TestDobotRobotHIL:
         assert raw.dtype == FeedbackDtype
         assert raw.shape == (1,)
 
-    def test_reconnect_restores_communication(
-        self, real_robot: DobotRobot
-    ) -> None:
+    def test_reconnect_restores_communication(self, real_robot: DobotRobot) -> None:
         """After reconnect(), forwarded commands must still work."""
         real_robot.reconnect()
         response = real_robot.robot_mode()
