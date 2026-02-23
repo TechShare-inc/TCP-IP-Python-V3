@@ -91,7 +91,7 @@ class AlarmI18n:
         """
         if alarm_type is None:
             alarm_type = "servo" if alarm_id >= self.SERVO_ID_MIN else "controller"
-        base_key = f"{alarm_type}.{alarm_id}"
+        base_key = f"alarms.{alarm_type}.{alarm_id}"
 
         if field:
             return {field: i18n.t(f"{base_key}.{field}", default="")}
@@ -99,10 +99,9 @@ class AlarmI18n:
         description = i18n.t(f"{base_key}.description", default="Unknown error")
         cause = i18n.t(f"{base_key}.cause", default="")
         solution = i18n.t(f"{base_key}.solution", default="")
-        level_raw = i18n.t(f"{base_key}.level", default=0)
         try:
-            level = int(level_raw)
-        except (TypeError, ValueError):
+            level = int(i18n.t(f"{base_key}.level", default="0"))
+        except (TypeError, ValueError, AttributeError):
             level = 0
         return {
             "id": alarm_id,

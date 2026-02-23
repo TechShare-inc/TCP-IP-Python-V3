@@ -7,8 +7,7 @@ from typing import Optional
 
 import numpy as np
 
-from .base import DobotApi, FeedbackDtype
-from .utils import deprecated_alias
+from dobot_api_v3.base import DobotApi, FeedbackData, FeedbackDtype
 
 
 class DobotApiFeedback(DobotApi):
@@ -29,12 +28,16 @@ class DobotApiFeedback(DobotApi):
         self._feedback_dtype: Optional[np.ndarray] = None
         self.last_recv_time = time.perf_counter()
 
-    def feedback_data(self) -> Optional[np.ndarray]:
-        """Read one feedback frame and parse it with ``FeedbackDtype``.
+    def raw_feedback_data(self) -> Optional[np.ndarray]:
+        """Read one feedback frame and return the raw NumPy structured array.
+
+        Use this method when you need zero-copy NumPy access to the packet
+        fields (e.g., for numeric pipelines or direct array slicing).  For
+        typed, IDE-friendly access prefer :meth:`feedback_data` instead.
 
         Returns:
-            A NumPy structured array of length 1 when a valid 1440-byte frame
-            is parsed, otherwise ``None``.
+            A NumPy structured array of length 1 (``dtype=FeedbackDtype``)
+            when a valid 1440-byte frame is parsed, otherwise ``None``.
 
         Raises:
             RuntimeError: If the socket is not connected.
@@ -71,17 +74,31 @@ class DobotApiFeedback(DobotApi):
             self._feedback_dtype = np.frombuffer(data, dtype=FeedbackDtype)
         return self._feedback_dtype
 
-    @deprecated_alias("feedback_data")
-    def feedBackData(self) -> Optional[np.ndarray]:
-        """Deprecated alias for :meth:`feedback_data`.
+    def feedback_data(self) -> Optional[FeedbackData]:
+        """Read one feedback frame and return a typed :class:`~dobot_api_v3.FeedbackData`.
+
+        Internally calls :meth:`raw_feedback_data` and converts the result to
+        an immutable :class:`~dobot_api_v3.FeedbackData` dataclass for full
+        IDE autocompletion and type-checker support.
+
+        For zero-copy NumPy access (e.g., numeric pipelines) use
+        :meth:`raw_feedback_data` directly.
 
         Returns:
-            Same value as :meth:`feedback_data`.
+            A :class:`~dobot_api_v3.FeedbackData` instance when a valid
+            1440-byte frame is parsed, otherwise ``None``.
+
+        Raises:
+            RuntimeError: If the socket is not connected.
+            RuntimeError: If repeated short reads indicate packet loss.
+
+        Example:
+            >>> data = feedback.feedback_data()
+            >>> if data is not None:
+            ...     print(data.robot_mode)
+            ...     print(data.tool_vector_actual)
         """
-        return self.feedback_data()
-
-
-# ---------------------------------------------------------------------------
-# Deprecated class alias — preserved for backward compatibility.
-# ---------------------------------------------------------------------------
-DobotApiFeedBack = DobotApiFeedback  # deprecated: use DobotApiFeedback
+        raw = self.raw_feedback_data()
+        if raw is None:
+            return None
+        return FeedbackData.from_numpy(raw)

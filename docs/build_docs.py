@@ -11,12 +11,15 @@ from __future__ import annotations
 import argparse
 import shutil
 import subprocess
+import sys
 from pathlib import Path
+
+_SHELL = sys.platform == "win32"
 
 
 def run_command(command: list[str], cwd: Path) -> None:
     """Run a shell command and fail fast on error."""
-    subprocess.run(command, cwd=str(cwd), check=True)
+    subprocess.run(command, cwd=str(cwd), check=True, shell=_SHELL)
 
 
 def sync_markdown(api_source_dir: Path, api_target_dir: Path) -> None:
@@ -38,6 +41,8 @@ def build_api_docs(project_root: Path) -> None:
 
     run_command(
         [
+            "uv",
+            "run",
             "sphinx-build",
             "-b",
             "markdown",

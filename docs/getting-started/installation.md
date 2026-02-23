@@ -7,13 +7,22 @@
 
 ## Install
 
-```bash
-pip install -e .
+```powershell
+uv venv
+uv pip install -e .
 ```
 
-## Optional dependencies
+## Development dependencies
 
-```bash
-pip install -e .[dev]
-pip install -e .[docs]
+```powershell
+uv pip install -e .[dev]
 ```
+
+## Documentation dependencies
+
+```powershell
+uv pip install -e .[docs]
+```
+
+> **Note:** Always use `uv` for environment and package management.
+> Do not use bare `pip install` or `python -m venv`.

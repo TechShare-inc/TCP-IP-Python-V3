@@ -2,6 +2,687 @@
 
 Dobot API (modular V4-style architecture for V3 protocol semantics).
 
+### *class* dobot_api_v3.DobotRobot(ip, \*, language='en')
+
+Bases: `object`
+
+Unified high-level interface for Dobot V3 robots.
+
+This class manages the dashboard (port 29999) and move (port 30003)
+connections immediately on construction.  Feedback connections on ports
+30004, 30005, and 30006 are created lazily on first access through the
+corresponding properties.
+
+The individual component objects remain accessible as public attributes
+(`robot.dashboard`, `robot.move`, etc.) so that the full API surface
+of each subsystem is always reachable.
+
+* **Parameters:**
+  * **ip** (*str*) – Robot controller IP address.
+  * **language** (*str*) – Default language for alarm messages (`"en"` or
+    `"zh_CN"`).
+
+### Example
+
+```
+>>> with DobotRobot("192.168.5.1") as robot:
+...     robot.startup(speed=40)
+...     robot.mov_j(200, 0, 200, 0, 0, 0)
+...     robot.sync()
+...     robot.shutdown()
+```
+
+#### \_\_init_\_(ip, \*, language='en')
+
+Initialize dashboard and move connections.
+
+* **Parameters:**
+  * **ip** (*str*) – Robot controller IP address.
+  * **language** (*str*) – Default alarm language for the error monitor.
+* **Raises:**
+  **ConnectionError** – If any eager socket connection fails.
+* **Return type:**
+  None
+
+#### *property* feedback *: [DobotApiFeedback](#dobot_api_v3.feedback.DobotApiFeedback)*
+
+Primary feedback connection (port 30004), created on first access.
+
+* **Returns:**
+  A connected `DobotApiFeedback` instance.
+
+#### *property* feedback_30005 *: [DobotApiFeedback](#dobot_api_v3.feedback.DobotApiFeedback)*
+
+Secondary feedback connection (port 30005), created on first access.
+
+Port 30005 provides feedback at a different query frequency than the
+primary port 30004.
+
+* **Returns:**
+  A connected `DobotApiFeedback` instance.
+
+#### *property* feedback_30006 *: [DobotApiFeedback](#dobot_api_v3.feedback.DobotApiFeedback)*
+
+Tertiary feedback connection (port 30006), created on first access.
+
+Port 30006 provides feedback at a different query frequency than the
+primary port 30004.
+
+* **Returns:**
+  A connected `DobotApiFeedback` instance.
+
+#### startup(speed=40, load=0.0, center_x=0.0, center_y=0.0, center_z=0.0, \*, power_on_wait=15.0)
+
+Perform the standard robot startup sequence.
+
+First checks for controller errors.  If errors are present the
+sequence is `clear_error → power_on → wait → disable_robot →
+enable_robot → speed_factor`.  If no errors are detected,
+`clear_error` and `power_on` (and the associated wait) are
+skipped and the sequence continues directly with
+`disable_robot → enable_robot → speed_factor`.
+
+* **Parameters:**
+  * **speed** (*int*) – Global speed factor (1-100) applied after enable.
+  * **load** (*float*) – Payload weight forwarded to `enable_robot()`.
+  * **center_x** (*float*) – Payload center X offset forwarded to
+    `enable_robot()`.
+  * **center_y** (*float*) – Payload center Y offset forwarded to
+    `enable_robot()`.
+  * **center_z** (*float*) – Payload center Z offset forwarded to
+    `enable_robot()`.
+  * **power_on_wait** (*float*) – Seconds to sleep after `power_on()` before
+    continuing (default `15`).  Only used when errors are
+    detected and `power_on` is called.
+* **Return type:**
+  None
+
+### Example
+
+```python
+>>> robot.startup(speed=50, load=1.0, center_z=0.05)
+```
+
+#### shutdown()
+
+Disable the robot arm (graceful stop).
+
+Does **not** close TCP connections — call `close()` separately
+when finished, or rely on `__exit__` when using as a context manager.
+
+### Example
+
+```python
+>>> robot.shutdown()
+```
+
+* **Return type:**
+  None
+
+#### close()
+
+Close all open TCP connections.
+
+It is safe to call this method more than once.  Connections that have
+not been opened (e.g. unrequested feedback ports) are silently skipped.
+
+### Example
+
+```python
+>>> robot.close()
+```
+
+* **Return type:**
+  None
+
+#### reconnect()
+
+Reconnect all currently-open TCP sockets.
+
+Opens new sockets for dashboard and move (always), and for whichever
+feedback ports were previously opened.
+
+* **Raises:**
+  **ConnectionError** – If any reconnection attempt fails.
+* **Return type:**
+  None
+
+### Example
+
+```python
+>>> robot.reconnect()
+```
+
+#### check_errors(language='en')
+
+Query and log all current alarms.
+
+* **Parameters:**
+  **language** (*str*) – Alarm translation language.
+* **Returns:**
+  `True` if alarms are present, otherwise `False`.
+* **Return type:**
+  bool
+
+### Example
+
+```python
+>>> has_errors = robot.check_errors(language="en")
+```
+
+#### clear_and_recover(language='en')
+
+Display current alarm details then send a clear command.
+
+* **Parameters:**
+  **language** (*str*) – Alarm translation language.
+* **Returns:**
+  `True` if errors were found and a clear command was sent,
+  otherwise `False`.
+* **Return type:**
+  bool
+
+### Example
+
+```python
+>>> robot.clear_and_recover(language="en")
+```
+
+#### feedback_data()
+
+Read one feedback frame from the primary feedback port (30004).
+
+Opens the feedback connection lazily on the first call.  Returns a
+typed `FeedbackData` for full IDE autocompletion.
+For zero-copy NumPy access use `raw_feedback_data()` instead.
+
+* **Returns:**
+  A `FeedbackData` instance when a valid
+  1440-byte frame is parsed, otherwise `None`.
+* **Return type:**
+  [*FeedbackData*](#dobot_api_v3.base.FeedbackData) | None
+
+### Example
+
+```python
+>>> data = robot.feedback_data()
+>>> if data is not None:
+...     print(data.tool_vector_actual)
+...     print(data.robot_mode)
+```
+
+#### raw_feedback_data()
+
+Read one feedback frame and return the raw NumPy structured array.
+
+Opens the feedback connection lazily on the first call.  Use this
+method for NumPy-native numeric pipelines; for typed access prefer
+`feedback_data()`.
+
+* **Returns:**
+  A NumPy structured array of length 1 (`dtype=FeedbackDtype`)
+  when a valid 1440-byte frame is parsed, otherwise `None`.
+* **Return type:**
+  *ndarray* | None
+
+### Example
+
+```python
+>>> raw = robot.raw_feedback_data()
+>>> if raw is not None:
+...     print(raw[0]["tool_vector_actual"])
+```
+
+#### enable_robot(load=0.0, center_x=0.0, center_y=0.0, center_z=0.0)
+
+Enable the robot with optional payload parameters.
+
+Delegates to `enable_robot()`.
+
+* **Parameters:**
+  * **load** (*float*) – Payload weight.
+  * **center_x** (*float*) – Payload center offset on X axis.
+  * **center_y** (*float*) – Payload center offset on Y axis.
+  * **center_z** (*float*) – Payload center offset on Z axis.
+* **Returns:**
+  `AckResponse` on success.
+* **Raises:**
+  **DobotApiError** – If the controller returns a non-zero error code.
+* **Return type:**
+  *AckResponse*
+
+#### disable_robot()
+
+Disable the robot arm.
+
+Delegates to `disable_robot()`.
+
+* **Returns:**
+  `AckResponse` on success.
+* **Raises:**
+  **DobotApiError** – If the controller returns a non-zero error code.
+* **Return type:**
+  *AckResponse*
+
+#### clear_error()
+
+Clear controller alarm information.
+
+Delegates to `clear_error()`.
+
+* **Returns:**
+  `AckResponse` on success.
+* **Raises:**
+  **DobotApiError** – If the controller returns a non-zero error code.
+* **Return type:**
+  *AckResponse*
+
+#### reset_robot()
+
+Stop the robot.
+
+Delegates to `reset_robot()`.
+
+* **Returns:**
+  `AckResponse` on success.
+* **Raises:**
+  **DobotApiError** – If the controller returns a non-zero error code.
+* **Return type:**
+  *AckResponse*
+
+#### power_on()
+
+Power on the controller.
+
+Delegates to `power_on()`.
+
+* **Returns:**
+  `AckResponse` on success.
+* **Raises:**
+  **DobotApiError** – If the controller returns a non-zero error code.
+* **Return type:**
+  *AckResponse*
+
+#### emergency_stop()
+
+Trigger an emergency stop.
+
+Delegates to `emergency_stop()`.
+
+* **Returns:**
+  `AckResponse` on success.
+* **Raises:**
+  **DobotApiError** – If the controller returns a non-zero error code.
+* **Return type:**
+  *AckResponse*
+
+#### speed_factor(speed)
+
+Set global speed factor.
+
+Delegates to `speed_factor()`.
+
+* **Parameters:**
+  **speed** (*int*) – Rate value in range 1-100.
+* **Returns:**
+  `AckResponse` on success.
+* **Raises:**
+  **DobotApiError** – If the controller returns a non-zero error code.
+* **Return type:**
+  *AckResponse*
+
+#### robot_mode()
+
+Query the robot operating mode.
+
+Delegates to `robot_mode()`.
+
+* **Returns:**
+  `IntResponse` with `value` set to the
+  current mode code (e.g. 5 = idle, 7 = running).
+* **Raises:**
+  **DobotApiError** – If the controller returns a non-zero error code.
+* **Return type:**
+  *IntResponse*
+
+#### get_pose()
+
+Get current Cartesian pose.
+
+Delegates to `get_pose()`.
+
+* **Returns:**
+  `PoseResponse` with `x`, `y`, `z`,
+  `rx`, `ry`, `rz` fields populated in mm / degrees.
+* **Raises:**
+  **DobotApiError** – If the controller returns a non-zero error code.
+* **Return type:**
+  *PoseResponse*
+
+#### get_angle()
+
+Get current joint angles.
+
+Delegates to `get_angle()`.
+
+* **Returns:**
+  `PoseResponse` with `x`-`rz` fields
+  mapping to joint angles J1-J6 in degrees.
+* **Raises:**
+  **DobotApiError** – If the controller returns a non-zero error code.
+* **Return type:**
+  *PoseResponse*
+
+#### get_error_id()
+
+Get current error IDs from the controller.
+
+Delegates to `get_error_id()`.
+
+* **Returns:**
+  `ErrorIdResponse` with `error_ids` tuple
+  of active non-zero alarm codes.
+* **Raises:**
+  **DobotApiError** – If the controller returns a non-zero error code.
+* **Return type:**
+  *ErrorIdResponse*
+
+#### start_drag()
+
+Enable drag (teach) mode.
+
+Delegates to `start_drag()`.
+
+* **Returns:**
+  `AckResponse` on success.
+* **Raises:**
+  **DobotApiError** – If the controller returns a non-zero error code.
+* **Return type:**
+  *AckResponse*
+
+#### stop_drag()
+
+Disable drag (teach) mode.
+
+Delegates to `stop_drag()`.
+
+* **Returns:**
+  `AckResponse` on success.
+* **Raises:**
+  **DobotApiError** – If the controller returns a non-zero error code.
+* **Return type:**
+  *AckResponse*
+
+#### set_user(index)
+
+Select the calibrated user coordinate system.
+
+Delegates to `set_user()`.
+
+* **Parameters:**
+  **index** (*int*) – Calibrated user coordinate index.
+* **Returns:**
+  `AckResponse` on success.
+* **Raises:**
+  **DobotApiError** – If the controller returns a non-zero error code.
+* **Return type:**
+  *AckResponse*
+
+#### set_tool(index)
+
+Select the calibrated tool coordinate system.
+
+Delegates to `set_tool()`.
+
+* **Parameters:**
+  **index** (*int*) – Calibrated tool coordinate index.
+* **Returns:**
+  `AckResponse` on success.
+* **Raises:**
+  **DobotApiError** – If the controller returns a non-zero error code.
+* **Return type:**
+  *AckResponse*
+
+#### mov_j(x, y, z, rx, ry, rz, \*dyn_params)
+
+Joint motion interface (point-to-point motion mode).
+
+Delegates to `mov_j()`.
+
+* **Parameters:**
+  * **x** (*float*) – Target X coordinate.
+  * **y** (*float*) – Target Y coordinate.
+  * **z** (*float*) – Target Z coordinate.
+  * **rx** (*float*) – Target RX rotation.
+  * **ry** (*float*) – Target RY rotation.
+  * **rz** (*float*) – Target RZ rotation.
+  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
+* **Returns:**
+  `AckResponse` on success.
+* **Raises:**
+  **DobotApiError** – If the controller returns a non-zero error code.
+* **Return type:**
+  *AckResponse*
+
+### Example
+
+```python
+>>> robot.mov_j(200, 0, 200, 0, 0, 0)
+>>> robot.mov_j(220, 20, 180, 0, 0, 0, "SpeedJ=40", "AccJ=40")
+```
+
+#### mov_l(x, y, z, rx, ry, rz, \*dyn_params)
+
+Linear motion interface.
+
+Delegates to `mov_l()`.
+
+* **Parameters:**
+  * **x** (*float*) – Target X coordinate.
+  * **y** (*float*) – Target Y coordinate.
+  * **z** (*float*) – Target Z coordinate.
+  * **rx** (*float*) – Target RX rotation.
+  * **ry** (*float*) – Target RY rotation.
+  * **rz** (*float*) – Target RZ rotation.
+  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
+* **Returns:**
+  `AckResponse` on success.
+* **Raises:**
+  **DobotApiError** – If the controller returns a non-zero error code.
+* **Return type:**
+  *AckResponse*
+
+### Example
+
+```python
+>>> robot.mov_l(250, 0, 180, 0, 0, 0)
+```
+
+#### joint_mov_j(j1, j2, j3, j4, j5, j6, \*dyn_params)
+
+Joint motion interface (joint target).
+
+Delegates to `joint_mov_j()`.
+
+* **Parameters:**
+  * **j1** (*float*) – Target joint 1 angle.
+  * **j2** (*float*) – Target joint 2 angle.
+  * **j3** (*float*) – Target joint 3 angle.
+  * **j4** (*float*) – Target joint 4 angle.
+  * **j5** (*float*) – Target joint 5 angle.
+  * **j6** (*float*) – Target joint 6 angle.
+  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
+* **Returns:**
+  `AckResponse` on success.
+* **Raises:**
+  **DobotApiError** – If the controller returns a non-zero error code.
+* **Return type:**
+  *AckResponse*
+
+### Example
+
+```python
+>>> robot.joint_mov_j(-11.53, 4.64, 87.16, -2.84, -77.71, 0.01)
+```
+
+#### rel_mov_j(offset1, offset2, offset3, offset4, offset5, offset6, \*dyn_params)
+
+Relative joint offset motion (point-to-point mode).
+
+Delegates to `rel_mov_j()`.
+
+* **Parameters:**
+  * **offset1** (*float*) – Joint 1 offset.
+  * **offset2** (*float*) – Joint 2 offset.
+  * **offset3** (*float*) – Joint 3 offset.
+  * **offset4** (*float*) – Joint 4 offset.
+  * **offset5** (*float*) – Joint 5 offset.
+  * **offset6** (*float*) – Joint 6 offset.
+  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
+* **Returns:**
+  `AckResponse` on success.
+* **Raises:**
+  **DobotApiError** – If the controller returns a non-zero error code.
+* **Return type:**
+  *AckResponse*
+
+### Example
+
+```python
+>>> robot.rel_mov_j(15, 0, 0, 0, 0, 0)
+```
+
+#### rel_mov_l(offset_x, offset_y, offset_z, \*dyn_params)
+
+Relative Cartesian offset motion (linear mode).
+
+Delegates to `rel_mov_l()`.
+
+* **Parameters:**
+  * **offset_x** (*float*) – X-axis offset.
+  * **offset_y** (*float*) – Y-axis offset.
+  * **offset_z** (*float*) – Z-axis offset.
+  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
+* **Returns:**
+  `AckResponse` on success.
+* **Raises:**
+  **DobotApiError** – If the controller returns a non-zero error code.
+* **Return type:**
+  *AckResponse*
+
+#### arc(x1, y1, z1, a1, b1, c1, x2, y2, z2, a2, b2, c2, \*dyn_params)
+
+Circular motion through an intermediate point.
+
+Delegates to `arc()`.
+
+* **Parameters:**
+  * **x1** (*float*) – Intermediate point X.
+  * **y1** (*float*) – Intermediate point Y.
+  * **z1** (*float*) – Intermediate point Z.
+  * **a1** (*float*) – Intermediate point A.
+  * **b1** (*float*) – Intermediate point B.
+  * **c1** (*float*) – Intermediate point C.
+  * **x2** (*float*) – End point X.
+  * **y2** (*float*) – End point Y.
+  * **z2** (*float*) – End point Z.
+  * **a2** (*float*) – End point A.
+  * **b2** (*float*) – End point B.
+  * **c2** (*float*) – End point C.
+  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
+* **Returns:**
+  `AckResponse` on success.
+* **Raises:**
+  **DobotApiError** – If the controller returns a non-zero error code.
+* **Return type:**
+  *AckResponse*
+
+#### servo_j(j1, j2, j3, j4, j5, j6, t=0.1, lookahead_time=50.0, gain=500.0)
+
+Dynamic following in joint space.
+
+Delegates to `servo_j()`.
+
+* **Parameters:**
+  * **j1** (*float*) – Target joint 1 angle.
+  * **j2** (*float*) – Target joint 2 angle.
+  * **j3** (*float*) – Target joint 3 angle.
+  * **j4** (*float*) – Target joint 4 angle.
+  * **j5** (*float*) – Target joint 5 angle.
+  * **j6** (*float*) – Target joint 6 angle.
+  * **t** (*float*) – Point run time in seconds.
+  * **lookahead_time** (*float*) – Feed-forward smoothing parameter.
+  * **gain** (*float*) – Servo gain parameter.
+* **Returns:**
+  `AckResponse` on success.
+* **Raises:**
+  **DobotApiError** – If the controller returns a non-zero error code.
+* **Return type:**
+  *AckResponse*
+
+#### servo_p(x, y, z, a, b, c)
+
+Dynamic following in Cartesian space.
+
+Delegates to `servo_p()`.
+
+* **Parameters:**
+  * **x** (*float*) – Target X coordinate.
+  * **y** (*float*) – Target Y coordinate.
+  * **z** (*float*) – Target Z coordinate.
+  * **a** (*float*) – Target A rotation.
+  * **b** (*float*) – Target B rotation.
+  * **c** (*float*) – Target C rotation.
+* **Returns:**
+  `AckResponse` on success.
+* **Raises:**
+  **DobotApiError** – If the controller returns a non-zero error code.
+* **Return type:**
+  *AckResponse*
+
+#### move_jog(axis_id, \*dyn_params)
+
+Jog motion along a single axis.
+
+Delegates to `move_jog()`.
+
+* **Parameters:**
+  * **axis_id** (*str*) – Axis command such as `"J1+"` or `"X-"`.
+  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional jog parameters `(coord_type, user, tool)`.
+* **Returns:**
+  `AckResponse` on success.
+* **Raises:**
+  **DobotApiError** – If the controller returns a non-zero error code.
+* **Return type:**
+  *AckResponse*
+
+### Example
+
+```python
+>>> robot.move_jog("J1+")
+>>> robot.move_jog("")  # stop jog
+```
+
+#### sync()
+
+Block until all queued motion commands complete.
+
+Delegates to `sync()`.
+
+* **Returns:**
+  `AckResponse` on success.
+* **Raises:**
+  **DobotApiError** – If the controller returns a non-zero error code.
+* **Return type:**
+  *AckResponse*
+
+### Example
+
+```python
+>>> robot.mov_j(200, 0, 200, 0, 0, 0)
+>>> robot.sync()
+```
+
 ### *class* dobot_api_v3.DobotApi(ip, port)
 
 Bases: `object`
@@ -121,7 +802,7 @@ Enable the robot with optional payload parameters.
 
 ### Example
 
-```pycon
+```python
 >>> dashboard.enable_robot()
 >>> dashboard.enable_robot(load=0.5, center_x=0.0, center_y=0.0, center_z=0.05)
 ```
@@ -144,7 +825,7 @@ Clear controller alarm information.
 
 ### Example
 
-```pycon
+```python
 >>> dashboard.clear_error()
 ```
 
@@ -168,7 +849,7 @@ Set global speed factor.
 
 ### Example
 
-```pycon
+```python
 >>> dashboard.speed_factor(40)
 ```
 
@@ -850,490 +1531,6 @@ Python keyword so the method is named `resume`.
 * **Return type:**
   str
 
-#### EnableRobot(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### DisableRobot()
-
-* **Return type:**
-  str
-
-#### ClearError()
-
-* **Return type:**
-  str
-
-#### ResetRobot()
-
-* **Return type:**
-  str
-
-#### SpeedFactor(speed)
-
-* **Parameters:**
-  **speed** (*int*)
-* **Return type:**
-  str
-
-#### User(index)
-
-* **Parameters:**
-  **index** (*int*)
-* **Return type:**
-  str
-
-#### Tool(index)
-
-* **Parameters:**
-  **index** (*int*)
-* **Return type:**
-  str
-
-#### RobotMode()
-
-* **Return type:**
-  str
-
-#### PayLoad(weight, inertia)
-
-* **Parameters:**
-  * **weight** (*float*)
-  * **inertia** (*float*)
-* **Return type:**
-  str
-
-#### DO(index, status)
-
-* **Parameters:**
-  * **index** (*int*)
-  * **status** (*int*)
-* **Return type:**
-  str
-
-#### DOExecute(index, status)
-
-* **Parameters:**
-  * **index** (*int*)
-  * **status** (*int*)
-* **Return type:**
-  str
-
-#### ToolDO(index, status)
-
-* **Parameters:**
-  * **index** (*int*)
-  * **status** (*int*)
-* **Return type:**
-  str
-
-#### ToolDOExecute(index, status)
-
-* **Parameters:**
-  * **index** (*int*)
-  * **status** (*int*)
-* **Return type:**
-  str
-
-#### AO(index, val)
-
-* **Parameters:**
-  * **index** (*int*)
-  * **val** (*float*)
-* **Return type:**
-  str
-
-#### AOExecute(index, val)
-
-* **Parameters:**
-  * **index** (*int*)
-  * **val** (*float*)
-* **Return type:**
-  str
-
-#### AccJ(speed)
-
-* **Parameters:**
-  **speed** (*int*)
-* **Return type:**
-  str
-
-#### AccL(speed)
-
-* **Parameters:**
-  **speed** (*int*)
-* **Return type:**
-  str
-
-#### SpeedJ(speed)
-
-* **Parameters:**
-  **speed** (*int*)
-* **Return type:**
-  str
-
-#### SpeedL(speed)
-
-* **Parameters:**
-  **speed** (*int*)
-* **Return type:**
-  str
-
-#### VelJ(speed)
-
-* **Parameters:**
-  **speed** (*int*)
-* **Return type:**
-  str
-
-#### VelL(speed)
-
-* **Parameters:**
-  **speed** (*int*)
-* **Return type:**
-  str
-
-#### Arch(index)
-
-* **Parameters:**
-  **index** (*int*)
-* **Return type:**
-  str
-
-#### CP(ratio)
-
-* **Parameters:**
-  **ratio** (*int*)
-* **Return type:**
-  str
-
-#### LimZ(value)
-
-* **Parameters:**
-  **value** (*int*)
-* **Return type:**
-  str
-
-#### SetArmOrientation(r, d, n, cfg)
-
-* **Parameters:**
-  * **r** (*int*)
-  * **d** (*int*)
-  * **n** (*int*)
-  * **cfg** (*int*)
-* **Return type:**
-  str
-
-#### PowerOn()
-
-* **Return type:**
-  str
-
-#### RunScript(project_name)
-
-* **Parameters:**
-  **project_name** (*str*)
-* **Return type:**
-  str
-
-#### StopScript()
-
-* **Return type:**
-  str
-
-#### PauseScript()
-
-* **Return type:**
-  str
-
-#### ContinueScript()
-
-* **Return type:**
-  str
-
-#### GetHoldRegs(id, addr, count, type_)
-
-* **Parameters:**
-  * **id** (*int*)
-  * **addr** (*int*)
-  * **count** (*int*)
-  * **type_** (*str*)
-* **Return type:**
-  str
-
-#### SetHoldRegs(id, addr, count, table, type_=None)
-
-* **Parameters:**
-  * **id** (*int*)
-  * **addr** (*int*)
-  * **count** (*int*)
-  * **table** (*str*)
-  * **type_** (*str* *|* *None*)
-* **Return type:**
-  str
-
-#### GetErrorID()
-
-* **Return type:**
-  str
-
-#### SetPayload(offset1, \*dyn_params)
-
-* **Parameters:**
-  * **offset1** (*float*)
-  * **dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*)
-* **Return type:**
-  str
-
-#### PositiveSolution(offset1, offset2, offset3, offset4, offset5, offset6, user, tool)
-
-* **Parameters:**
-  * **offset1** (*float*)
-  * **offset2** (*float*)
-  * **offset3** (*float*)
-  * **offset4** (*float*)
-  * **offset5** (*float*)
-  * **offset6** (*float*)
-  * **user** (*int*)
-  * **tool** (*int*)
-* **Return type:**
-  str
-
-#### InverseSolution(offset1, offset2, offset3, offset4, offset5, offset6, user, tool, \*dyn_params)
-
-* **Parameters:**
-  * **offset1** (*float*)
-  * **offset2** (*float*)
-  * **offset3** (*float*)
-  * **offset4** (*float*)
-  * **offset5** (*float*)
-  * **offset6** (*float*)
-  * **user** (*int*)
-  * **tool** (*int*)
-  * **dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*)
-* **Return type:**
-  str
-
-#### SetCollisionLevel(offset1)
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### GetAngle()
-
-* **Return type:**
-  str
-
-#### GetPose()
-
-* **Return type:**
-  str
-
-#### EmergencyStop()
-
-* **Return type:**
-  str
-
-#### ModbusCreate(ip, port, slave_id, isRTU)
-
-* **Parameters:**
-  * **ip** (*str*)
-  * **port** (*int*)
-  * **slave_id** (*int*)
-  * **isRTU** (*int*)
-* **Return type:**
-  str
-
-#### ModbusClose(offset1)
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### SetSafeSkin(offset1)
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### SetObstacleAvoid(offset1)
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### GetTraceStartPose(offset1)
-
-* **Parameters:**
-  **offset1** (*str*)
-* **Return type:**
-  str
-
-#### GetPathStartPose(offset1)
-
-* **Parameters:**
-  **offset1** (*str*)
-* **Return type:**
-  str
-
-#### HandleTrajPoints(offset1)
-
-* **Parameters:**
-  **offset1** (*str*)
-* **Return type:**
-  str
-
-#### GetSixForceData()
-
-* **Return type:**
-  str
-
-#### SetCollideDrag(offset1)
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### SetTerminalKeys(offset1)
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### SetTerminal485(offset1, offset2, offset3, offset4)
-
-* **Parameters:**
-  * **offset1** (*int*)
-  * **offset2** (*int*)
-  * **offset3** (*str*)
-  * **offset4** (*int*)
-* **Return type:**
-  str
-
-#### GetTerminal485()
-
-* **Return type:**
-  str
-
-#### TCPSpeed(offset1)
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### TCPSpeedEnd()
-
-* **Return type:**
-  str
-
-#### GetInBits(offset1, offset2, offset3)
-
-* **Parameters:**
-  * **offset1** (*int*)
-  * **offset2** (*int*)
-  * **offset3** (*int*)
-* **Return type:**
-  str
-
-#### GetInRegs(offset1, offset2, offset3, \*dyn_params)
-
-* **Parameters:**
-  * **offset1** (*int*)
-  * **offset2** (*int*)
-  * **offset3** (*int*)
-  * **dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*)
-* **Return type:**
-  str
-
-#### GetCoils(offset1, offset2, offset3)
-
-* **Parameters:**
-  * **offset1** (*int*)
-  * **offset2** (*int*)
-  * **offset3** (*int*)
-* **Return type:**
-  str
-
-#### SetCoils(offset1, offset2, offset3, offset4)
-
-* **Parameters:**
-  * **offset1** (*int*)
-  * **offset2** (*int*)
-  * **offset3** (*int*)
-  * **offset4** (*int*)
-* **Return type:**
-  str
-
-#### DI(offset1)
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### ToolDI(offset1)
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### DOGroup(\*dyn_params)
-
-* **Parameters:**
-  **dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*)
-* **Return type:**
-  str
-
-#### BrakeControl(offset1, offset2)
-
-* **Parameters:**
-  * **offset1** (*int*)
-  * **offset2** (*int*)
-* **Return type:**
-  str
-
-#### StartDrag()
-
-* **Return type:**
-  str
-
-#### StopDrag()
-
-* **Return type:**
-  str
-
-#### LoadSwitch(offset1)
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### Continue()
-
-* **Return type:**
-  str
-
-#### Pause()
-
-* **Return type:**
-  str
-
-#### Stop()
-
-* **Return type:**
-  str
-
 ### *class* dobot_api_v3.DobotApiMove(ip, port)
 
 Bases: [`DobotApi`](#dobot_api_v3.base.DobotApi)
@@ -1366,7 +1563,7 @@ Joint motion interface (point-to-point motion mode).
 
 ### Example
 
-```pycon
+```python
 >>> move.mov_j(200, 0, 200, 0, 0, 0)
 >>> move.mov_j(220, 20, 180, 0, 0, 0, "SpeedJ=40", "AccJ=40")
 ```
@@ -1390,7 +1587,7 @@ Linear motion interface.
 
 ### Example
 
-```pycon
+```python
 >>> move.mov_l(250, 0, 180, 0, 0, 0)
 >>> move.mov_l(250, 30, 180, 0, 0, 0, "SpeedL=30", "AccL=30")
 ```
@@ -1598,7 +1795,7 @@ Jog motion along a single axis.
 
 ### Example
 
-```pycon
+```python
 >>> move.move_jog("J1+")
 >>> move.move_jog("")
 ```
@@ -1649,7 +1846,7 @@ Block until all queued commands have been executed.
 
 ### Example
 
-```pycon
+```python
 >>> move.mov_j(200, 0, 200, 0, 0, 0)
 >>> move.mov_l(220, 20, 180, 0, 0, 0)
 >>> move.sync()
@@ -1744,134 +1941,6 @@ Relative motion along each joint axis (joint motion mode).
 * **Return type:**
   str
 
-#### MovJ(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### MovL(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### JointMovJ(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### Jump()
-
-* **Return type:**
-  None
-
-#### RelMovJ(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### RelMovL(offsetX, offsetY, offsetZ, \*dyn_params)
-
-* **Parameters:**
-  * **offsetX** (*float*)
-  * **offsetY** (*float*)
-  * **offsetZ** (*float*)
-  * **dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*)
-* **Return type:**
-  str
-
-#### MovLIO(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### MovJIO(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### Arc(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### Circle3(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### ServoJ(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### ServoJS(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### ServoP(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### MoveJog(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### StartTrace(trace_name)
-
-* **Parameters:**
-  **trace_name** (*str*)
-* **Return type:**
-  str
-
-#### StartPath(trace_name, const, cart)
-
-* **Parameters:**
-  * **trace_name** (*str*)
-  * **const** (*int*)
-  * **cart** (*int*)
-* **Return type:**
-  str
-
-#### StartFCTrace(trace_name)
-
-* **Parameters:**
-  **trace_name** (*str*)
-* **Return type:**
-  str
-
-#### Sync()
-
-* **Return type:**
-  str
-
-#### RelMovJTool(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### RelMovLTool(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### RelMovJUser(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### RelMovLUser(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### RelJointMovJ(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
 ### *class* dobot_api_v3.DobotApiFeedback(ip, port)
 
 Bases: [`DobotApi`](#dobot_api_v3.base.DobotApi)
@@ -1895,27 +1964,51 @@ Initialize the feedback socket client.
 * **Return type:**
   None
 
-#### feedback_data()
+#### raw_feedback_data()
 
-Read one feedback frame and parse it with `FeedbackDtype`.
+Read one feedback frame and return the raw NumPy structured array.
+
+Use this method when you need zero-copy NumPy access to the packet
+fields (e.g., for numeric pipelines or direct array slicing).  For
+typed, IDE-friendly access prefer `feedback_data()` instead.
 
 * **Returns:**
-  A NumPy structured array of length 1 when a valid 1440-byte frame
-  is parsed, otherwise `None`.
+  A NumPy structured array of length 1 (`dtype=FeedbackDtype`)
+  when a valid 1440-byte frame is parsed, otherwise `None`.
 * **Raises:**
   * **RuntimeError** – If the socket is not connected.
   * **RuntimeError** – If repeated short reads indicate packet loss.
 * **Return type:**
   *ndarray* | None
 
-#### feedBackData()
+#### feedback_data()
 
-Deprecated alias for `feedback_data()`.
+Read one feedback frame and return a typed `FeedbackData`.
+
+Internally calls `raw_feedback_data()` and converts the result to
+an immutable `FeedbackData` dataclass for full
+IDE autocompletion and type-checker support.
+
+For zero-copy NumPy access (e.g., numeric pipelines) use
+`raw_feedback_data()` directly.
 
 * **Returns:**
-  Same value as `feedback_data()`.
+  A `FeedbackData` instance when a valid
+  1440-byte frame is parsed, otherwise `None`.
+* **Raises:**
+  * **RuntimeError** – If the socket is not connected.
+  * **RuntimeError** – If repeated short reads indicate packet loss.
 * **Return type:**
-  *ndarray* | None
+  [*FeedbackData*](#dobot_api_v3.base.FeedbackData) | None
+
+### Example
+
+```python
+>>> data = feedback.feedback_data()
+>>> if data is not None:
+...     print(data.robot_mode)
+...     print(data.tool_vector_actual)
+```
 
 ### *class* dobot_api_v3.RobotErrorMonitor(dashboard, \*, language='en')
 
@@ -1947,47 +2040,6 @@ Initialize the error monitor.
 * **Parameters:**
   * **dashboard** ([*DobotApiDashboard*](#dobot_api_v3.dashboard.DobotApiDashboard)) – Shared dashboard client used for alarm queries and clear.
   * **language** (*str*) – Default alarm translation language.
-* **Return type:**
-  None
-
-#### *classmethod* from_connection(robot_ip='192.168.200.1', dashboard_port=29999)
-
-Create a monitor by opening a new dashboard connection.
-
-* **Parameters:**
-  * **robot_ip** (*str*) – Robot controller IP address.
-  * **dashboard_port** (*int*) – Dashboard TCP port.
-* **Returns:**
-  New monitor instance bound to a newly created dashboard client.
-* **Return type:**
-  [*RobotErrorMonitor*](#dobot_api_v3.error_monitor.RobotErrorMonitor)
-
-#### Deprecated
-Deprecated since version Prefer: creating a `DobotApiDashboard`
-yourself and passing it to `RobotErrorMonitor` directly
-so that the same connection can be shared with other API objects.
-
-#### connect()
-
-No-op kept for backward compatibility.
-
-* **Returns:**
-  Always `True`.
-* **Return type:**
-  bool
-
-#### Deprecated
-Deprecated since version Lifecycle: is now the caller’s responsibility.  Manage the
-`DobotApiDashboard` connection yourself.
-
-#### disconnect()
-
-No-op kept for backward compatibility.
-
-#### Deprecated
-Deprecated since version Lifecycle: is now the caller’s responsibility.  Close the
-`DobotApiDashboard` yourself when done.
-
 * **Return type:**
   None
 
@@ -2046,6 +2098,807 @@ Clear robot errors after displaying them with details.
   otherwise `False`.
 * **Return type:**
   bool
+
+### *class* dobot_api_v3.FeedbackData(len, digital_input_bits, digital_output_bits, robot_mode, time_stamp, time_stamp_reserve_bit, test_value, test_value_keep_bit, speed_scaling, linear_momentum_norm, v_main, v_robot, i_robot, i_robot_keep_bit1, i_robot_keep_bit2, tool_accelerometer_values, elbow_position, elbow_velocity, q_target, qd_target, qdd_target, i_target, m_target, q_actual, qd_actual, i_actual, actual_tcp_force, tool_vector_actual, tcp_speed_actual, tcp_force, tool_vector_target, tcp_speed_target, motor_temperatures, joint_modes, v_actual, hand_type, user, tool, run_queued_cmd, pause_cmd_flag, velocity_ratio, acceleration_ratio, jerk_ratio, xyz_velocity_ratio, r_velocity_ratio, xyz_acceleration_ratio, r_acceleration_ratio, xyz_jerk_ratio, r_jerk_ratio, brake_status, enable_status, drag_status, running_status, error_status, jog_status, robot_type, drag_button_signal, enable_button_signal, record_button_signal, reappear_button_signal, jaw_button_signal, six_force_online, reserve2, m_actual, load, center_x, center_y, center_z, user_coords, tool_coords, trace_index, six_force_value, target_quaternion, actual_quaternion, reserve3)
+
+Bases: `object`
+
+Immutable snapshot of one decoded feedback packet (1440 bytes).
+
+All scalar fields are plain Python `int` or `float`.  Multi-element
+fields (joint arrays, vectors, quaternions, …) are `tuple[float, ...]`
+or `tuple[int, ...]`.  Because the dataclass is frozen, field values
+cannot be mutated after construction — treat each instance as a read-only
+timestamped snapshot.
+
+Use `from_numpy()` to construct a `FeedbackData` from the raw
+`np.ndarray` produced by `np.frombuffer(buf, dtype=FeedbackDtype)`.
+For direct NumPy access call `raw_feedback_data()` instead of
+`feedback_data()`.
+
+* **Parameters:**
+  * **len** (*int*)
+  * **digital_input_bits** (*int*)
+  * **digital_output_bits** (*int*)
+  * **robot_mode** (*int*)
+  * **time_stamp** (*int*)
+  * **time_stamp_reserve_bit** (*int*)
+  * **test_value** (*int*)
+  * **test_value_keep_bit** (*float*)
+  * **speed_scaling** (*float*)
+  * **linear_momentum_norm** (*float*)
+  * **v_main** (*float*)
+  * **v_robot** (*float*)
+  * **i_robot** (*float*)
+  * **i_robot_keep_bit1** (*float*)
+  * **i_robot_keep_bit2** (*float*)
+  * **tool_accelerometer_values** (*tuple* *[**float* *,*  *...* *]*)
+  * **elbow_position** (*tuple* *[**float* *,*  *...* *]*)
+  * **elbow_velocity** (*tuple* *[**float* *,*  *...* *]*)
+  * **q_target** (*tuple* *[**float* *,*  *...* *]*)
+  * **qd_target** (*tuple* *[**float* *,*  *...* *]*)
+  * **qdd_target** (*tuple* *[**float* *,*  *...* *]*)
+  * **i_target** (*tuple* *[**float* *,*  *...* *]*)
+  * **m_target** (*tuple* *[**float* *,*  *...* *]*)
+  * **q_actual** (*tuple* *[**float* *,*  *...* *]*)
+  * **qd_actual** (*tuple* *[**float* *,*  *...* *]*)
+  * **i_actual** (*tuple* *[**float* *,*  *...* *]*)
+  * **actual_tcp_force** (*tuple* *[**float* *,*  *...* *]*)
+  * **tool_vector_actual** (*tuple* *[**float* *,*  *...* *]*)
+  * **tcp_speed_actual** (*tuple* *[**float* *,*  *...* *]*)
+  * **tcp_force** (*tuple* *[**float* *,*  *...* *]*)
+  * **tool_vector_target** (*tuple* *[**float* *,*  *...* *]*)
+  * **tcp_speed_target** (*tuple* *[**float* *,*  *...* *]*)
+  * **motor_temperatures** (*tuple* *[**float* *,*  *...* *]*)
+  * **joint_modes** (*tuple* *[**float* *,*  *...* *]*)
+  * **v_actual** (*tuple* *[**float* *,*  *...* *]*)
+  * **hand_type** (*tuple* *[**int* *,*  *...* *]*)
+  * **user** (*int*)
+  * **tool** (*int*)
+  * **run_queued_cmd** (*int*)
+  * **pause_cmd_flag** (*int*)
+  * **velocity_ratio** (*int*)
+  * **acceleration_ratio** (*int*)
+  * **jerk_ratio** (*int*)
+  * **xyz_velocity_ratio** (*int*)
+  * **r_velocity_ratio** (*int*)
+  * **xyz_acceleration_ratio** (*int*)
+  * **r_acceleration_ratio** (*int*)
+  * **xyz_jerk_ratio** (*int*)
+  * **r_jerk_ratio** (*int*)
+  * **brake_status** (*int*)
+  * **enable_status** (*int*)
+  * **drag_status** (*int*)
+  * **running_status** (*int*)
+  * **error_status** (*int*)
+  * **jog_status** (*int*)
+  * **robot_type** (*int*)
+  * **drag_button_signal** (*int*)
+  * **enable_button_signal** (*int*)
+  * **record_button_signal** (*int*)
+  * **reappear_button_signal** (*int*)
+  * **jaw_button_signal** (*int*)
+  * **six_force_online** (*int*)
+  * **reserve2** (*tuple* *[**int* *,*  *...* *]*)
+  * **m_actual** (*tuple* *[**float* *,*  *...* *]*)
+  * **load** (*float*)
+  * **center_x** (*float*)
+  * **center_y** (*float*)
+  * **center_z** (*float*)
+  * **user_coords** (*tuple* *[**float* *,*  *...* *]*)
+  * **tool_coords** (*tuple* *[**float* *,*  *...* *]*)
+  * **trace_index** (*float*)
+  * **six_force_value** (*tuple* *[**float* *,*  *...* *]*)
+  * **target_quaternion** (*tuple* *[**float* *,*  *...* *]*)
+  * **actual_quaternion** (*tuple* *[**float* *,*  *...* *]*)
+  * **reserve3** (*tuple* *[**int* *,*  *...* *]*)
+
+#### len
+
+Total packet length in bytes.
+
+* **Type:**
+  int
+
+#### digital_input_bits
+
+Digital input bitmask.
+
+* **Type:**
+  int
+
+#### digital_output_bits
+
+Digital output bitmask.
+
+* **Type:**
+  int
+
+#### robot_mode
+
+Current robot mode code.
+
+* **Type:**
+  int
+
+#### time_stamp
+
+Controller timestamp.
+
+* **Type:**
+  int
+
+#### time_stamp_reserve_bit
+
+Reserved timestamp bits.
+
+* **Type:**
+  int
+
+#### test_value
+
+Internal test value.
+
+* **Type:**
+  int
+
+#### test_value_keep_bit
+
+Internal test keep bit.
+
+* **Type:**
+  float
+
+#### speed_scaling
+
+Global speed scaling factor (0-1).
+
+* **Type:**
+  float
+
+#### linear_momentum_norm
+
+Linear momentum magnitude.
+
+* **Type:**
+  float
+
+#### v_main
+
+Main voltage (V).
+
+* **Type:**
+  float
+
+#### v_robot
+
+Robot voltage (V).
+
+* **Type:**
+  float
+
+#### i_robot
+
+Robot current (A).
+
+* **Type:**
+  float
+
+#### i_robot_keep_bit1
+
+Reserved current field 1.
+
+* **Type:**
+  float
+
+#### i_robot_keep_bit2
+
+Reserved current field 2.
+
+* **Type:**
+  float
+
+#### tool_accelerometer_values
+
+Tool accelerometer XYZ (3 values).
+
+* **Type:**
+  tuple[float, …]
+
+#### elbow_position
+
+Elbow Cartesian position XYZ (3 values).
+
+* **Type:**
+  tuple[float, …]
+
+#### elbow_velocity
+
+Elbow Cartesian velocity XYZ (3 values).
+
+* **Type:**
+  tuple[float, …]
+
+#### q_target
+
+Target joint angles, radians (6 joints).
+
+* **Type:**
+  tuple[float, …]
+
+#### qd_target
+
+Target joint velocities, rad/s (6 joints).
+
+* **Type:**
+  tuple[float, …]
+
+#### qdd_target
+
+Target joint accelerations, rad/s² (6 joints).
+
+* **Type:**
+  tuple[float, …]
+
+#### i_target
+
+Target joint currents (6 joints).
+
+* **Type:**
+  tuple[float, …]
+
+#### m_target
+
+Target joint torques, N·m (6 joints).
+
+* **Type:**
+  tuple[float, …]
+
+#### q_actual
+
+Actual joint angles, radians (6 joints).
+
+* **Type:**
+  tuple[float, …]
+
+#### qd_actual
+
+Actual joint velocities, rad/s (6 joints).
+
+* **Type:**
+  tuple[float, …]
+
+#### i_actual
+
+Actual joint currents (6 joints).
+
+* **Type:**
+  tuple[float, …]
+
+#### actual_tcp_force
+
+Actual TCP force/torque (6 values).
+
+* **Type:**
+  tuple[float, …]
+
+#### tool_vector_actual
+
+Actual TCP pose [x, y, z, rx, ry, rz] (6 values).
+
+* **Type:**
+  tuple[float, …]
+
+#### tcp_speed_actual
+
+Actual TCP speed vector (6 values).
+
+* **Type:**
+  tuple[float, …]
+
+#### tcp_force
+
+TCP force/torque sensor reading (6 values).
+
+* **Type:**
+  tuple[float, …]
+
+#### tool_vector_target
+
+Target TCP pose (6 values).
+
+* **Type:**
+  tuple[float, …]
+
+#### tcp_speed_target
+
+Target TCP speed vector (6 values).
+
+* **Type:**
+  tuple[float, …]
+
+#### motor_temperatures
+
+Joint motor temperatures, °C (6 joints).
+
+* **Type:**
+  tuple[float, …]
+
+#### joint_modes
+
+Joint mode codes (6 joints).
+
+* **Type:**
+  tuple[float, …]
+
+#### v_actual
+
+Actual joint voltages (6 joints).
+
+* **Type:**
+  tuple[float, …]
+
+#### hand_type
+
+Hand type flags (4 bytes).
+
+* **Type:**
+  tuple[int, …]
+
+#### user
+
+Active user coordinate index.
+
+* **Type:**
+  int
+
+#### tool
+
+Active tool coordinate index.
+
+* **Type:**
+  int
+
+#### run_queued_cmd
+
+Whether queued command is running (1 = yes).
+
+* **Type:**
+  int
+
+#### pause_cmd_flag
+
+Pause command flag.
+
+* **Type:**
+  int
+
+#### velocity_ratio
+
+Joint velocity ratio (%).
+
+* **Type:**
+  int
+
+#### acceleration_ratio
+
+Joint acceleration ratio (%).
+
+* **Type:**
+  int
+
+#### jerk_ratio
+
+Joint jerk ratio (%).
+
+* **Type:**
+  int
+
+#### xyz_velocity_ratio
+
+Cartesian velocity ratio (%).
+
+* **Type:**
+  int
+
+#### r_velocity_ratio
+
+Rotational velocity ratio (%).
+
+* **Type:**
+  int
+
+#### xyz_acceleration_ratio
+
+Cartesian acceleration ratio (%).
+
+* **Type:**
+  int
+
+#### r_acceleration_ratio
+
+Rotational acceleration ratio (%).
+
+* **Type:**
+  int
+
+#### xyz_jerk_ratio
+
+Cartesian jerk ratio (%).
+
+* **Type:**
+  int
+
+#### r_jerk_ratio
+
+Rotational jerk ratio (%).
+
+* **Type:**
+  int
+
+#### brake_status
+
+Brake status bitmask.
+
+* **Type:**
+  int
+
+#### enable_status
+
+Robot enable status (1 = enabled).
+
+* **Type:**
+  int
+
+#### drag_status
+
+Drag mode status.
+
+* **Type:**
+  int
+
+#### running_status
+
+Motion running flag.
+
+* **Type:**
+  int
+
+#### error_status
+
+Error flag (non-zero = fault present).
+
+* **Type:**
+  int
+
+#### jog_status
+
+Jog mode status.
+
+* **Type:**
+  int
+
+#### robot_type
+
+Robot model type code.
+
+* **Type:**
+  int
+
+#### drag_button_signal
+
+Physical drag button signal.
+
+* **Type:**
+  int
+
+#### enable_button_signal
+
+Physical enable button signal.
+
+* **Type:**
+  int
+
+#### record_button_signal
+
+Physical record button signal.
+
+* **Type:**
+  int
+
+#### reappear_button_signal
+
+Physical reappear button signal.
+
+* **Type:**
+  int
+
+#### jaw_button_signal
+
+Jaw button signal.
+
+* **Type:**
+  int
+
+#### six_force_online
+
+Six-axis force sensor online flag.
+
+* **Type:**
+  int
+
+#### reserve2
+
+Reserved bytes (82 bytes).
+
+* **Type:**
+  tuple[int, …]
+
+#### m_actual
+
+Actual joint torques, N·m (6 joints).
+
+* **Type:**
+  tuple[float, …]
+
+#### load
+
+Payload mass, kg.
+
+* **Type:**
+  float
+
+#### center_x
+
+Payload centre-of-mass X offset, mm.
+
+* **Type:**
+  float
+
+#### center_y
+
+Payload centre-of-mass Y offset, mm.
+
+* **Type:**
+  float
+
+#### center_z
+
+Payload centre-of-mass Z offset, mm.
+
+* **Type:**
+  float
+
+#### user_coords
+
+Active user coordinate frame [x, y, z, rx, ry, rz].
+
+* **Type:**
+  tuple[float, …]
+
+#### tool_coords
+
+Active tool coordinate frame [x, y, z, rx, ry, rz].
+
+* **Type:**
+  tuple[float, …]
+
+#### trace_index
+
+Current trace index.
+
+* **Type:**
+  float
+
+#### six_force_value
+
+Six-axis force sensor readings (6 values).
+
+* **Type:**
+  tuple[float, …]
+
+#### target_quaternion
+
+Target TCP orientation quaternion [w, x, y, z].
+
+* **Type:**
+  tuple[float, …]
+
+#### actual_quaternion
+
+Actual TCP orientation quaternion [w, x, y, z].
+
+* **Type:**
+  tuple[float, …]
+
+#### reserve3
+
+Reserved bytes (24 bytes).
+
+* **Type:**
+  tuple[int, …]
+
+### Example
+
+```python
+>>> data = robot.feedback_data()
+>>> if data is not None:
+...     print(data.robot_mode)
+...     print(data.tool_vector_actual)
+...     print(data.enable_status)
+```
+
+#### len *: int*
+
+#### digital_input_bits *: int*
+
+#### digital_output_bits *: int*
+
+#### robot_mode *: int*
+
+#### time_stamp *: int*
+
+#### time_stamp_reserve_bit *: int*
+
+#### test_value *: int*
+
+#### test_value_keep_bit *: float*
+
+#### speed_scaling *: float*
+
+#### linear_momentum_norm *: float*
+
+#### v_main *: float*
+
+#### v_robot *: float*
+
+#### i_robot *: float*
+
+#### i_robot_keep_bit1 *: float*
+
+#### i_robot_keep_bit2 *: float*
+
+#### tool_accelerometer_values *: tuple[float, ...]*
+
+#### elbow_position *: tuple[float, ...]*
+
+#### elbow_velocity *: tuple[float, ...]*
+
+#### q_target *: tuple[float, ...]*
+
+#### qd_target *: tuple[float, ...]*
+
+#### qdd_target *: tuple[float, ...]*
+
+#### i_target *: tuple[float, ...]*
+
+#### m_target *: tuple[float, ...]*
+
+#### q_actual *: tuple[float, ...]*
+
+#### qd_actual *: tuple[float, ...]*
+
+#### i_actual *: tuple[float, ...]*
+
+#### actual_tcp_force *: tuple[float, ...]*
+
+#### tool_vector_actual *: tuple[float, ...]*
+
+#### tcp_speed_actual *: tuple[float, ...]*
+
+#### tcp_force *: tuple[float, ...]*
+
+#### tool_vector_target *: tuple[float, ...]*
+
+#### tcp_speed_target *: tuple[float, ...]*
+
+#### motor_temperatures *: tuple[float, ...]*
+
+#### joint_modes *: tuple[float, ...]*
+
+#### v_actual *: tuple[float, ...]*
+
+#### hand_type *: tuple[int, ...]*
+
+#### user *: int*
+
+#### tool *: int*
+
+#### run_queued_cmd *: int*
+
+#### pause_cmd_flag *: int*
+
+#### velocity_ratio *: int*
+
+#### acceleration_ratio *: int*
+
+#### jerk_ratio *: int*
+
+#### xyz_velocity_ratio *: int*
+
+#### r_velocity_ratio *: int*
+
+#### xyz_acceleration_ratio *: int*
+
+#### r_acceleration_ratio *: int*
+
+#### xyz_jerk_ratio *: int*
+
+#### r_jerk_ratio *: int*
+
+#### brake_status *: int*
+
+#### enable_status *: int*
+
+#### drag_status *: int*
+
+#### running_status *: int*
+
+#### error_status *: int*
+
+#### jog_status *: int*
+
+#### robot_type *: int*
+
+#### drag_button_signal *: int*
+
+#### enable_button_signal *: int*
+
+#### record_button_signal *: int*
+
+#### reappear_button_signal *: int*
+
+#### jaw_button_signal *: int*
+
+#### six_force_online *: int*
+
+#### reserve2 *: tuple[int, ...]*
+
+#### m_actual *: tuple[float, ...]*
+
+#### load *: float*
+
+#### center_x *: float*
+
+#### center_y *: float*
+
+#### center_z *: float*
+
+#### user_coords *: tuple[float, ...]*
+
+#### tool_coords *: tuple[float, ...]*
+
+#### trace_index *: float*
+
+#### six_force_value *: tuple[float, ...]*
+
+#### target_quaternion *: tuple[float, ...]*
+
+#### actual_quaternion *: tuple[float, ...]*
+
+#### reserve3 *: tuple[int, ...]*
+
+#### *classmethod* from_numpy(arr)
+
+Construct a `FeedbackData` from a raw structured NumPy array.
+
+* **Parameters:**
+  **arr** (*ndarray*) – A 1-element NumPy structured array decoded with
+  `FeedbackDtype`, as returned by
+  `np.frombuffer(buf, dtype=FeedbackDtype)`.
+* **Returns:**
+  Immutable `FeedbackData` snapshot with all fields converted
+  to plain Python scalars or tuples.
+* **Return type:**
+  [*FeedbackData*](#dobot_api_v3.base.FeedbackData)
+
+### Example
+
+```python
+>>> raw = np.frombuffer(buf, dtype=FeedbackDtype)
+>>> data = FeedbackData.from_numpy(raw)
+>>> data.robot_mode
+```
 
 ### *class* dobot_api_v3.AlarmI18n(default_language='en')
 
@@ -2180,13 +3033,1036 @@ Normalize a language code using alias mapping.
 * **Return type:**
   str
 
-### dobot_api_v3.DobotApiFeedBack
+### *exception* dobot_api_v3.DobotApiError(error_code, command_id, message, raw)
 
-alias of [`DobotApiFeedback`](#dobot_api_v3.feedback.DobotApiFeedback)
+Bases: `Exception`
+
+Raised when the Dobot controller returns a non-zero error code
+or when the response string cannot be parsed.
+
+* **Parameters:**
+  * **error_code** (*int*)
+  * **command_id** (*int*)
+  * **message** (*str*)
+  * **raw** (*str*)
+* **Return type:**
+  None
+
+#### error_code
+
+The integer error code from the response (negative for
+parse failures).
+
+#### command_id
+
+The command queue ID from the response (0 when absent).
+
+#### message
+
+Human-readable detail extracted from the payload.
+
+#### raw
+
+The original response string received from the robot.
+
+### *class* dobot_api_v3.AckResponse(command_id)
+
+Bases: `object`
+
+Simple acknowledgment response with no data payload.
+
+Returned by lifecycle commands (`enable_robot`, `disable_robot`, …)
+and all motion commands (`mov_j`, `sync`, …).
+
+* **Parameters:**
+  **command_id** (*int*)
+
+#### command_id
+
+Motion-queue command ID from the controller (often 0).
+
+* **Type:**
+  int
+
+#### command_id *: int*
+
+### *class* dobot_api_v3.IntResponse(command_id, value)
+
+Bases: `object`
+
+Single integer value response.
+
+Returned by status-query commands such as `robot_mode`.
+
+* **Parameters:**
+  * **command_id** (*int*)
+  * **value** (*int*)
+
+#### command_id
+
+Motion-queue command ID from the controller.
+
+* **Type:**
+  int
+
+#### value
+
+The integer value returned by the controller.
+
+* **Type:**
+  int
+
+#### command_id *: int*
+
+#### value *: int*
+
+### *class* dobot_api_v3.PoseResponse(command_id, x, y, z, rx, ry, rz)
+
+Bases: `object`
+
+Six-degree-of-freedom pose or joint-angle response.
+
+Returned by `get_pose` (Cartesian) and `get_angle` (joint).
+
+* **Parameters:**
+  * **command_id** (*int*)
+  * **x** (*float*)
+  * **y** (*float*)
+  * **z** (*float*)
+  * **rx** (*float*)
+  * **ry** (*float*)
+  * **rz** (*float*)
+
+#### command_id
+
+Motion-queue command ID from the controller.
+
+* **Type:**
+  int
+
+#### x
+
+X coordinate or joint-1 angle.
+
+* **Type:**
+  float
+
+#### y
+
+Y coordinate or joint-2 angle.
+
+* **Type:**
+  float
+
+#### z
+
+Z coordinate or joint-3 angle.
+
+* **Type:**
+  float
+
+#### rx
+
+RX rotation or joint-4 angle.
+
+* **Type:**
+  float
+
+#### ry
+
+RY rotation or joint-5 angle.
+
+* **Type:**
+  float
+
+#### rz
+
+RZ rotation or joint-6 angle.
+
+* **Type:**
+  float
+
+#### command_id *: int*
+
+#### x *: float*
+
+#### y *: float*
+
+#### z *: float*
+
+#### rx *: float*
+
+#### ry *: float*
+
+#### rz *: float*
+
+### *class* dobot_api_v3.ErrorIdResponse(command_id, error_ids)
+
+Bases: `object`
+
+Alarm / error-ID list response.
+
+Returned by `get_error_id`.  Zero sentinel values from the controller
+are filtered out, matching the behaviour of
+`RobotErrorMonitor`.
+
+* **Parameters:**
+  * **command_id** (*int*)
+  * **error_ids** (*Tuple* *[**int* *,*  *...* *]*)
+
+#### command_id
+
+Motion-queue command ID from the controller.
+
+* **Type:**
+  int
+
+#### error_ids
+
+Tuple of non-zero alarm codes active on the controller.
+
+* **Type:**
+  Tuple[int, …]
+
+#### command_id *: int*
+
+#### error_ids *: Tuple[int, ...]*
+
+### dobot_api_v3.parse_response(raw, response_type)
+
+Parse a raw Dobot TCP response string into a typed dataclass.
+
+Accepts both Dobot response formats:
+
+* `"error_code,command_id,payload;"` — 3-field plain
+* `"error_code,{brace_payload};"` — 2-field brace
+
+* **Parameters:**
+  * **raw** (*str*) – The raw response string received from the robot controller.
+  * **response_type** (*Type* *[* *\_ResponseT* *]*) – The dataclass type to parse into.  Must be one of
+    `AckResponse`, `IntResponse`,
+    `PoseResponse`, or `ErrorIdResponse`.
+* **Returns:**
+  A populated, frozen response dataclass instance.
+* **Raises:**
+  **DobotApiError** – If the controller reports a non-zero error code, or
+      if the response string is malformed / missing expected values.
+* **Return type:**
+   *\_ResponseT*
+
+### Example
+
+```python
+>>> raw = dashboard.robot_mode()
+>>> resp = parse_response(raw, IntResponse)
+>>> print(resp.value)
+5
+```
 
 <a id="module-dobot_api_v3.base"></a>
 
 Base classes and data types for Dobot API.
+
+### *class* dobot_api_v3.base.FeedbackData(len, digital_input_bits, digital_output_bits, robot_mode, time_stamp, time_stamp_reserve_bit, test_value, test_value_keep_bit, speed_scaling, linear_momentum_norm, v_main, v_robot, i_robot, i_robot_keep_bit1, i_robot_keep_bit2, tool_accelerometer_values, elbow_position, elbow_velocity, q_target, qd_target, qdd_target, i_target, m_target, q_actual, qd_actual, i_actual, actual_tcp_force, tool_vector_actual, tcp_speed_actual, tcp_force, tool_vector_target, tcp_speed_target, motor_temperatures, joint_modes, v_actual, hand_type, user, tool, run_queued_cmd, pause_cmd_flag, velocity_ratio, acceleration_ratio, jerk_ratio, xyz_velocity_ratio, r_velocity_ratio, xyz_acceleration_ratio, r_acceleration_ratio, xyz_jerk_ratio, r_jerk_ratio, brake_status, enable_status, drag_status, running_status, error_status, jog_status, robot_type, drag_button_signal, enable_button_signal, record_button_signal, reappear_button_signal, jaw_button_signal, six_force_online, reserve2, m_actual, load, center_x, center_y, center_z, user_coords, tool_coords, trace_index, six_force_value, target_quaternion, actual_quaternion, reserve3)
+
+Bases: `object`
+
+Immutable snapshot of one decoded feedback packet (1440 bytes).
+
+All scalar fields are plain Python `int` or `float`.  Multi-element
+fields (joint arrays, vectors, quaternions, …) are `tuple[float, ...]`
+or `tuple[int, ...]`.  Because the dataclass is frozen, field values
+cannot be mutated after construction — treat each instance as a read-only
+timestamped snapshot.
+
+Use [`from_numpy()`](#dobot_api_v3.base.FeedbackData.from_numpy) to construct a `FeedbackData` from the raw
+`np.ndarray` produced by `np.frombuffer(buf, dtype=FeedbackDtype)`.
+For direct NumPy access call `raw_feedback_data()` instead of
+`feedback_data()`.
+
+* **Parameters:**
+  * **len** (*int*)
+  * **digital_input_bits** (*int*)
+  * **digital_output_bits** (*int*)
+  * **robot_mode** (*int*)
+  * **time_stamp** (*int*)
+  * **time_stamp_reserve_bit** (*int*)
+  * **test_value** (*int*)
+  * **test_value_keep_bit** (*float*)
+  * **speed_scaling** (*float*)
+  * **linear_momentum_norm** (*float*)
+  * **v_main** (*float*)
+  * **v_robot** (*float*)
+  * **i_robot** (*float*)
+  * **i_robot_keep_bit1** (*float*)
+  * **i_robot_keep_bit2** (*float*)
+  * **tool_accelerometer_values** (*tuple* *[**float* *,*  *...* *]*)
+  * **elbow_position** (*tuple* *[**float* *,*  *...* *]*)
+  * **elbow_velocity** (*tuple* *[**float* *,*  *...* *]*)
+  * **q_target** (*tuple* *[**float* *,*  *...* *]*)
+  * **qd_target** (*tuple* *[**float* *,*  *...* *]*)
+  * **qdd_target** (*tuple* *[**float* *,*  *...* *]*)
+  * **i_target** (*tuple* *[**float* *,*  *...* *]*)
+  * **m_target** (*tuple* *[**float* *,*  *...* *]*)
+  * **q_actual** (*tuple* *[**float* *,*  *...* *]*)
+  * **qd_actual** (*tuple* *[**float* *,*  *...* *]*)
+  * **i_actual** (*tuple* *[**float* *,*  *...* *]*)
+  * **actual_tcp_force** (*tuple* *[**float* *,*  *...* *]*)
+  * **tool_vector_actual** (*tuple* *[**float* *,*  *...* *]*)
+  * **tcp_speed_actual** (*tuple* *[**float* *,*  *...* *]*)
+  * **tcp_force** (*tuple* *[**float* *,*  *...* *]*)
+  * **tool_vector_target** (*tuple* *[**float* *,*  *...* *]*)
+  * **tcp_speed_target** (*tuple* *[**float* *,*  *...* *]*)
+  * **motor_temperatures** (*tuple* *[**float* *,*  *...* *]*)
+  * **joint_modes** (*tuple* *[**float* *,*  *...* *]*)
+  * **v_actual** (*tuple* *[**float* *,*  *...* *]*)
+  * **hand_type** (*tuple* *[**int* *,*  *...* *]*)
+  * **user** (*int*)
+  * **tool** (*int*)
+  * **run_queued_cmd** (*int*)
+  * **pause_cmd_flag** (*int*)
+  * **velocity_ratio** (*int*)
+  * **acceleration_ratio** (*int*)
+  * **jerk_ratio** (*int*)
+  * **xyz_velocity_ratio** (*int*)
+  * **r_velocity_ratio** (*int*)
+  * **xyz_acceleration_ratio** (*int*)
+  * **r_acceleration_ratio** (*int*)
+  * **xyz_jerk_ratio** (*int*)
+  * **r_jerk_ratio** (*int*)
+  * **brake_status** (*int*)
+  * **enable_status** (*int*)
+  * **drag_status** (*int*)
+  * **running_status** (*int*)
+  * **error_status** (*int*)
+  * **jog_status** (*int*)
+  * **robot_type** (*int*)
+  * **drag_button_signal** (*int*)
+  * **enable_button_signal** (*int*)
+  * **record_button_signal** (*int*)
+  * **reappear_button_signal** (*int*)
+  * **jaw_button_signal** (*int*)
+  * **six_force_online** (*int*)
+  * **reserve2** (*tuple* *[**int* *,*  *...* *]*)
+  * **m_actual** (*tuple* *[**float* *,*  *...* *]*)
+  * **load** (*float*)
+  * **center_x** (*float*)
+  * **center_y** (*float*)
+  * **center_z** (*float*)
+  * **user_coords** (*tuple* *[**float* *,*  *...* *]*)
+  * **tool_coords** (*tuple* *[**float* *,*  *...* *]*)
+  * **trace_index** (*float*)
+  * **six_force_value** (*tuple* *[**float* *,*  *...* *]*)
+  * **target_quaternion** (*tuple* *[**float* *,*  *...* *]*)
+  * **actual_quaternion** (*tuple* *[**float* *,*  *...* *]*)
+  * **reserve3** (*tuple* *[**int* *,*  *...* *]*)
+
+#### len
+
+Total packet length in bytes.
+
+* **Type:**
+  int
+
+#### digital_input_bits
+
+Digital input bitmask.
+
+* **Type:**
+  int
+
+#### digital_output_bits
+
+Digital output bitmask.
+
+* **Type:**
+  int
+
+#### robot_mode
+
+Current robot mode code.
+
+* **Type:**
+  int
+
+#### time_stamp
+
+Controller timestamp.
+
+* **Type:**
+  int
+
+#### time_stamp_reserve_bit
+
+Reserved timestamp bits.
+
+* **Type:**
+  int
+
+#### test_value
+
+Internal test value.
+
+* **Type:**
+  int
+
+#### test_value_keep_bit
+
+Internal test keep bit.
+
+* **Type:**
+  float
+
+#### speed_scaling
+
+Global speed scaling factor (0-1).
+
+* **Type:**
+  float
+
+#### linear_momentum_norm
+
+Linear momentum magnitude.
+
+* **Type:**
+  float
+
+#### v_main
+
+Main voltage (V).
+
+* **Type:**
+  float
+
+#### v_robot
+
+Robot voltage (V).
+
+* **Type:**
+  float
+
+#### i_robot
+
+Robot current (A).
+
+* **Type:**
+  float
+
+#### i_robot_keep_bit1
+
+Reserved current field 1.
+
+* **Type:**
+  float
+
+#### i_robot_keep_bit2
+
+Reserved current field 2.
+
+* **Type:**
+  float
+
+#### tool_accelerometer_values
+
+Tool accelerometer XYZ (3 values).
+
+* **Type:**
+  tuple[float, …]
+
+#### elbow_position
+
+Elbow Cartesian position XYZ (3 values).
+
+* **Type:**
+  tuple[float, …]
+
+#### elbow_velocity
+
+Elbow Cartesian velocity XYZ (3 values).
+
+* **Type:**
+  tuple[float, …]
+
+#### q_target
+
+Target joint angles, radians (6 joints).
+
+* **Type:**
+  tuple[float, …]
+
+#### qd_target
+
+Target joint velocities, rad/s (6 joints).
+
+* **Type:**
+  tuple[float, …]
+
+#### qdd_target
+
+Target joint accelerations, rad/s² (6 joints).
+
+* **Type:**
+  tuple[float, …]
+
+#### i_target
+
+Target joint currents (6 joints).
+
+* **Type:**
+  tuple[float, …]
+
+#### m_target
+
+Target joint torques, N·m (6 joints).
+
+* **Type:**
+  tuple[float, …]
+
+#### q_actual
+
+Actual joint angles, radians (6 joints).
+
+* **Type:**
+  tuple[float, …]
+
+#### qd_actual
+
+Actual joint velocities, rad/s (6 joints).
+
+* **Type:**
+  tuple[float, …]
+
+#### i_actual
+
+Actual joint currents (6 joints).
+
+* **Type:**
+  tuple[float, …]
+
+#### actual_tcp_force
+
+Actual TCP force/torque (6 values).
+
+* **Type:**
+  tuple[float, …]
+
+#### tool_vector_actual
+
+Actual TCP pose [x, y, z, rx, ry, rz] (6 values).
+
+* **Type:**
+  tuple[float, …]
+
+#### tcp_speed_actual
+
+Actual TCP speed vector (6 values).
+
+* **Type:**
+  tuple[float, …]
+
+#### tcp_force
+
+TCP force/torque sensor reading (6 values).
+
+* **Type:**
+  tuple[float, …]
+
+#### tool_vector_target
+
+Target TCP pose (6 values).
+
+* **Type:**
+  tuple[float, …]
+
+#### tcp_speed_target
+
+Target TCP speed vector (6 values).
+
+* **Type:**
+  tuple[float, …]
+
+#### motor_temperatures
+
+Joint motor temperatures, °C (6 joints).
+
+* **Type:**
+  tuple[float, …]
+
+#### joint_modes
+
+Joint mode codes (6 joints).
+
+* **Type:**
+  tuple[float, …]
+
+#### v_actual
+
+Actual joint voltages (6 joints).
+
+* **Type:**
+  tuple[float, …]
+
+#### hand_type
+
+Hand type flags (4 bytes).
+
+* **Type:**
+  tuple[int, …]
+
+#### user
+
+Active user coordinate index.
+
+* **Type:**
+  int
+
+#### tool
+
+Active tool coordinate index.
+
+* **Type:**
+  int
+
+#### run_queued_cmd
+
+Whether queued command is running (1 = yes).
+
+* **Type:**
+  int
+
+#### pause_cmd_flag
+
+Pause command flag.
+
+* **Type:**
+  int
+
+#### velocity_ratio
+
+Joint velocity ratio (%).
+
+* **Type:**
+  int
+
+#### acceleration_ratio
+
+Joint acceleration ratio (%).
+
+* **Type:**
+  int
+
+#### jerk_ratio
+
+Joint jerk ratio (%).
+
+* **Type:**
+  int
+
+#### xyz_velocity_ratio
+
+Cartesian velocity ratio (%).
+
+* **Type:**
+  int
+
+#### r_velocity_ratio
+
+Rotational velocity ratio (%).
+
+* **Type:**
+  int
+
+#### xyz_acceleration_ratio
+
+Cartesian acceleration ratio (%).
+
+* **Type:**
+  int
+
+#### r_acceleration_ratio
+
+Rotational acceleration ratio (%).
+
+* **Type:**
+  int
+
+#### xyz_jerk_ratio
+
+Cartesian jerk ratio (%).
+
+* **Type:**
+  int
+
+#### r_jerk_ratio
+
+Rotational jerk ratio (%).
+
+* **Type:**
+  int
+
+#### brake_status
+
+Brake status bitmask.
+
+* **Type:**
+  int
+
+#### enable_status
+
+Robot enable status (1 = enabled).
+
+* **Type:**
+  int
+
+#### drag_status
+
+Drag mode status.
+
+* **Type:**
+  int
+
+#### running_status
+
+Motion running flag.
+
+* **Type:**
+  int
+
+#### error_status
+
+Error flag (non-zero = fault present).
+
+* **Type:**
+  int
+
+#### jog_status
+
+Jog mode status.
+
+* **Type:**
+  int
+
+#### robot_type
+
+Robot model type code.
+
+* **Type:**
+  int
+
+#### drag_button_signal
+
+Physical drag button signal.
+
+* **Type:**
+  int
+
+#### enable_button_signal
+
+Physical enable button signal.
+
+* **Type:**
+  int
+
+#### record_button_signal
+
+Physical record button signal.
+
+* **Type:**
+  int
+
+#### reappear_button_signal
+
+Physical reappear button signal.
+
+* **Type:**
+  int
+
+#### jaw_button_signal
+
+Jaw button signal.
+
+* **Type:**
+  int
+
+#### six_force_online
+
+Six-axis force sensor online flag.
+
+* **Type:**
+  int
+
+#### reserve2
+
+Reserved bytes (82 bytes).
+
+* **Type:**
+  tuple[int, …]
+
+#### m_actual
+
+Actual joint torques, N·m (6 joints).
+
+* **Type:**
+  tuple[float, …]
+
+#### load
+
+Payload mass, kg.
+
+* **Type:**
+  float
+
+#### center_x
+
+Payload centre-of-mass X offset, mm.
+
+* **Type:**
+  float
+
+#### center_y
+
+Payload centre-of-mass Y offset, mm.
+
+* **Type:**
+  float
+
+#### center_z
+
+Payload centre-of-mass Z offset, mm.
+
+* **Type:**
+  float
+
+#### user_coords
+
+Active user coordinate frame [x, y, z, rx, ry, rz].
+
+* **Type:**
+  tuple[float, …]
+
+#### tool_coords
+
+Active tool coordinate frame [x, y, z, rx, ry, rz].
+
+* **Type:**
+  tuple[float, …]
+
+#### trace_index
+
+Current trace index.
+
+* **Type:**
+  float
+
+#### six_force_value
+
+Six-axis force sensor readings (6 values).
+
+* **Type:**
+  tuple[float, …]
+
+#### target_quaternion
+
+Target TCP orientation quaternion [w, x, y, z].
+
+* **Type:**
+  tuple[float, …]
+
+#### actual_quaternion
+
+Actual TCP orientation quaternion [w, x, y, z].
+
+* **Type:**
+  tuple[float, …]
+
+#### reserve3
+
+Reserved bytes (24 bytes).
+
+* **Type:**
+  tuple[int, …]
+
+### Example
+
+```python
+>>> data = robot.feedback_data()
+>>> if data is not None:
+...     print(data.robot_mode)
+...     print(data.tool_vector_actual)
+...     print(data.enable_status)
+```
+
+#### len *: int*
+
+#### digital_input_bits *: int*
+
+#### digital_output_bits *: int*
+
+#### robot_mode *: int*
+
+#### time_stamp *: int*
+
+#### time_stamp_reserve_bit *: int*
+
+#### test_value *: int*
+
+#### test_value_keep_bit *: float*
+
+#### speed_scaling *: float*
+
+#### linear_momentum_norm *: float*
+
+#### v_main *: float*
+
+#### v_robot *: float*
+
+#### i_robot *: float*
+
+#### i_robot_keep_bit1 *: float*
+
+#### i_robot_keep_bit2 *: float*
+
+#### tool_accelerometer_values *: tuple[float, ...]*
+
+#### elbow_position *: tuple[float, ...]*
+
+#### elbow_velocity *: tuple[float, ...]*
+
+#### q_target *: tuple[float, ...]*
+
+#### qd_target *: tuple[float, ...]*
+
+#### qdd_target *: tuple[float, ...]*
+
+#### i_target *: tuple[float, ...]*
+
+#### m_target *: tuple[float, ...]*
+
+#### q_actual *: tuple[float, ...]*
+
+#### qd_actual *: tuple[float, ...]*
+
+#### i_actual *: tuple[float, ...]*
+
+#### actual_tcp_force *: tuple[float, ...]*
+
+#### tool_vector_actual *: tuple[float, ...]*
+
+#### tcp_speed_actual *: tuple[float, ...]*
+
+#### tcp_force *: tuple[float, ...]*
+
+#### tool_vector_target *: tuple[float, ...]*
+
+#### tcp_speed_target *: tuple[float, ...]*
+
+#### motor_temperatures *: tuple[float, ...]*
+
+#### joint_modes *: tuple[float, ...]*
+
+#### v_actual *: tuple[float, ...]*
+
+#### hand_type *: tuple[int, ...]*
+
+#### user *: int*
+
+#### tool *: int*
+
+#### run_queued_cmd *: int*
+
+#### pause_cmd_flag *: int*
+
+#### velocity_ratio *: int*
+
+#### acceleration_ratio *: int*
+
+#### jerk_ratio *: int*
+
+#### xyz_velocity_ratio *: int*
+
+#### r_velocity_ratio *: int*
+
+#### xyz_acceleration_ratio *: int*
+
+#### r_acceleration_ratio *: int*
+
+#### xyz_jerk_ratio *: int*
+
+#### r_jerk_ratio *: int*
+
+#### brake_status *: int*
+
+#### enable_status *: int*
+
+#### drag_status *: int*
+
+#### running_status *: int*
+
+#### error_status *: int*
+
+#### jog_status *: int*
+
+#### robot_type *: int*
+
+#### drag_button_signal *: int*
+
+#### enable_button_signal *: int*
+
+#### record_button_signal *: int*
+
+#### reappear_button_signal *: int*
+
+#### jaw_button_signal *: int*
+
+#### six_force_online *: int*
+
+#### reserve2 *: tuple[int, ...]*
+
+#### m_actual *: tuple[float, ...]*
+
+#### load *: float*
+
+#### center_x *: float*
+
+#### center_y *: float*
+
+#### center_z *: float*
+
+#### user_coords *: tuple[float, ...]*
+
+#### tool_coords *: tuple[float, ...]*
+
+#### trace_index *: float*
+
+#### six_force_value *: tuple[float, ...]*
+
+#### target_quaternion *: tuple[float, ...]*
+
+#### actual_quaternion *: tuple[float, ...]*
+
+#### reserve3 *: tuple[int, ...]*
+
+#### *classmethod* from_numpy(arr)
+
+Construct a [`FeedbackData`](#dobot_api_v3.base.FeedbackData) from a raw structured NumPy array.
+
+* **Parameters:**
+  **arr** (*ndarray*) – A 1-element NumPy structured array decoded with
+  `FeedbackDtype`, as returned by
+  `np.frombuffer(buf, dtype=FeedbackDtype)`.
+* **Returns:**
+  Immutable [`FeedbackData`](#dobot_api_v3.base.FeedbackData) snapshot with all fields converted
+  to plain Python scalars or tuples.
+* **Return type:**
+  [*FeedbackData*](#dobot_api_v3.base.FeedbackData)
+
+### Example
+
+```python
+>>> raw = np.frombuffer(buf, dtype=FeedbackDtype)
+>>> data = FeedbackData.from_numpy(raw)
+>>> data.robot_mode
+```
 
 ### *class* dobot_api_v3.base.DobotApi(ip, port)
 
@@ -2311,7 +4187,7 @@ Enable the robot with optional payload parameters.
 
 ### Example
 
-```pycon
+```python
 >>> dashboard.enable_robot()
 >>> dashboard.enable_robot(load=0.5, center_x=0.0, center_y=0.0, center_z=0.05)
 ```
@@ -2334,7 +4210,7 @@ Clear controller alarm information.
 
 ### Example
 
-```pycon
+```python
 >>> dashboard.clear_error()
 ```
 
@@ -2358,7 +4234,7 @@ Set global speed factor.
 
 ### Example
 
-```pycon
+```python
 >>> dashboard.speed_factor(40)
 ```
 
@@ -3040,490 +4916,6 @@ Python keyword so the method is named `resume`.
 * **Return type:**
   str
 
-#### EnableRobot(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### DisableRobot()
-
-* **Return type:**
-  str
-
-#### ClearError()
-
-* **Return type:**
-  str
-
-#### ResetRobot()
-
-* **Return type:**
-  str
-
-#### SpeedFactor(speed)
-
-* **Parameters:**
-  **speed** (*int*)
-* **Return type:**
-  str
-
-#### User(index)
-
-* **Parameters:**
-  **index** (*int*)
-* **Return type:**
-  str
-
-#### Tool(index)
-
-* **Parameters:**
-  **index** (*int*)
-* **Return type:**
-  str
-
-#### RobotMode()
-
-* **Return type:**
-  str
-
-#### PayLoad(weight, inertia)
-
-* **Parameters:**
-  * **weight** (*float*)
-  * **inertia** (*float*)
-* **Return type:**
-  str
-
-#### DO(index, status)
-
-* **Parameters:**
-  * **index** (*int*)
-  * **status** (*int*)
-* **Return type:**
-  str
-
-#### DOExecute(index, status)
-
-* **Parameters:**
-  * **index** (*int*)
-  * **status** (*int*)
-* **Return type:**
-  str
-
-#### ToolDO(index, status)
-
-* **Parameters:**
-  * **index** (*int*)
-  * **status** (*int*)
-* **Return type:**
-  str
-
-#### ToolDOExecute(index, status)
-
-* **Parameters:**
-  * **index** (*int*)
-  * **status** (*int*)
-* **Return type:**
-  str
-
-#### AO(index, val)
-
-* **Parameters:**
-  * **index** (*int*)
-  * **val** (*float*)
-* **Return type:**
-  str
-
-#### AOExecute(index, val)
-
-* **Parameters:**
-  * **index** (*int*)
-  * **val** (*float*)
-* **Return type:**
-  str
-
-#### AccJ(speed)
-
-* **Parameters:**
-  **speed** (*int*)
-* **Return type:**
-  str
-
-#### AccL(speed)
-
-* **Parameters:**
-  **speed** (*int*)
-* **Return type:**
-  str
-
-#### SpeedJ(speed)
-
-* **Parameters:**
-  **speed** (*int*)
-* **Return type:**
-  str
-
-#### SpeedL(speed)
-
-* **Parameters:**
-  **speed** (*int*)
-* **Return type:**
-  str
-
-#### VelJ(speed)
-
-* **Parameters:**
-  **speed** (*int*)
-* **Return type:**
-  str
-
-#### VelL(speed)
-
-* **Parameters:**
-  **speed** (*int*)
-* **Return type:**
-  str
-
-#### Arch(index)
-
-* **Parameters:**
-  **index** (*int*)
-* **Return type:**
-  str
-
-#### CP(ratio)
-
-* **Parameters:**
-  **ratio** (*int*)
-* **Return type:**
-  str
-
-#### LimZ(value)
-
-* **Parameters:**
-  **value** (*int*)
-* **Return type:**
-  str
-
-#### SetArmOrientation(r, d, n, cfg)
-
-* **Parameters:**
-  * **r** (*int*)
-  * **d** (*int*)
-  * **n** (*int*)
-  * **cfg** (*int*)
-* **Return type:**
-  str
-
-#### PowerOn()
-
-* **Return type:**
-  str
-
-#### RunScript(project_name)
-
-* **Parameters:**
-  **project_name** (*str*)
-* **Return type:**
-  str
-
-#### StopScript()
-
-* **Return type:**
-  str
-
-#### PauseScript()
-
-* **Return type:**
-  str
-
-#### ContinueScript()
-
-* **Return type:**
-  str
-
-#### GetHoldRegs(id, addr, count, type_)
-
-* **Parameters:**
-  * **id** (*int*)
-  * **addr** (*int*)
-  * **count** (*int*)
-  * **type_** (*str*)
-* **Return type:**
-  str
-
-#### SetHoldRegs(id, addr, count, table, type_=None)
-
-* **Parameters:**
-  * **id** (*int*)
-  * **addr** (*int*)
-  * **count** (*int*)
-  * **table** (*str*)
-  * **type_** (*str* *|* *None*)
-* **Return type:**
-  str
-
-#### GetErrorID()
-
-* **Return type:**
-  str
-
-#### SetPayload(offset1, \*dyn_params)
-
-* **Parameters:**
-  * **offset1** (*float*)
-  * **dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*)
-* **Return type:**
-  str
-
-#### PositiveSolution(offset1, offset2, offset3, offset4, offset5, offset6, user, tool)
-
-* **Parameters:**
-  * **offset1** (*float*)
-  * **offset2** (*float*)
-  * **offset3** (*float*)
-  * **offset4** (*float*)
-  * **offset5** (*float*)
-  * **offset6** (*float*)
-  * **user** (*int*)
-  * **tool** (*int*)
-* **Return type:**
-  str
-
-#### InverseSolution(offset1, offset2, offset3, offset4, offset5, offset6, user, tool, \*dyn_params)
-
-* **Parameters:**
-  * **offset1** (*float*)
-  * **offset2** (*float*)
-  * **offset3** (*float*)
-  * **offset4** (*float*)
-  * **offset5** (*float*)
-  * **offset6** (*float*)
-  * **user** (*int*)
-  * **tool** (*int*)
-  * **dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*)
-* **Return type:**
-  str
-
-#### SetCollisionLevel(offset1)
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### GetAngle()
-
-* **Return type:**
-  str
-
-#### GetPose()
-
-* **Return type:**
-  str
-
-#### EmergencyStop()
-
-* **Return type:**
-  str
-
-#### ModbusCreate(ip, port, slave_id, isRTU)
-
-* **Parameters:**
-  * **ip** (*str*)
-  * **port** (*int*)
-  * **slave_id** (*int*)
-  * **isRTU** (*int*)
-* **Return type:**
-  str
-
-#### ModbusClose(offset1)
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### SetSafeSkin(offset1)
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### SetObstacleAvoid(offset1)
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### GetTraceStartPose(offset1)
-
-* **Parameters:**
-  **offset1** (*str*)
-* **Return type:**
-  str
-
-#### GetPathStartPose(offset1)
-
-* **Parameters:**
-  **offset1** (*str*)
-* **Return type:**
-  str
-
-#### HandleTrajPoints(offset1)
-
-* **Parameters:**
-  **offset1** (*str*)
-* **Return type:**
-  str
-
-#### GetSixForceData()
-
-* **Return type:**
-  str
-
-#### SetCollideDrag(offset1)
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### SetTerminalKeys(offset1)
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### SetTerminal485(offset1, offset2, offset3, offset4)
-
-* **Parameters:**
-  * **offset1** (*int*)
-  * **offset2** (*int*)
-  * **offset3** (*str*)
-  * **offset4** (*int*)
-* **Return type:**
-  str
-
-#### GetTerminal485()
-
-* **Return type:**
-  str
-
-#### TCPSpeed(offset1)
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### TCPSpeedEnd()
-
-* **Return type:**
-  str
-
-#### GetInBits(offset1, offset2, offset3)
-
-* **Parameters:**
-  * **offset1** (*int*)
-  * **offset2** (*int*)
-  * **offset3** (*int*)
-* **Return type:**
-  str
-
-#### GetInRegs(offset1, offset2, offset3, \*dyn_params)
-
-* **Parameters:**
-  * **offset1** (*int*)
-  * **offset2** (*int*)
-  * **offset3** (*int*)
-  * **dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*)
-* **Return type:**
-  str
-
-#### GetCoils(offset1, offset2, offset3)
-
-* **Parameters:**
-  * **offset1** (*int*)
-  * **offset2** (*int*)
-  * **offset3** (*int*)
-* **Return type:**
-  str
-
-#### SetCoils(offset1, offset2, offset3, offset4)
-
-* **Parameters:**
-  * **offset1** (*int*)
-  * **offset2** (*int*)
-  * **offset3** (*int*)
-  * **offset4** (*int*)
-* **Return type:**
-  str
-
-#### DI(offset1)
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### ToolDI(offset1)
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### DOGroup(\*dyn_params)
-
-* **Parameters:**
-  **dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*)
-* **Return type:**
-  str
-
-#### BrakeControl(offset1, offset2)
-
-* **Parameters:**
-  * **offset1** (*int*)
-  * **offset2** (*int*)
-* **Return type:**
-  str
-
-#### StartDrag()
-
-* **Return type:**
-  str
-
-#### StopDrag()
-
-* **Return type:**
-  str
-
-#### LoadSwitch(offset1)
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### Continue()
-
-* **Return type:**
-  str
-
-#### Pause()
-
-* **Return type:**
-  str
-
-#### Stop()
-
-* **Return type:**
-  str
-
 <a id="module-dobot_api_v3.move"></a>
 
 Movement commands for Dobot API (DobotApiMove class).
@@ -3560,7 +4952,7 @@ Joint motion interface (point-to-point motion mode).
 
 ### Example
 
-```pycon
+```python
 >>> move.mov_j(200, 0, 200, 0, 0, 0)
 >>> move.mov_j(220, 20, 180, 0, 0, 0, "SpeedJ=40", "AccJ=40")
 ```
@@ -3584,7 +4976,7 @@ Linear motion interface.
 
 ### Example
 
-```pycon
+```python
 >>> move.mov_l(250, 0, 180, 0, 0, 0)
 >>> move.mov_l(250, 30, 180, 0, 0, 0, "SpeedL=30", "AccL=30")
 ```
@@ -3792,7 +5184,7 @@ Jog motion along a single axis.
 
 ### Example
 
-```pycon
+```python
 >>> move.move_jog("J1+")
 >>> move.move_jog("")
 ```
@@ -3843,7 +5235,7 @@ Block until all queued commands have been executed.
 
 ### Example
 
-```pycon
+```python
 >>> move.mov_j(200, 0, 200, 0, 0, 0)
 >>> move.mov_l(220, 20, 180, 0, 0, 0)
 >>> move.sync()
@@ -3938,134 +5330,6 @@ Relative motion along each joint axis (joint motion mode).
 * **Return type:**
   str
 
-#### MovJ(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### MovL(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### JointMovJ(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### Jump()
-
-* **Return type:**
-  None
-
-#### RelMovJ(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### RelMovL(offsetX, offsetY, offsetZ, \*dyn_params)
-
-* **Parameters:**
-  * **offsetX** (*float*)
-  * **offsetY** (*float*)
-  * **offsetZ** (*float*)
-  * **dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*)
-* **Return type:**
-  str
-
-#### MovLIO(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### MovJIO(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### Arc(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### Circle3(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### ServoJ(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### ServoJS(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### ServoP(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### MoveJog(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### StartTrace(trace_name)
-
-* **Parameters:**
-  **trace_name** (*str*)
-* **Return type:**
-  str
-
-#### StartPath(trace_name, const, cart)
-
-* **Parameters:**
-  * **trace_name** (*str*)
-  * **const** (*int*)
-  * **cart** (*int*)
-* **Return type:**
-  str
-
-#### StartFCTrace(trace_name)
-
-* **Parameters:**
-  **trace_name** (*str*)
-* **Return type:**
-  str
-
-#### Sync()
-
-* **Return type:**
-  str
-
-#### RelMovJTool(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### RelMovLTool(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### RelMovJUser(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### RelMovLUser(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
-#### RelJointMovJ(\*args, \*\*kwargs)
-
-* **Return type:**
-  str
-
 <a id="module-dobot_api_v3.feedback"></a>
 
 Feedback interface for Dobot API.
@@ -4093,31 +5357,51 @@ Initialize the feedback socket client.
 * **Return type:**
   None
 
-#### feedback_data()
+#### raw_feedback_data()
 
-Read one feedback frame and parse it with `FeedbackDtype`.
+Read one feedback frame and return the raw NumPy structured array.
+
+Use this method when you need zero-copy NumPy access to the packet
+fields (e.g., for numeric pipelines or direct array slicing).  For
+typed, IDE-friendly access prefer [`feedback_data()`](#dobot_api_v3.feedback.DobotApiFeedback.feedback_data) instead.
 
 * **Returns:**
-  A NumPy structured array of length 1 when a valid 1440-byte frame
-  is parsed, otherwise `None`.
+  A NumPy structured array of length 1 (`dtype=FeedbackDtype`)
+  when a valid 1440-byte frame is parsed, otherwise `None`.
 * **Raises:**
   * **RuntimeError** – If the socket is not connected.
   * **RuntimeError** – If repeated short reads indicate packet loss.
 * **Return type:**
   *ndarray* | None
 
-#### feedBackData()
+#### feedback_data()
 
-Deprecated alias for [`feedback_data()`](#dobot_api_v3.feedback.DobotApiFeedback.feedback_data).
+Read one feedback frame and return a typed `FeedbackData`.
+
+Internally calls [`raw_feedback_data()`](#dobot_api_v3.feedback.DobotApiFeedback.raw_feedback_data) and converts the result to
+an immutable `FeedbackData` dataclass for full
+IDE autocompletion and type-checker support.
+
+For zero-copy NumPy access (e.g., numeric pipelines) use
+[`raw_feedback_data()`](#dobot_api_v3.feedback.DobotApiFeedback.raw_feedback_data) directly.
 
 * **Returns:**
-  Same value as [`feedback_data()`](#dobot_api_v3.feedback.DobotApiFeedback.feedback_data).
+  A `FeedbackData` instance when a valid
+  1440-byte frame is parsed, otherwise `None`.
+* **Raises:**
+  * **RuntimeError** – If the socket is not connected.
+  * **RuntimeError** – If repeated short reads indicate packet loss.
 * **Return type:**
-  *ndarray* | None
+  [*FeedbackData*](#dobot_api_v3.base.FeedbackData) | None
 
-### dobot_api_v3.feedback.DobotApiFeedBack
+### Example
 
-alias of [`DobotApiFeedback`](#dobot_api_v3.feedback.DobotApiFeedback)
+```python
+>>> data = feedback.feedback_data()
+>>> if data is not None:
+...     print(data.robot_mode)
+...     print(data.tool_vector_actual)
+```
 
 <a id="module-dobot_api_v3.error_monitor"></a>
 
@@ -4153,47 +5437,6 @@ Initialize the error monitor.
 * **Parameters:**
   * **dashboard** ([*DobotApiDashboard*](#dobot_api_v3.dashboard.DobotApiDashboard)) – Shared dashboard client used for alarm queries and clear.
   * **language** (*str*) – Default alarm translation language.
-* **Return type:**
-  None
-
-#### *classmethod* from_connection(robot_ip='192.168.200.1', dashboard_port=29999)
-
-Create a monitor by opening a new dashboard connection.
-
-* **Parameters:**
-  * **robot_ip** (*str*) – Robot controller IP address.
-  * **dashboard_port** (*int*) – Dashboard TCP port.
-* **Returns:**
-  New monitor instance bound to a newly created dashboard client.
-* **Return type:**
-  [*RobotErrorMonitor*](#dobot_api_v3.error_monitor.RobotErrorMonitor)
-
-#### Deprecated
-Deprecated since version Prefer: creating a `DobotApiDashboard`
-yourself and passing it to [`RobotErrorMonitor`](#dobot_api_v3.error_monitor.RobotErrorMonitor) directly
-so that the same connection can be shared with other API objects.
-
-#### connect()
-
-No-op kept for backward compatibility.
-
-* **Returns:**
-  Always `True`.
-* **Return type:**
-  bool
-
-#### Deprecated
-Deprecated since version Lifecycle: is now the caller’s responsibility.  Manage the
-`DobotApiDashboard` connection yourself.
-
-#### disconnect()
-
-No-op kept for backward compatibility.
-
-#### Deprecated
-Deprecated since version Lifecycle: is now the caller’s responsibility.  Close the
-`DobotApiDashboard` yourself when done.
-
 * **Return type:**
   None
 
@@ -4393,23 +5636,3 @@ Normalize a language code using alias mapping.
 <a id="module-dobot_api_v3.utils"></a>
 
 Utility helpers for Dobot API.
-
-### dobot_api_v3.utils.deprecated_alias(new_name)
-
-Decorator that marks a method as a deprecated alias for *new_name*.
-
-Usage (inside a class body):
-
-```default
-@deprecated_alias("enable_robot")
-def EnableRobot(self, *args, **kwargs):
-    return self.enable_robot(*args, **kwargs)
-```
-
-At call time the decorator emits a `DeprecationWarning` pointing at the
-caller’s frame and then delegates to the wrapped function body.
-
-* **Parameters:**
-  **new_name** (*str*)
-* **Return type:**
-  *Callable*[[*Callable*[[…], *Any*]], *Callable*[[…], *Any*]]

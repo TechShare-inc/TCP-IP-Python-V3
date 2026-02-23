@@ -5,12 +5,21 @@ import sys
 
 from loguru import logger
 
-from .base import PROTOCOL_FIELD_MAP, DobotApi, FeedbackDtype, MyType
+from .base import PROTOCOL_FIELD_MAP, DobotApi, FeedbackData, FeedbackDtype
 from .dashboard import DobotApiDashboard
 from .error_monitor import RobotErrorMonitor
-from .feedback import DobotApiFeedBack, DobotApiFeedback
+from .feedback import DobotApiFeedback
 from .i18n_manager import AlarmI18n
 from .move import DobotApiMove
+from .responses import (
+    AckResponse,
+    DobotApiError,
+    ErrorIdResponse,
+    IntResponse,
+    PoseResponse,
+    parse_response,
+)
+from .robot import DobotRobot
 
 logger.remove()
 logger.add(
@@ -24,16 +33,22 @@ __version__ = "3.0.0"
 
 __all__ = [
     # Primary names — use these in new code.
+    "DobotRobot",
     "DobotApi",
     "DobotApiDashboard",
     "DobotApiMove",
     "DobotApiFeedback",
     "RobotErrorMonitor",
+    "FeedbackData",
     "FeedbackDtype",
     "PROTOCOL_FIELD_MAP",
     "AlarmI18n",
     "logger",
-    # Deprecated aliases — kept for backward compatibility.
-    "DobotApiFeedBack",  # deprecated: use DobotApiFeedback
-    "MyType",  # deprecated: use FeedbackDtype
+    # Response types and parser.
+    "DobotApiError",
+    "AckResponse",
+    "IntResponse",
+    "PoseResponse",
+    "ErrorIdResponse",
+    "parse_response",
 ]

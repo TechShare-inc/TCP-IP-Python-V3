@@ -5,7 +5,7 @@ from __future__ import annotations
 from loguru import logger
 
 from .base import DobotApi
-from .utils import DynParam, ToolDynParam, deprecated_alias
+from .utils import DynParam, ToolDynParam
 
 
 class DobotApiMove(DobotApi):
@@ -647,99 +647,3 @@ class DobotApiMove(DobotApi):
         return self.send_recv_msg(string)
 
     # ------------------------------------------------------------------
-    # Deprecated PascalCase aliases — do not use in new code.
-    # ------------------------------------------------------------------
-
-    @deprecated_alias("mov_j")
-    def MovJ(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
-        return self.mov_j(*args, **kwargs)
-
-    @deprecated_alias("mov_l")
-    def MovL(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
-        return self.mov_l(*args, **kwargs)
-
-    @deprecated_alias("joint_mov_j")
-    def JointMovJ(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
-        return self.joint_mov_j(*args, **kwargs)
-
-    @deprecated_alias("jump")
-    def Jump(self) -> None:
-        return self.jump()
-
-    @deprecated_alias("rel_mov_j")
-    def RelMovJ(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
-        return self.rel_mov_j(*args, **kwargs)
-
-    @deprecated_alias("rel_mov_l")
-    def RelMovL(
-        self, offsetX: float, offsetY: float, offsetZ: float, *dyn_params: DynParam
-    ) -> str:
-        return self.rel_mov_l(offsetX, offsetY, offsetZ, *dyn_params)
-
-    @deprecated_alias("mov_l_io")
-    def MovLIO(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
-        return self.mov_l_io(*args, **kwargs)
-
-    @deprecated_alias("mov_j_io")
-    def MovJIO(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
-        return self.mov_j_io(*args, **kwargs)
-
-    @deprecated_alias("arc")
-    def Arc(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
-        return self.arc(*args, **kwargs)
-
-    @deprecated_alias("circle3")
-    def Circle3(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
-        return self.circle3(*args, **kwargs)
-
-    @deprecated_alias("servo_j")
-    def ServoJ(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
-        return self.servo_j(*args, **kwargs)
-
-    @deprecated_alias("servo_js")
-    def ServoJS(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
-        return self.servo_js(*args, **kwargs)
-
-    @deprecated_alias("servo_p")
-    def ServoP(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
-        return self.servo_p(*args, **kwargs)
-
-    @deprecated_alias("move_jog")
-    def MoveJog(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
-        return self.move_jog(*args, **kwargs)
-
-    @deprecated_alias("start_trace")
-    def StartTrace(self, trace_name: str) -> str:
-        return self.start_trace(trace_name)
-
-    @deprecated_alias("start_path")
-    def StartPath(self, trace_name: str, const: int, cart: int) -> str:
-        return self.start_path(trace_name, const, cart)
-
-    @deprecated_alias("start_fc_trace")
-    def StartFCTrace(self, trace_name: str) -> str:
-        return self.start_fc_trace(trace_name)
-
-    @deprecated_alias("sync")
-    def Sync(self) -> str:
-        return self.sync()
-
-    @deprecated_alias("rel_mov_j_tool")
-    def RelMovJTool(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
-        return self.rel_mov_j_tool(*args, **kwargs)
-
-    @deprecated_alias("rel_mov_l_tool")
-    def RelMovLTool(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
-        return self.rel_mov_l_tool(*args, **kwargs)
-
-    @deprecated_alias("rel_mov_j_user")
-    def RelMovJUser(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
-        return self.rel_mov_j_user(*args, **kwargs)
-
-    @deprecated_alias("rel_mov_l_user")
-    def RelMovLUser(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
-        return self.rel_mov_l_user(*args, **kwargs)
-
-    @deprecated_alias("rel_joint_mov_j")
-    def RelJointMovJ(self, *args, **kwargs) -> str:  # type: ignore[no-untyped-def]
-        return self.rel_joint_mov_j(*args, **kwargs)
