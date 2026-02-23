@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Callable
-from unittest.mock import MagicMock
-
 import numpy as np
 import pytest
 
-from dobot_api_v3.base import DobotApi, FeedbackData, FeedbackDtype
+from dobot_api_v3.base import FeedbackData, FeedbackDtype
 from dobot_api_v3.feedback import DobotApiFeedback
 
 pytestmark = pytest.mark.unit
@@ -276,24 +273,3 @@ class TestFeedbackDataClass:
         data = self._make_data()
         with pytest.raises((dataclasses.FrozenInstanceError, AttributeError)):
             data.robot_mode = 99  # type: ignore[misc]
-
-
-# ---------------------------------------------------------------------------
-# Deprecated feedBackData alias
-# ---------------------------------------------------------------------------
-
-
-class TestFeedBackDataAlias:
-    def test_feed_back_data_alias_delegates_and_warns(
-        self, mock_feedback: DobotApiFeedback
-    ) -> None:
-        import warnings
-
-        mock_feedback.socket_dobot.recv.return_value = _valid_buffer()  # type: ignore[union-attr]
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            result = mock_feedback.feedBackData()
-        assert result is not None
-        dep = [x for x in w if issubclass(x.category, DeprecationWarning)]
-        assert len(dep) == 1
-        assert "feedBackData" in str(dep[0].message)

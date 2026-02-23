@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import pytest
 
-from dobot_api_v3.move import DobotApiMove
-
 pytestmark = pytest.mark.unit
 
 

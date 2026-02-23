@@ -8,7 +8,6 @@ from typing import Optional
 import numpy as np
 
 from dobot_api_v3.base import DobotApi, FeedbackData, FeedbackDtype
-from dobot_api_v3.utils import deprecated_alias
 
 
 class DobotApiFeedback(DobotApi):
@@ -103,35 +102,3 @@ class DobotApiFeedback(DobotApi):
         if raw is None:
             return None
         return FeedbackData.from_numpy(raw)
-
-    @deprecated_alias("feedback_data")
-    def feedBackData(self) -> Optional[FeedbackData]:
-        """Deprecated alias for :meth:`feedback_data`.
-
-        Returns:
-            Same value as :meth:`feedback_data`.
-        """
-        return self.feedback_data()
-
-
-# ---------------------------------------------------------------------------
-# Deprecated class alias — preserved for backward compatibility.
-# PEP 562: module __getattr__ emits DeprecationWarning on access.
-# ---------------------------------------------------------------------------
-import warnings as _warnings
-
-_DEPRECATED_NAMES: dict[str, object] = {
-    "DobotApiFeedBack": DobotApiFeedback,
-}
-
-
-def __getattr__(name: str) -> object:
-    """Emit DeprecationWarning for legacy module-level names."""
-    if name in _DEPRECATED_NAMES:
-        _warnings.warn(
-            f"{name} is deprecated, use DobotApiFeedback instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return _DEPRECATED_NAMES[name]
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
