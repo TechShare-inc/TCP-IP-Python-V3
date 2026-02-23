@@ -2,7 +2,6 @@
 
 import os
 import sys
-import warnings as _warnings
 
 from loguru import logger
 
@@ -32,25 +31,6 @@ logger.add(
 
 __version__ = "3.0.0"
 
-_DEPRECATED_NAMES: dict[str, object] = {
-    "MyType": FeedbackDtype,
-    "DobotApiFeedBack": DobotApiFeedback,
-}
-
-_DEPRECATED_MSG: dict[str, str] = {
-    "MyType": "MyType is deprecated, use FeedbackDtype instead.",
-    "DobotApiFeedBack": "DobotApiFeedBack is deprecated, use DobotApiFeedback instead.",
-}
-
-
-def __getattr__(name: str) -> object:
-    """Emit DeprecationWarning for legacy package-level names (PEP 562)."""
-    if name in _DEPRECATED_NAMES:
-        _warnings.warn(_DEPRECATED_MSG[name], DeprecationWarning, stacklevel=2)
-        return _DEPRECATED_NAMES[name]
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-
 __all__ = [
     # Primary names — use these in new code.
     "DobotRobot",
@@ -71,7 +51,4 @@ __all__ = [
     "PoseResponse",
     "ErrorIdResponse",
     "parse_response",
-    # Deprecated aliases — kept for backward compatibility.
-    "DobotApiFeedBack",  # deprecated: use DobotApiFeedback
-    "MyType",  # deprecated: use FeedbackDtype
 ]

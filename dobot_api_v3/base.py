@@ -5,7 +5,6 @@ from __future__ import annotations
 import dataclasses
 import socket
 import threading
-import warnings
 from typing import Optional
 
 import numpy as np
@@ -143,7 +142,7 @@ class FeedbackData:
         time_stamp_reserve_bit: Reserved timestamp bits.
         test_value: Internal test value.
         test_value_keep_bit: Internal test keep bit.
-        speed_scaling: Global speed scaling factor (0–1).
+        speed_scaling: Global speed scaling factor (0-1).
         linear_momentum_norm: Linear momentum magnitude.
         v_main: Main voltage (V).
         v_robot: Robot voltage (V).
@@ -410,27 +409,6 @@ class FeedbackData:
             actual_quaternion=tuple(row["actual_quaternion"].tolist()),
             reserve3=tuple(int(b) for b in row["reserve3"].tolist()),
         )
-
-
-# ---------------------------------------------------------------------------
-# Deprecated alias — kept for backward compatibility.
-# PEP 562: module __getattr__ emits DeprecationWarning on access.
-# ---------------------------------------------------------------------------
-_DEPRECATED_NAMES: dict[str, object] = {
-    "MyType": FeedbackDtype,
-}
-
-
-def __getattr__(name: str) -> object:
-    """Emit DeprecationWarning for legacy module-level names."""
-    if name in _DEPRECATED_NAMES:
-        warnings.warn(
-            f"{name} is deprecated, use FeedbackDtype instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return _DEPRECATED_NAMES[name]
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 class DobotApi:

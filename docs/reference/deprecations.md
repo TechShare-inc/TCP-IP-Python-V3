@@ -1,11 +1,10 @@
 # Deprecations
 
-The package keeps PascalCase command aliases for backward compatibility.
+All deprecated backward-compatibility aliases have been removed. The API is
+now exclusively `snake_case`.
 
-- New code should use `snake_case` methods.
-- Deprecated aliases emit `DeprecationWarning`.
-
-Example:
-
-- deprecated: `EnableRobot()`
-- preferred: `enable_robot()`
+If you are upgrading from an older version, replace any PascalCase method calls
+with their `snake_case` equivalents (e.g. `EnableRobot()` → `enable_robot()`,
+`MovJ()` → `mov_j()`). The full mapping is documented in the
+[copilot-instructions](../../.github/copilot-instructions.md) protocol name
+table under **Section 3b**.

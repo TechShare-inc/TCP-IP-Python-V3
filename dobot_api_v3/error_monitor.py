@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import re
 import time
-import warnings
 from typing import Any, Dict, List, Optional
 
 from loguru import logger
@@ -38,76 +37,6 @@ class RobotErrorMonitor:
         """
         self.dashboard = dashboard
         self.i18n = AlarmI18n(default_language=language)
-
-    # ------------------------------------------------------------------
-    # Deprecated factory — kept for backward compatibility
-    # ------------------------------------------------------------------
-
-    @classmethod
-    def from_connection(
-        cls,
-        robot_ip: str = "192.168.200.1",
-        dashboard_port: int = 29999,
-    ) -> "RobotErrorMonitor":
-        """Create a monitor by opening a new dashboard connection.
-
-        Args:
-            robot_ip: Robot controller IP address.
-            dashboard_port: Dashboard TCP port.
-
-        Returns:
-            New monitor instance bound to a newly created dashboard client.
-
-        .. deprecated::
-            Prefer creating a :class:`~dobot_api_v3.DobotApiDashboard`
-            yourself and passing it to :class:`RobotErrorMonitor` directly
-            so that the same connection can be shared with other API objects.
-        """
-        warnings.warn(
-            "RobotErrorMonitor.from_connection() is deprecated. "
-            "Create a DobotApiDashboard instance and pass it to "
-            "RobotErrorMonitor(dashboard) instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        dashboard = DobotApiDashboard(robot_ip, dashboard_port)
-        return cls(dashboard)
-
-    # ------------------------------------------------------------------
-    # Deprecated lifecycle helpers — kept for backward compatibility
-    # ------------------------------------------------------------------
-
-    def connect(self) -> bool:
-        """No-op kept for backward compatibility.
-
-        Returns:
-            Always ``True``.
-
-        .. deprecated::
-            Lifecycle is now the caller's responsibility.  Manage the
-            :class:`DobotApiDashboard` connection yourself.
-        """
-        warnings.warn(
-            "RobotErrorMonitor.connect() is deprecated and is now a no-op. "
-            "Manage the DobotApiDashboard connection yourself.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return True
-
-    def disconnect(self) -> None:
-        """No-op kept for backward compatibility.
-
-        .. deprecated::
-            Lifecycle is now the caller's responsibility.  Close the
-            :class:`DobotApiDashboard` yourself when done.
-        """
-        warnings.warn(
-            "RobotErrorMonitor.disconnect() is deprecated and is now a no-op. "
-            "Close the DobotApiDashboard yourself when done.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
 
     # ------------------------------------------------------------------
     # Core API
