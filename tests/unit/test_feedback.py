@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 import numpy as np
 import pytest
 
-from dobot_api_v3.base import DobotApi, FeedbackDtype
+from dobot_api_v3.base import DobotApi, FeedbackData, FeedbackDtype
 from dobot_api_v3.feedback import DobotApiFeedback
 
 pytestmark = pytest.mark.unit
@@ -38,28 +38,37 @@ assert (
 
 
 class TestFeedbackDataHappyPath:
-    def test_returns_numpy_array_for_exact_1440_bytes(
+    def test_returns_feedback_data_for_exact_1440_bytes(
         self, mock_feedback: DobotApiFeedback
     ) -> None:
         mock_feedback.socket_dobot.recv.return_value = _valid_buffer()  # type: ignore[union-attr]
         result = mock_feedback.feedback_data()
+        assert isinstance(result, FeedbackData)
+
+    def test_raw_returns_numpy_array_for_exact_1440_bytes(
+        self, mock_feedback: DobotApiFeedback
+    ) -> None:
+        mock_feedback.socket_dobot.recv.return_value = _valid_buffer()  # type: ignore[union-attr]
+        result = mock_feedback.raw_feedback_data()
         assert isinstance(result, np.ndarray)
 
-    def test_array_has_feedback_dtype(self, mock_feedback: DobotApiFeedback) -> None:
+    def test_raw_array_has_feedback_dtype(
+        self, mock_feedback: DobotApiFeedback
+    ) -> None:
         mock_feedback.socket_dobot.recv.return_value = _valid_buffer()  # type: ignore[union-attr]
-        result = mock_feedback.feedback_data()
+        result = mock_feedback.raw_feedback_data()
         assert result is not None
         assert result.dtype == FeedbackDtype
 
     def test_field_values_round_trip(self, mock_feedback: DobotApiFeedback) -> None:
-        """Values written into the buffer should be readable from the parsed array."""
+        """Values written into the buffer should be readable from the parsed FeedbackData."""
         buf = _valid_buffer(robot_mode=5, load=2.5, speed_scaling=0.75)
         mock_feedback.socket_dobot.recv.return_value = buf  # type: ignore[union-attr]
         result = mock_feedback.feedback_data()
         assert result is not None
-        assert int(result[0]["robot_mode"]) == 5
-        assert float(result[0]["load"]) == pytest.approx(2.5)
-        assert float(result[0]["speed_scaling"]) == pytest.approx(0.75)
+        assert result.robot_mode == 5
+        assert result.load == pytest.approx(2.5)
+        assert result.speed_scaling == pytest.approx(0.75)
 
     def test_updates_last_recv_time(self, mock_feedback: DobotApiFeedback) -> None:
         before = mock_feedback.last_recv_time
@@ -96,7 +105,7 @@ class TestFeedbackDataOversizedPacket:
         mock_feedback.socket_dobot.recv.side_effect = [big_buf, big_buf]  # type: ignore[union-attr]
         result = mock_feedback.feedback_data()
         assert result is not None
-        assert int(result[0]["robot_mode"]) == 3
+        assert result.robot_mode == 3
 
 
 # ---------------------------------------------------------------------------
@@ -128,7 +137,7 @@ class TestFeedbackDataPartialPacket:
         mock_feedback.socket_dobot.recv.side_effect = [short, short, good_buf]  # type: ignore[union-attr]
         result = mock_feedback.feedback_data()
         assert result is not None
-        assert int(result[0]["robot_mode"]) == 9
+        assert result.robot_mode == 9
 
 
 # ---------------------------------------------------------------------------
@@ -143,6 +152,13 @@ class TestFeedbackDataNoSocket:
         mock_feedback.socket_dobot = None
         with pytest.raises(RuntimeError, match="Socket connection is not established"):
             mock_feedback.feedback_data()
+
+    def test_raw_raises_runtime_error_when_socket_is_none(
+        self, mock_feedback: DobotApiFeedback
+    ) -> None:
+        mock_feedback.socket_dobot = None
+        with pytest.raises(RuntimeError, match="Socket connection is not established"):
+            mock_feedback.raw_feedback_data()
 
 
 # ---------------------------------------------------------------------------
@@ -182,6 +198,84 @@ class TestFeedbackDtype:
         ]
         for field in joint_fields:
             assert len(arr[0][field]) == 6, f"field {field!r} should have 6 elements"
+
+
+# ---------------------------------------------------------------------------
+# FeedbackData typed dataclass
+# ---------------------------------------------------------------------------
+
+
+class TestFeedbackDataClass:
+    """Tests for FeedbackData.from_numpy() and immutability."""
+
+    def _make_data(self, **kwargs: object) -> FeedbackData:
+        buf = _valid_buffer(**kwargs)
+        arr = np.frombuffer(buf, dtype=FeedbackDtype)
+        return FeedbackData.from_numpy(arr)
+
+    def test_scalar_fields_are_python_int_or_float(self) -> None:
+        data = self._make_data(robot_mode=3)
+        assert isinstance(data.robot_mode, int)
+        assert isinstance(data.load, float)
+        assert isinstance(data.speed_scaling, float)
+
+    def test_array_fields_are_tuples(self) -> None:
+        data = self._make_data()
+        assert isinstance(data.q_actual, tuple)
+        assert isinstance(data.tool_vector_actual, tuple)
+        assert isinstance(data.hand_type, tuple)
+
+    def test_six_element_tuple_lengths(self) -> None:
+        data = self._make_data()
+        six_fields = [
+            "q_target",
+            "qd_target",
+            "qdd_target",
+            "i_target",
+            "m_target",
+            "q_actual",
+            "qd_actual",
+            "i_actual",
+            "actual_tcp_force",
+            "tool_vector_actual",
+            "tcp_speed_actual",
+            "tcp_force",
+            "tool_vector_target",
+            "tcp_speed_target",
+            "motor_temperatures",
+            "joint_modes",
+            "v_actual",
+            "m_actual",
+            "user_coords",
+            "tool_coords",
+            "six_force_value",
+        ]
+        for field in six_fields:
+            value = getattr(data, field)
+            assert len(value) == 6, f"field {field!r} should have 6 elements"
+
+    def test_three_element_tuple_lengths(self) -> None:
+        data = self._make_data()
+        for field in ("tool_accelerometer_values", "elbow_position", "elbow_velocity"):
+            assert len(getattr(data, field)) == 3, f"{field!r} should have 3 elements"
+
+    def test_quaternion_fields_have_four_elements(self) -> None:
+        data = self._make_data()
+        assert len(data.target_quaternion) == 4
+        assert len(data.actual_quaternion) == 4
+
+    def test_round_trip_scalar_values(self) -> None:
+        data = self._make_data(robot_mode=7, load=1.5, speed_scaling=0.5)
+        assert data.robot_mode == 7
+        assert data.load == pytest.approx(1.5)
+        assert data.speed_scaling == pytest.approx(0.5)
+
+    def test_is_frozen(self) -> None:
+        import dataclasses
+
+        data = self._make_data()
+        with pytest.raises((dataclasses.FrozenInstanceError, AttributeError)):
+            data.robot_mode = 99  # type: ignore[misc]
 
 
 # ---------------------------------------------------------------------------

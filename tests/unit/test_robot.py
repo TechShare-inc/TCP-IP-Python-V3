@@ -7,7 +7,13 @@ from unittest.mock import MagicMock, call, patch
 import numpy as np
 import pytest
 
-from dobot_api_v3.base import DobotApi, FeedbackDtype
+from dobot_api_v3.base import DobotApi, FeedbackData, FeedbackDtype
+from dobot_api_v3.responses import (
+    AckResponse,
+    ErrorIdResponse,
+    IntResponse,
+    PoseResponse,
+)
 from dobot_api_v3.robot import DobotRobot
 
 pytestmark = pytest.mark.unit
@@ -19,7 +25,9 @@ pytestmark = pytest.mark.unit
 
 
 @pytest.fixture
-def mock_robot(monkeypatch: pytest.MonkeyPatch) -> tuple[DobotRobot, list[str], list[str]]:
+def mock_robot(
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[DobotRobot, list[str], list[str]]:
     """DobotRobot with all sockets mocked.
 
     Returns:
@@ -38,6 +46,13 @@ def mock_robot(monkeypatch: pytest.MonkeyPatch) -> tuple[DobotRobot, list[str], 
 
     def _capture_dashboard(cmd: str) -> str:
         dashboard_cmds.append(cmd)
+        # Return realistic protocol responses so parse_response succeeds.
+        if cmd.startswith("RobotMode"):
+            return "0,{5};"
+        if cmd.startswith("GetPose") or cmd.startswith("GetAngle"):
+            return "0,{0.0,0.0,0.0,0.0,0.0,0.0};"
+        if cmd.startswith("GetErrorID"):
+            return "0,{0};"
         return f"0,0,{cmd};"
 
     def _capture_move(cmd: str) -> str:
@@ -106,9 +121,7 @@ class TestContextManager:
         robot.__exit__(None, None, None)
         assert len(close_calls) == 1
 
-    def test_context_manager_protocol(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_context_manager_protocol(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(DobotApi, "_connect", lambda self: None)
         with DobotRobot("192.168.1.1") as robot:
             assert isinstance(robot, DobotRobot)
@@ -221,44 +234,78 @@ class TestClose:
 
 
 class TestStartup:
-    def test_startup_command_sequence(self, mock_robot: tuple) -> None:
+    def test_startup_command_sequence_with_errors(self, mock_robot: tuple) -> None:
+        """When errors are present, startup runs the full clear→power→disable→enable→speed sequence."""
         robot, dashboard_cmds, _ = mock_robot
-        with patch("time.sleep"):
+        with (
+            patch.object(robot.errors, "check_errors", return_value=True),
+            patch("time.sleep"),
+        ):
             robot.startup(speed=50)
-        # Verify the commands appear in the correct order
         assert dashboard_cmds[0] == "ClearError()"
         assert dashboard_cmds[1] == "PowerOn()"
         assert dashboard_cmds[2] == "DisableRobot()"
         assert dashboard_cmds[3] == "EnableRobot()"
         assert dashboard_cmds[4] == "SpeedFactor(50)"
 
+    def test_startup_command_sequence_no_errors(self, mock_robot: tuple) -> None:
+        """When no errors, startup skips clear_error/power_on and goes straight to disable→enable→speed."""
+        robot, dashboard_cmds, _ = mock_robot
+        with patch.object(robot.errors, "check_errors", return_value=False):
+            robot.startup(speed=50)
+        assert dashboard_cmds[0] == "DisableRobot()"
+        assert dashboard_cmds[1] == "EnableRobot()"
+        assert dashboard_cmds[2] == "SpeedFactor(50)"
+        # clear_error and power_on must NOT appear
+        assert not any("ClearError" in c for c in dashboard_cmds)
+        assert not any("PowerOn" in c for c in dashboard_cmds)
+
     def test_startup_default_speed_factor(self, mock_robot: tuple) -> None:
         robot, dashboard_cmds, _ = mock_robot
-        with patch("time.sleep"):
+        with patch.object(robot.errors, "check_errors", return_value=False):
             robot.startup()
         assert any("SpeedFactor(40)" in cmd for cmd in dashboard_cmds)
 
     def test_startup_with_load(self, mock_robot: tuple) -> None:
         robot, dashboard_cmds, _ = mock_robot
-        with patch("time.sleep"):
+        with patch.object(robot.errors, "check_errors", return_value=False):
             robot.startup(speed=30, load=1.5, center_z=0.05)
         enable_cmd = next(c for c in dashboard_cmds if c.startswith("EnableRobot"))
         assert "1.500000" in enable_cmd
         assert "0.050000" in enable_cmd
 
     def test_startup_power_on_wait(self, mock_robot: tuple) -> None:
+        """Custom power_on_wait is forwarded to time.sleep when errors are present."""
         robot, _, _ = mock_robot
         sleep_calls: list[float] = []
-        with patch("time.sleep", side_effect=lambda t: sleep_calls.append(t)):
+        with (
+            patch.object(robot.errors, "check_errors", return_value=True),
+            patch("time.sleep", side_effect=lambda t: sleep_calls.append(t)),
+        ):
             robot.startup(power_on_wait=5.0)
         assert 5.0 in sleep_calls
 
-    def test_startup_default_wait_is_10(self, mock_robot: tuple) -> None:
+    def test_startup_default_wait_is_15(self, mock_robot: tuple) -> None:
+        """Default power_on_wait (15s) is used when errors are present."""
         robot, _, _ = mock_robot
         sleep_calls: list[float] = []
-        with patch("time.sleep", side_effect=lambda t: sleep_calls.append(t)):
+        with (
+            patch.object(robot.errors, "check_errors", return_value=True),
+            patch("time.sleep", side_effect=lambda t: sleep_calls.append(t)),
+        ):
             robot.startup()
-        assert 10.0 in sleep_calls
+        assert 15.0 in sleep_calls
+
+    def test_startup_no_sleep_without_errors(self, mock_robot: tuple) -> None:
+        """When no errors are detected, time.sleep is never called."""
+        robot, _, _ = mock_robot
+        sleep_calls: list[float] = []
+        with (
+            patch.object(robot.errors, "check_errors", return_value=False),
+            patch("time.sleep", side_effect=lambda t: sleep_calls.append(t)),
+        ):
+            robot.startup()
+        assert len(sleep_calls) == 0
 
 
 # ---------------------------------------------------------------------------
@@ -289,9 +336,7 @@ class TestReconnect:
         assert dashboard_reconnected
         assert move_reconnected
 
-    def test_reconnect_with_feedback(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_reconnect_with_feedback(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(DobotApi, "_connect", lambda self: None)
         robot = DobotRobot("192.168.1.1")
         _ = robot.feedback  # trigger lazy creation
@@ -309,9 +354,7 @@ class TestReconnect:
 
 
 class TestErrorConvenience:
-    def test_check_errors_delegates_to_error_monitor(
-        self, mock_robot: tuple
-    ) -> None:
+    def test_check_errors_delegates_to_error_monitor(self, mock_robot: tuple) -> None:
         robot, _, _ = mock_robot
         results = []
         robot.errors.check_errors = lambda language="en": results.append(language) or False  # type: ignore[method-assign]
@@ -358,17 +401,32 @@ class TestFeedbackData:
         fb_mock.feedback_data.assert_called_once()
         assert result is None
 
-    def test_feedback_data_returns_numpy_array(
+    def test_feedback_data_returns_feedback_data_instance(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(DobotApi, "_connect", lambda self: None)
+        robot = DobotRobot("192.168.1.1")
+        arr = np.zeros(1, dtype=FeedbackDtype)
+        expected = FeedbackData.from_numpy(arr)
+        fb_mock = MagicMock()
+        fb_mock.feedback_data.return_value = expected
+        robot._feedback = fb_mock  # type: ignore[assignment]
+        result = robot.feedback_data()
+        assert result is expected
+        assert isinstance(result, FeedbackData)
+
+    def test_raw_feedback_data_delegates_to_feedback(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setattr(DobotApi, "_connect", lambda self: None)
         robot = DobotRobot("192.168.1.1")
         expected = np.zeros(1, dtype=FeedbackDtype)
         fb_mock = MagicMock()
-        fb_mock.feedback_data.return_value = expected
+        fb_mock.raw_feedback_data.return_value = expected
         robot._feedback = fb_mock  # type: ignore[assignment]
-        result = robot.feedback_data()
+        result = robot.raw_feedback_data()
         assert result is expected
+        fb_mock.raw_feedback_data.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
@@ -378,23 +436,23 @@ class TestFeedbackData:
 
 class TestForwardedDashboardCommands:
     @pytest.mark.parametrize(
-        "method,args,expected_cmd",
+        "method,args,expected_cmd,expected_type",
         [
-            ("enable_robot", (), "EnableRobot()"),
-            ("disable_robot", (), "DisableRobot()"),
-            ("clear_error", (), "ClearError()"),
-            ("reset_robot", (), "ResetRobot()"),
-            ("power_on", (), "PowerOn()"),
-            ("emergency_stop", (), "EmergencyStop()"),
-            ("speed_factor", (40,), "SpeedFactor(40)"),
-            ("robot_mode", (), "RobotMode()"),
-            ("get_pose", (), "GetPose()"),
-            ("get_angle", (), "GetAngle()"),
-            ("get_error_id", (), "GetErrorID()"),
-            ("start_drag", (), "StartDrag()"),
-            ("stop_drag", (), "StopDrag()"),
-            ("set_user", (1,), "User(1)"),
-            ("set_tool", (2,), "Tool(2)"),
+            ("enable_robot", (), "EnableRobot()", AckResponse),
+            ("disable_robot", (), "DisableRobot()", AckResponse),
+            ("clear_error", (), "ClearError()", AckResponse),
+            ("reset_robot", (), "ResetRobot()", AckResponse),
+            ("power_on", (), "PowerOn()", AckResponse),
+            ("emergency_stop", (), "EmergencyStop()", AckResponse),
+            ("speed_factor", (40,), "SpeedFactor(40)", AckResponse),
+            ("robot_mode", (), "RobotMode()", IntResponse),
+            ("get_pose", (), "GetPose()", PoseResponse),
+            ("get_angle", (), "GetAngle()", PoseResponse),
+            ("get_error_id", (), "GetErrorID()", ErrorIdResponse),
+            ("start_drag", (), "StartDrag()", AckResponse),
+            ("stop_drag", (), "StopDrag()", AckResponse),
+            ("set_user", (1,), "User(1)", AckResponse),
+            ("set_tool", (2,), "Tool(2)", AckResponse),
         ],
     )
     def test_dashboard_forward(
@@ -403,10 +461,12 @@ class TestForwardedDashboardCommands:
         method: str,
         args: tuple,
         expected_cmd: str,
+        expected_type: type,
     ) -> None:
         robot, dashboard_cmds, _ = mock_robot
-        getattr(robot, method)(*args)
+        result = getattr(robot, method)(*args)
         assert expected_cmd in dashboard_cmds
+        assert isinstance(result, expected_type)
 
 
 # ---------------------------------------------------------------------------

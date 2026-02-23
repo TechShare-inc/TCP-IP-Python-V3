@@ -25,6 +25,7 @@ import pytest
 from dobot_api_v3.dashboard import DobotApiDashboard
 from dobot_api_v3.feedback import DobotApiFeedback
 from dobot_api_v3.move import DobotApiMove
+from dobot_api_v3.robot import DobotRobot
 
 # ---------------------------------------------------------------------------
 # Environment
@@ -83,3 +84,12 @@ def real_feedback() -> Generator[DobotApiFeedback, None, None]:
     fb = DobotApiFeedback(_ROBOT_IP, _FEEDBACK_PORT)
     yield fb
     fb.close()
+
+
+@pytest.fixture(scope="module")
+def real_robot() -> Generator[DobotRobot, None, None]:
+    """Live DobotRobot connected to the robot under test."""
+    if not _ROBOT_IP:
+        pytest.skip(_SKIP_REASON)
+    with DobotRobot(_ROBOT_IP) as robot:
+        yield robot

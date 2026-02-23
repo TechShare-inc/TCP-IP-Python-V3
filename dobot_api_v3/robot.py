@@ -27,10 +27,18 @@ from typing import Optional
 import numpy as np
 from loguru import logger
 
+from .base import FeedbackData
 from .dashboard import DobotApiDashboard
 from .error_monitor import RobotErrorMonitor
 from .feedback import DobotApiFeedback
 from .move import DobotApiMove
+from .responses import (
+    AckResponse,
+    ErrorIdResponse,
+    IntResponse,
+    PoseResponse,
+    parse_response,
+)
 from .utils import DynParam
 
 
@@ -185,22 +193,22 @@ class DobotRobot:
         has_errors = self.errors.check_errors()
         if has_errors:
             logger.info("Errors detected — clearing and powering on")
-            logger.debug(self.dashboard.clear_error())
-            logger.debug(self.dashboard.power_on())
+            logger.debug(self.clear_error())
+            logger.debug(self.power_on())
             logger.info(f"Waiting {power_on_wait}s for controller to power on")
             time.sleep(power_on_wait)
         else:
             logger.info("No errors detected — skipping clear_error and power_on")
-        logger.debug(self.dashboard.disable_robot())
+        logger.debug(self.disable_robot())
         logger.debug(
-            self.dashboard.enable_robot(
+            self.enable_robot(
                 load=load,
                 center_x=center_x,
                 center_y=center_y,
                 center_z=center_z,
             )
         )
-        logger.debug(self.dashboard.speed_factor(speed))
+        logger.debug(self.speed_factor(speed))
         logger.info("DobotRobot startup sequence complete")
 
     def shutdown(self) -> None:
@@ -213,7 +221,7 @@ class DobotRobot:
             >>> robot.shutdown()
         """
         logger.info("DobotRobot shutdown: disabling robot")
-        logger.debug(self.dashboard.disable_robot())
+        logger.debug(self.disable_robot())
 
     def close(self) -> None:
         """Close all open TCP connections.
@@ -296,21 +304,42 @@ class DobotRobot:
     # Feedback convenience
     # ------------------------------------------------------------------
 
-    def feedback_data(self) -> Optional[np.ndarray]:
+    def feedback_data(self) -> Optional[FeedbackData]:
         """Read one feedback frame from the primary feedback port (30004).
 
-        Opens the feedback connection lazily on the first call.
+        Opens the feedback connection lazily on the first call.  Returns a
+        typed :class:`~dobot_api_v3.FeedbackData` for full IDE autocompletion.
+        For zero-copy NumPy access use :meth:`raw_feedback_data` instead.
 
         Returns:
-            A NumPy structured array of length 1 when a valid 1440-byte frame
-            is parsed, otherwise ``None``.
+            A :class:`~dobot_api_v3.FeedbackData` instance when a valid
+            1440-byte frame is parsed, otherwise ``None``.
 
         Example:
             >>> data = robot.feedback_data()
             >>> if data is not None:
-            ...     print(data["tool_vector_actual"][0])
+            ...     print(data.tool_vector_actual)
+            ...     print(data.robot_mode)
         """
         return self.feedback.feedback_data()
+
+    def raw_feedback_data(self) -> Optional[np.ndarray]:
+        """Read one feedback frame and return the raw NumPy structured array.
+
+        Opens the feedback connection lazily on the first call.  Use this
+        method for NumPy-native numeric pipelines; for typed access prefer
+        :meth:`feedback_data`.
+
+        Returns:
+            A NumPy structured array of length 1 (``dtype=FeedbackDtype``)
+            when a valid 1440-byte frame is parsed, otherwise ``None``.
+
+        Example:
+            >>> raw = robot.raw_feedback_data()
+            >>> if raw is not None:
+            ...     print(raw[0]["tool_vector_actual"])
+        """
+        return self.feedback.raw_feedback_data()
 
     # ------------------------------------------------------------------
     # Forwarded dashboard commands
@@ -322,7 +351,7 @@ class DobotRobot:
         center_x: float = 0.0,
         center_y: float = 0.0,
         center_z: float = 0.0,
-    ) -> str:
+    ) -> AckResponse:
         """Enable the robot with optional payload parameters.
 
         Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.enable_robot`.
@@ -334,63 +363,82 @@ class DobotRobot:
             center_z: Payload center offset on Z axis.
 
         Returns:
-            Robot response string.
+            :class:`~dobot_api_v3.AckResponse` on success.
+
+        Raises:
+            DobotApiError: If the controller returns a non-zero error code.
         """
-        return self.dashboard.enable_robot(
+        raw = self.dashboard.enable_robot(
             load=load, center_x=center_x, center_y=center_y, center_z=center_z
         )
+        return parse_response(raw, AckResponse)
 
-    def disable_robot(self) -> str:
+    def disable_robot(self) -> AckResponse:
         """Disable the robot arm.
 
         Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.disable_robot`.
 
         Returns:
-            Robot response string.
-        """
-        return self.dashboard.disable_robot()
+            :class:`~dobot_api_v3.AckResponse` on success.
 
-    def clear_error(self) -> str:
+        Raises:
+            DobotApiError: If the controller returns a non-zero error code.
+        """
+        return parse_response(self.dashboard.disable_robot(), AckResponse)
+
+    def clear_error(self) -> AckResponse:
         """Clear controller alarm information.
 
         Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.clear_error`.
 
         Returns:
-            Robot response string.
-        """
-        return self.dashboard.clear_error()
+            :class:`~dobot_api_v3.AckResponse` on success.
 
-    def reset_robot(self) -> str:
+        Raises:
+            DobotApiError: If the controller returns a non-zero error code.
+        """
+        return parse_response(self.dashboard.clear_error(), AckResponse)
+
+    def reset_robot(self) -> AckResponse:
         """Stop the robot.
 
         Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.reset_robot`.
 
         Returns:
-            Robot response string.
-        """
-        return self.dashboard.reset_robot()
+            :class:`~dobot_api_v3.AckResponse` on success.
 
-    def power_on(self) -> str:
+        Raises:
+            DobotApiError: If the controller returns a non-zero error code.
+        """
+        return parse_response(self.dashboard.reset_robot(), AckResponse)
+
+    def power_on(self) -> AckResponse:
         """Power on the controller.
 
         Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.power_on`.
 
         Returns:
-            Robot response string.
-        """
-        return self.dashboard.power_on()
+            :class:`~dobot_api_v3.AckResponse` on success.
 
-    def emergency_stop(self) -> str:
+        Raises:
+            DobotApiError: If the controller returns a non-zero error code.
+        """
+        return parse_response(self.dashboard.power_on(), AckResponse)
+
+    def emergency_stop(self) -> AckResponse:
         """Trigger an emergency stop.
 
         Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.emergency_stop`.
 
         Returns:
-            Robot response string.
-        """
-        return self.dashboard.emergency_stop()
+            :class:`~dobot_api_v3.AckResponse` on success.
 
-    def speed_factor(self, speed: int) -> str:
+        Raises:
+            DobotApiError: If the controller returns a non-zero error code.
+        """
+        return parse_response(self.dashboard.emergency_stop(), AckResponse)
+
+    def speed_factor(self, speed: int) -> AckResponse:
         """Set global speed factor.
 
         Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.speed_factor`.
@@ -399,71 +447,96 @@ class DobotRobot:
             speed: Rate value in range 1-100.
 
         Returns:
-            Robot response string.
-        """
-        return self.dashboard.speed_factor(speed)
+            :class:`~dobot_api_v3.AckResponse` on success.
 
-    def robot_mode(self) -> str:
+        Raises:
+            DobotApiError: If the controller returns a non-zero error code.
+        """
+        return parse_response(self.dashboard.speed_factor(speed), AckResponse)
+
+    def robot_mode(self) -> IntResponse:
         """Query the robot operating mode.
 
         Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.robot_mode`.
 
         Returns:
-            Robot response string.
-        """
-        return self.dashboard.robot_mode()
+            :class:`~dobot_api_v3.IntResponse` with ``value`` set to the
+            current mode code (e.g. 5 = idle, 7 = running).
 
-    def get_pose(self) -> str:
+        Raises:
+            DobotApiError: If the controller returns a non-zero error code.
+        """
+        return parse_response(self.dashboard.robot_mode(), IntResponse)
+
+    def get_pose(self) -> PoseResponse:
         """Get current Cartesian pose.
 
         Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.get_pose`.
 
         Returns:
-            Robot response string.
-        """
-        return self.dashboard.get_pose()
+            :class:`~dobot_api_v3.PoseResponse` with ``x``, ``y``, ``z``,
+            ``rx``, ``ry``, ``rz`` fields populated in mm / degrees.
 
-    def get_angle(self) -> str:
+        Raises:
+            DobotApiError: If the controller returns a non-zero error code.
+        """
+        return parse_response(self.dashboard.get_pose(), PoseResponse)
+
+    def get_angle(self) -> PoseResponse:
         """Get current joint angles.
 
         Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.get_angle`.
 
         Returns:
-            Robot response string.
-        """
-        return self.dashboard.get_angle()
+            :class:`~dobot_api_v3.PoseResponse` with ``x``-``rz`` fields
+            mapping to joint angles J1-J6 in degrees.
 
-    def get_error_id(self) -> str:
+        Raises:
+            DobotApiError: If the controller returns a non-zero error code.
+        """
+        return parse_response(self.dashboard.get_angle(), PoseResponse)
+
+    def get_error_id(self) -> ErrorIdResponse:
         """Get current error IDs from the controller.
 
         Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.get_error_id`.
 
         Returns:
-            Robot response string.
-        """
-        return self.dashboard.get_error_id()
+            :class:`~dobot_api_v3.ErrorIdResponse` with ``error_ids`` tuple
+            of active non-zero alarm codes.
 
-    def start_drag(self) -> str:
+        Raises:
+            DobotApiError: If the controller returns a non-zero error code.
+        """
+        return parse_response(self.dashboard.get_error_id(), ErrorIdResponse)
+
+    def start_drag(self) -> AckResponse:
         """Enable drag (teach) mode.
 
         Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.start_drag`.
 
         Returns:
-            Robot response string.
-        """
-        return self.dashboard.start_drag()
+            :class:`~dobot_api_v3.AckResponse` on success.
 
-    def stop_drag(self) -> str:
+        Raises:
+            DobotApiError: If the controller returns a non-zero error code.
+        """
+        return parse_response(self.dashboard.start_drag(), AckResponse)
+
+    def stop_drag(self) -> AckResponse:
         """Disable drag (teach) mode.
 
         Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.stop_drag`.
 
         Returns:
-            Robot response string.
-        """
-        return self.dashboard.stop_drag()
+            :class:`~dobot_api_v3.AckResponse` on success.
 
-    def set_user(self, index: int) -> str:
+        Raises:
+            DobotApiError: If the controller returns a non-zero error code.
+        """
+        return parse_response(self.dashboard.stop_drag(), AckResponse)
+
+    def set_user(self, index: int) -> AckResponse:
         """Select the calibrated user coordinate system.
 
         Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.set_user`.
@@ -472,11 +545,14 @@ class DobotRobot:
             index: Calibrated user coordinate index.
 
         Returns:
-            Robot response string.
-        """
-        return self.dashboard.set_user(index)
+            :class:`~dobot_api_v3.AckResponse` on success.
 
-    def set_tool(self, index: int) -> str:
+        Raises:
+            DobotApiError: If the controller returns a non-zero error code.
+        """
+        return parse_response(self.dashboard.set_user(index), AckResponse)
+
+    def set_tool(self, index: int) -> AckResponse:
         """Select the calibrated tool coordinate system.
 
         Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.set_tool`.
@@ -485,9 +561,12 @@ class DobotRobot:
             index: Calibrated tool coordinate index.
 
         Returns:
-            Robot response string.
+            :class:`~dobot_api_v3.AckResponse` on success.
+
+        Raises:
+            DobotApiError: If the controller returns a non-zero error code.
         """
-        return self.dashboard.set_tool(index)
+        return parse_response(self.dashboard.set_tool(index), AckResponse)
 
     # ------------------------------------------------------------------
     # Forwarded move commands
@@ -502,7 +581,7 @@ class DobotRobot:
         ry: float,
         rz: float,
         *dyn_params: DynParam,
-    ) -> str:
+    ) -> AckResponse:
         """Joint motion interface (point-to-point motion mode).
 
         Delegates to :meth:`~dobot_api_v3.DobotApiMove.mov_j`.
@@ -517,13 +596,18 @@ class DobotRobot:
             *dyn_params: Optional motion parameters.
 
         Returns:
-            Robot response string.
+            :class:`~dobot_api_v3.AckResponse` on success.
+
+        Raises:
+            DobotApiError: If the controller returns a non-zero error code.
 
         Example:
             >>> robot.mov_j(200, 0, 200, 0, 0, 0)
             >>> robot.mov_j(220, 20, 180, 0, 0, 0, "SpeedJ=40", "AccJ=40")
         """
-        return self.move.mov_j(x, y, z, rx, ry, rz, *dyn_params)
+        return parse_response(
+            self.move.mov_j(x, y, z, rx, ry, rz, *dyn_params), AckResponse
+        )
 
     def mov_l(
         self,
@@ -534,7 +618,7 @@ class DobotRobot:
         ry: float,
         rz: float,
         *dyn_params: DynParam,
-    ) -> str:
+    ) -> AckResponse:
         """Linear motion interface.
 
         Delegates to :meth:`~dobot_api_v3.DobotApiMove.mov_l`.
@@ -549,12 +633,17 @@ class DobotRobot:
             *dyn_params: Optional motion parameters.
 
         Returns:
-            Robot response string.
+            :class:`~dobot_api_v3.AckResponse` on success.
+
+        Raises:
+            DobotApiError: If the controller returns a non-zero error code.
 
         Example:
             >>> robot.mov_l(250, 0, 180, 0, 0, 0)
         """
-        return self.move.mov_l(x, y, z, rx, ry, rz, *dyn_params)
+        return parse_response(
+            self.move.mov_l(x, y, z, rx, ry, rz, *dyn_params), AckResponse
+        )
 
     def joint_mov_j(
         self,
@@ -565,7 +654,7 @@ class DobotRobot:
         j5: float,
         j6: float,
         *dyn_params: DynParam,
-    ) -> str:
+    ) -> AckResponse:
         """Joint motion interface (joint target).
 
         Delegates to :meth:`~dobot_api_v3.DobotApiMove.joint_mov_j`.
@@ -580,12 +669,17 @@ class DobotRobot:
             *dyn_params: Optional motion parameters.
 
         Returns:
-            Robot response string.
+            :class:`~dobot_api_v3.AckResponse` on success.
+
+        Raises:
+            DobotApiError: If the controller returns a non-zero error code.
 
         Example:
             >>> robot.joint_mov_j(-11.53, 4.64, 87.16, -2.84, -77.71, 0.01)
         """
-        return self.move.joint_mov_j(j1, j2, j3, j4, j5, j6, *dyn_params)
+        return parse_response(
+            self.move.joint_mov_j(j1, j2, j3, j4, j5, j6, *dyn_params), AckResponse
+        )
 
     def rel_mov_j(
         self,
@@ -596,7 +690,7 @@ class DobotRobot:
         offset5: float,
         offset6: float,
         *dyn_params: DynParam,
-    ) -> str:
+    ) -> AckResponse:
         """Relative joint offset motion (point-to-point mode).
 
         Delegates to :meth:`~dobot_api_v3.DobotApiMove.rel_mov_j`.
@@ -611,13 +705,19 @@ class DobotRobot:
             *dyn_params: Optional motion parameters.
 
         Returns:
-            Robot response string.
+            :class:`~dobot_api_v3.AckResponse` on success.
+
+        Raises:
+            DobotApiError: If the controller returns a non-zero error code.
 
         Example:
             >>> robot.rel_mov_j(15, 0, 0, 0, 0, 0)
         """
-        return self.move.rel_mov_j(
-            offset1, offset2, offset3, offset4, offset5, offset6, *dyn_params
+        return parse_response(
+            self.move.rel_mov_j(
+                offset1, offset2, offset3, offset4, offset5, offset6, *dyn_params
+            ),
+            AckResponse,
         )
 
     def rel_mov_l(
@@ -626,7 +726,7 @@ class DobotRobot:
         offset_y: float,
         offset_z: float,
         *dyn_params: DynParam,
-    ) -> str:
+    ) -> AckResponse:
         """Relative Cartesian offset motion (linear mode).
 
         Delegates to :meth:`~dobot_api_v3.DobotApiMove.rel_mov_l`.
@@ -638,9 +738,14 @@ class DobotRobot:
             *dyn_params: Optional motion parameters.
 
         Returns:
-            Robot response string.
+            :class:`~dobot_api_v3.AckResponse` on success.
+
+        Raises:
+            DobotApiError: If the controller returns a non-zero error code.
         """
-        return self.move.rel_mov_l(offset_x, offset_y, offset_z, *dyn_params)
+        return parse_response(
+            self.move.rel_mov_l(offset_x, offset_y, offset_z, *dyn_params), AckResponse
+        )
 
     def arc(
         self,
@@ -657,7 +762,7 @@ class DobotRobot:
         b2: float,
         c2: float,
         *dyn_params: DynParam,
-    ) -> str:
+    ) -> AckResponse:
         """Circular motion through an intermediate point.
 
         Delegates to :meth:`~dobot_api_v3.DobotApiMove.arc`.
@@ -678,10 +783,14 @@ class DobotRobot:
             *dyn_params: Optional motion parameters.
 
         Returns:
-            Robot response string.
+            :class:`~dobot_api_v3.AckResponse` on success.
+
+        Raises:
+            DobotApiError: If the controller returns a non-zero error code.
         """
-        return self.move.arc(
-            x1, y1, z1, a1, b1, c1, x2, y2, z2, a2, b2, c2, *dyn_params
+        return parse_response(
+            self.move.arc(x1, y1, z1, a1, b1, c1, x2, y2, z2, a2, b2, c2, *dyn_params),
+            AckResponse,
         )
 
     def servo_j(
@@ -695,7 +804,7 @@ class DobotRobot:
         t: float = 0.1,
         lookahead_time: float = 50.0,
         gain: float = 500.0,
-    ) -> str:
+    ) -> AckResponse:
         """Dynamic following in joint space.
 
         Delegates to :meth:`~dobot_api_v3.DobotApiMove.servo_j`.
@@ -712,9 +821,15 @@ class DobotRobot:
             gain: Servo gain parameter.
 
         Returns:
-            Robot response string.
+            :class:`~dobot_api_v3.AckResponse` on success.
+
+        Raises:
+            DobotApiError: If the controller returns a non-zero error code.
         """
-        return self.move.servo_j(j1, j2, j3, j4, j5, j6, t, lookahead_time, gain)
+        return parse_response(
+            self.move.servo_j(j1, j2, j3, j4, j5, j6, t, lookahead_time, gain),
+            AckResponse,
+        )
 
     def servo_p(
         self,
@@ -724,7 +839,7 @@ class DobotRobot:
         a: float,
         b: float,
         c: float,
-    ) -> str:
+    ) -> AckResponse:
         """Dynamic following in Cartesian space.
 
         Delegates to :meth:`~dobot_api_v3.DobotApiMove.servo_p`.
@@ -738,11 +853,14 @@ class DobotRobot:
             c: Target C rotation.
 
         Returns:
-            Robot response string.
-        """
-        return self.move.servo_p(x, y, z, a, b, c)
+            :class:`~dobot_api_v3.AckResponse` on success.
 
-    def move_jog(self, axis_id: str, *dyn_params: DynParam) -> str:
+        Raises:
+            DobotApiError: If the controller returns a non-zero error code.
+        """
+        return parse_response(self.move.servo_p(x, y, z, a, b, c), AckResponse)
+
+    def move_jog(self, axis_id: str, *dyn_params: DynParam) -> AckResponse:
         """Jog motion along a single axis.
 
         Delegates to :meth:`~dobot_api_v3.DobotApiMove.move_jog`.
@@ -752,27 +870,33 @@ class DobotRobot:
             *dyn_params: Optional jog parameters ``(coord_type, user, tool)``.
 
         Returns:
-            Robot response string.
+            :class:`~dobot_api_v3.AckResponse` on success.
+
+        Raises:
+            DobotApiError: If the controller returns a non-zero error code.
 
         Example:
             >>> robot.move_jog("J1+")
             >>> robot.move_jog("")  # stop jog
         """
-        return self.move.move_jog(axis_id, *dyn_params)
+        return parse_response(self.move.move_jog(axis_id, *dyn_params), AckResponse)
 
-    def sync(self) -> str:
+    def sync(self) -> AckResponse:
         """Block until all queued motion commands complete.
 
         Delegates to :meth:`~dobot_api_v3.DobotApiMove.sync`.
 
         Returns:
-            Robot response string.
+            :class:`~dobot_api_v3.AckResponse` on success.
+
+        Raises:
+            DobotApiError: If the controller returns a non-zero error code.
 
         Example:
             >>> robot.mov_j(200, 0, 200, 0, 0, 0)
             >>> robot.sync()
         """
-        return self.move.sync()
+        return parse_response(self.move.sync(), AckResponse)
 
     def __repr__(self) -> str:
         return f"DobotRobot(ip={self.ip!r})"

@@ -1,6 +1,118 @@
-# Dobot API – Naming Convention Rules for AI Agents
+# Dobot API – Constitutive Rules for AI Agents
 
-This document is the authoritative naming convention reference for the
+This document is the **authoritative reference** governing how AI coding agents
+must operate within the `dobot_api_v3` project. It covers tooling, workflows,
+scripting, and naming conventions. **All rules are mandatory** for code
+generation, refactoring, review, and automation tasks.
+
+---
+
+# Part A — Project Tooling & Workflow Rules
+
+## A1. Python Environment — `uv` Only
+
+| Rule | Detail |
+|---|---|
+| Virtual-env creation | `uv venv` (creates `.venv/` in project root). **Never** use `python -m venv`, `virtualenv`, or `conda`. |
+| Package installation | `uv pip install -e .[dev]` for development. **Never** use bare `pip install`. |
+| Dependency resolution | All dependency metadata lives in `pyproject.toml`. No `requirements.txt` files. |
+| Lock file | When lock-file support is used, use `uv lock` / `uv.lock`. |
+| Running tools | Prefer `uv run <tool>` (e.g. `uv run pytest`, `uv run ruff check .`) to ensure the correct venv is used. |
+| Python version | ≥ 3.9 as declared in `pyproject.toml`. |
+
+**Setup command (canonical):**
+
+```powershell
+uv venv
+uv pip install -e .[dev]
+```
+
+## A2. Shell & Scripting — PowerShell Only
+
+| Rule | Detail |
+|---|---|
+| Script language | All automation scripts **must** be PowerShell (`.ps1`). **Never** write Bash (`.sh`) or Batch (`.bat`/`.cmd`) scripts. |
+| Script location | `scripts/` directory at the project root. |
+| Naming convention | `Verb-Noun.ps1` using PowerShell approved verbs (e.g. `Setup-Dev.ps1`, `Run-Tests.ps1`). |
+| Shebang / header | Start each `.ps1` file with `#Requires -Version 5.1` and a brief comment block. |
+| Execution | Users run scripts via `pwsh ./scripts/Verb-Noun.ps1` or `.\scripts\Verb-Noun.ps1` from the repo root. |
+| CI compatibility | CI pipelines should invoke PowerShell with `pwsh -NoProfile -File scripts/Verb-Noun.ps1`. |
+
+**Available scripts:**
+
+| Script | Purpose |
+|---|---|
+| `scripts/Setup-Dev.ps1` | Create venv, install dev dependencies |
+| `scripts/Run-Tests.ps1` | Run pytest with optional marker filter |
+| `scripts/Run-Lint.ps1` | Run ruff + mypy checks |
+| `scripts/Build-Docs.ps1` | Generate Sphinx API docs and build VitePress site |
+
+## A3. Code Quality Tools
+
+| Tool | Purpose | Command |
+|---|---|---|
+| **ruff** | Linting + formatting | `uv run ruff check .` / `uv run ruff format .` |
+| **mypy** | Static type checking | `uv run mypy dobot_api_v3` |
+| **pytest** | Testing | `uv run pytest` |
+| **pytest-cov** | Coverage reporting | `uv run pytest --cov` |
+
+Configuration for all tools lives in `pyproject.toml`. Do **not** create
+standalone config files (e.g. `.flake8`, `setup.cfg`, `tox.ini`).
+
+## A4. File & Editor Settings
+
+- An `.editorconfig` at the project root governs indentation, line endings,
+  and trailing whitespace. AI agents must respect these settings.
+- Indent with **4 spaces** for Python, **2 spaces** for YAML/JSON/Markdown.
+- Line endings: `LF` (Unix-style) everywhere.
+- Final newline: always present.
+
+## A5. Pre-commit Hooks
+
+A `.pre-commit-config.yaml` is provided. AI agents that create or modify
+source files should ensure the changes pass the configured hooks:
+
+- `ruff` (lint + format)
+- `trailing-whitespace`, `end-of-file-fixer`, `check-yaml`, `check-toml`
+
+## A6. Project Structure Invariants
+
+```
+TCP-IP-Python-V3/
+├── .github/
+│   └── copilot-instructions.md   ← THIS FILE (agent rules)
+├── dobot_api_v3/                  ← package source
+├── tests/
+│   ├── unit/                      ← fast tests, no I/O
+│   ├── integration/               ← loopback stub-server tests
+│   └── hil/                       ← hardware-in-the-loop tests
+├── scripts/                       ← PowerShell automation (.ps1 only)
+├── examples/                      ← numbered example scripts
+├── docs/                          ← documentation source
+├── pyproject.toml                 ← single source of project metadata
+├── .editorconfig
+└── .pre-commit-config.yaml
+```
+
+**Rules:**
+
+- **No `setup.py` or `setup.cfg`** — all metadata in `pyproject.toml`.
+- **No `requirements*.txt`** — dependencies declared in `pyproject.toml`.
+- **No Bash/Batch scripts** — only `.ps1` in `scripts/`.
+
+## A7. Git & Version Control
+
+| Rule | Detail |
+|---|---|
+| Commit messages | Use [Conventional Commits](https://www.conventionalcommits.org/) format: `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`. |
+| Branch naming | `feature/<description>`, `fix/<description>`, `chore/<description>`. |
+| PR scope | Keep PRs focused — one logical change per PR. |
+
+---
+
+# Part B — Naming Convention Rules
+
+This section is the authoritative naming convention reference for the
 `dobot_api_v3` package. AI coding agents **must** follow these rules for all
 code generation, refactoring, and review tasks.
 
@@ -263,6 +375,16 @@ def speed_factor(self, speed: int) -> str:
 ## 11. Quick-Check Checklist for AI Agents
 
 Before submitting any code touching this package, verify:
+
+**Tooling & Workflow:**
+
+- [ ] Environment created with `uv venv`, packages installed with `uv pip install`
+- [ ] No `requirements.txt`, `setup.py`, or `setup.cfg` files created
+- [ ] Any new automation scripts are PowerShell `.ps1` files (no `.sh` or `.bat`)
+- [ ] Tool configuration added to `pyproject.toml`, not standalone config files
+- [ ] Terminal commands use `uv run <tool>` instead of invoking tools directly
+
+**Naming & Style:**
 
 - [ ] No camelCase method, parameter, or variable names (except inside string literals sent to the robot protocol)
 - [ ] No `__PascalCase` private members — use `_snake_case` instead

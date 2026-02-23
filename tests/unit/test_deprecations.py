@@ -7,9 +7,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from dobot_api_v3.base import DobotApi, FeedbackDtype, MyType
+from dobot_api_v3.base import DobotApi, FeedbackDtype
 from dobot_api_v3.dashboard import DobotApiDashboard
-from dobot_api_v3.feedback import DobotApiFeedBack, DobotApiFeedback
+from dobot_api_v3.feedback import DobotApiFeedback
 from dobot_api_v3.move import DobotApiMove
 
 pytestmark = pytest.mark.unit
@@ -127,11 +127,59 @@ def test_move_alias_emits_deprecation_warning(
 # ---------------------------------------------------------------------------
 
 
-def test_my_type_is_identical_to_feedback_dtype() -> None:
-    """MyType must be the same object as FeedbackDtype (not a copy)."""
-    assert MyType is FeedbackDtype
+def test_my_type_emits_deprecation_warning() -> None:
+    """Accessing MyType must emit a DeprecationWarning and return FeedbackDtype."""
+    import dobot_api_v3.base as _base
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        result = _base.MyType  # type: ignore[attr-defined]
+    assert result is FeedbackDtype
+    assert any(
+        issubclass(x.category, DeprecationWarning) and "MyType" in str(x.message)
+        for x in w
+    ), f"Expected DeprecationWarning mentioning 'MyType' but got: {[str(x.message) for x in w]}"
 
 
-def test_dobot_api_feedback_back_is_feedback_class_alias() -> None:
-    """DobotApiFeedBack must point to DobotApiFeedback."""
-    assert DobotApiFeedBack is DobotApiFeedback
+def test_my_type_package_emits_deprecation_warning() -> None:
+    """Accessing MyType from the top-level package must emit a DeprecationWarning."""
+    import dobot_api_v3 as _pkg
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        result = _pkg.MyType  # type: ignore[attr-defined]
+    assert result is FeedbackDtype
+    assert any(
+        issubclass(x.category, DeprecationWarning) and "MyType" in str(x.message)
+        for x in w
+    ), f"Expected DeprecationWarning mentioning 'MyType' but got: {[str(x.message) for x in w]}"
+
+
+def test_dobot_api_feed_back_emits_deprecation_warning() -> None:
+    """Accessing DobotApiFeedBack must emit a DeprecationWarning and return DobotApiFeedback."""
+    import dobot_api_v3.feedback as _fb
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        result = _fb.DobotApiFeedBack  # type: ignore[attr-defined]
+    assert result is DobotApiFeedback
+    assert any(
+        issubclass(x.category, DeprecationWarning)
+        and "DobotApiFeedBack" in str(x.message)
+        for x in w
+    ), f"Expected DeprecationWarning mentioning 'DobotApiFeedBack' but got: {[str(x.message) for x in w]}"
+
+
+def test_dobot_api_feed_back_package_emits_deprecation_warning() -> None:
+    """Accessing DobotApiFeedBack from the top-level package must emit a DeprecationWarning."""
+    import dobot_api_v3 as _pkg
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        result = _pkg.DobotApiFeedBack  # type: ignore[attr-defined]
+    assert result is DobotApiFeedback
+    assert any(
+        issubclass(x.category, DeprecationWarning)
+        and "DobotApiFeedBack" in str(x.message)
+        for x in w
+    ), f"Expected DeprecationWarning mentioning 'DobotApiFeedBack' but got: {[str(x.message) for x in w]}"
