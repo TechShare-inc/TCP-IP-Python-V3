@@ -7,8 +7,8 @@ Use this page as a quick guide for composing dashboard/move command arguments.
 Use plain positional arguments for required protocol parameters.
 
 ```python
-move.mov_j(200, 0, 200, 0, 0, 0)
-dashboard.speed_factor(40)
+robot.mov_j(200, 0, 200, 0, 0, 0)
+robot.speed_factor(40)
 ```
 
 ## Pattern 2: Optional Dynamic Parameters (`*dyn_params`)
@@ -25,8 +25,8 @@ Typical forms:
 Examples:
 
 ```python
-move.mov_j(220, 20, 180, 0, 0, 0, "SpeedJ=40", "AccJ=40", "User=0")
-move.mov_l_io(250, 0, 180, 0, 0, 0, (0, 50, 1, 1))
+robot.mov_j(220, 20, 180, 0, 0, 0, "SpeedJ=40", "AccJ=40", "User=0")
+robot.move.mov_l_io(250, 0, 180, 0, 0, 0, (0, 50, 1, 1))
 ```
 
 ## Pattern 3: Tool/User Relative Moves
@@ -35,24 +35,68 @@ For tool-relative helpers using `ToolDynParam`, pass optional tuples in the
 form `(speed, acc, index)`.
 
 ```python
-move.rel_mov_j_tool(10, 0, 0, 0, 0, 0, 0, (40, 40, 0))
-move.rel_mov_l_tool(0, 0, -10, 0, 0, 0, 0, (30, 30, 0))
+robot.move.rel_mov_j_tool(10, 0, 0, 0, 0, 0, 0, (40, 40, 0))
+robot.move.rel_mov_l_tool(0, 0, -10, 0, 0, 0, 0, (30, 30, 0))
 ```
 
-## Pattern 4: Lifecycle + Motion Ordering
+## Pattern 4: Lifecycle with `DobotRobot` (Recommended)
 
-Recommended command ordering for most scripts:
+The `DobotRobot` class handles the standard startup/shutdown sequence:
+
+```python
+from dobot_api_v3 import DobotRobot
+
+with DobotRobot("192.168.5.1") as robot:
+    robot.startup(speed=40)          # clear_error → power_on → enable → speed_factor
+    robot.mov_j(200, 0, 200, 0, 0, 0)
+    robot.sync()
+    robot.shutdown()                 # disable_robot
+```
+
+`startup()` inspects current alarms and skips `clear_error`/`power_on` when
+no errors are detected, reducing startup time on a clean controller.
+
+## Pattern 5: Manual Lifecycle (Advanced)
+
+If you need fine-grained control, use subsystem classes directly:
 
 1. `dashboard.clear_error()`
 2. `dashboard.enable_robot()`
-3. Configure speed/acceleration (for example `speed_factor`, `speed_j`)
-4. Issue move commands (`mov_j`, `mov_l`, etc.)
+3. Configure speed/acceleration (`speed_factor`, `speed_j`)
+4. Issue move commands (`mov_j`, `mov_l`, …)
 5. `move.sync()`
 6. `dashboard.disable_robot()`
 
-## Pattern 5: Feedback + Error Monitoring
+## Pattern 6: Typed Responses
 
-Use a separate feedback connection and keep dashboard ownership explicit.
+`DobotRobot` methods return typed frozen dataclasses:
+
+```python
+resp = robot.robot_mode()       # IntResponse
+print(resp.value)               # e.g. 5
+
+pose = robot.get_pose()         # PoseResponse
+print(pose.x, pose.y, pose.z)
+
+ack = robot.mov_j(200, 0, 200, 0, 0, 0)   # AckResponse
+print(ack.command_id)
+```
+
+For raw string responses, use the subsystem objects directly
+(`robot.dashboard`, `robot.move`).
+
+## Pattern 7: Feedback + Error Monitoring
+
+Use the unified `DobotRobot` for feedback and error access:
+
+```python
+with DobotRobot("192.168.5.1", language="en") as robot:
+    data = robot.feedback_data()       # FeedbackData (typed)
+    raw  = robot.raw_feedback_data()   # np.ndarray (zero-copy)
+    has_errors = robot.check_errors()
+```
+
+Or use separate connections for advanced scenarios:
 
 ```python
 dashboard = DobotApiDashboard(ip, 29999)
@@ -63,6 +107,7 @@ monitor = RobotErrorMonitor(dashboard, language="en")
 
 ## Tips
 
-- Prefer `snake_case` API names in all new code.
-- Keep deprecated PascalCase aliases only for migration compatibility.
-- Always close sockets in `finally` blocks.
+- Prefer the `DobotRobot` wrapper for new code.
+- Use `snake_case` API names exclusively — PascalCase aliases have been removed.
+- Always close sockets in `finally` blocks or use `with` statements.
+
