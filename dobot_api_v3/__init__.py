@@ -12,6 +12,14 @@ from .error_monitor import RobotErrorMonitor
 from .feedback import DobotApiFeedback
 from .i18n_manager import AlarmI18n
 from .move import DobotApiMove
+from .responses import (
+    AckResponse,
+    DobotApiError,
+    ErrorIdResponse,
+    IntResponse,
+    PoseResponse,
+    parse_response,
+)
 from .robot import DobotRobot
 
 logger.remove()
@@ -56,6 +64,13 @@ __all__ = [
     "PROTOCOL_FIELD_MAP",
     "AlarmI18n",
     "logger",
+    # Response types and parser.
+    "DobotApiError",
+    "AckResponse",
+    "IntResponse",
+    "PoseResponse",
+    "ErrorIdResponse",
+    "parse_response",
     # Deprecated aliases — kept for backward compatibility.
     "DobotApiFeedBack",  # deprecated: use DobotApiFeedback
     "MyType",  # deprecated: use FeedbackDtype

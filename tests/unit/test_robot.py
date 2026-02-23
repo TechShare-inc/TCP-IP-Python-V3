@@ -8,6 +8,12 @@ import numpy as np
 import pytest
 
 from dobot_api_v3.base import DobotApi, FeedbackData, FeedbackDtype
+from dobot_api_v3.responses import (
+    AckResponse,
+    ErrorIdResponse,
+    IntResponse,
+    PoseResponse,
+)
 from dobot_api_v3.robot import DobotRobot
 
 pytestmark = pytest.mark.unit
@@ -40,6 +46,13 @@ def mock_robot(
 
     def _capture_dashboard(cmd: str) -> str:
         dashboard_cmds.append(cmd)
+        # Return realistic protocol responses so parse_response succeeds.
+        if cmd.startswith("RobotMode"):
+            return "0,{5};"
+        if cmd.startswith("GetPose") or cmd.startswith("GetAngle"):
+            return "0,{0.0,0.0,0.0,0.0,0.0,0.0};"
+        if cmd.startswith("GetErrorID"):
+            return "0,{0};"
         return f"0,0,{cmd};"
 
     def _capture_move(cmd: str) -> str:
@@ -423,23 +436,23 @@ class TestFeedbackData:
 
 class TestForwardedDashboardCommands:
     @pytest.mark.parametrize(
-        "method,args,expected_cmd",
+        "method,args,expected_cmd,expected_type",
         [
-            ("enable_robot", (), "EnableRobot()"),
-            ("disable_robot", (), "DisableRobot()"),
-            ("clear_error", (), "ClearError()"),
-            ("reset_robot", (), "ResetRobot()"),
-            ("power_on", (), "PowerOn()"),
-            ("emergency_stop", (), "EmergencyStop()"),
-            ("speed_factor", (40,), "SpeedFactor(40)"),
-            ("robot_mode", (), "RobotMode()"),
-            ("get_pose", (), "GetPose()"),
-            ("get_angle", (), "GetAngle()"),
-            ("get_error_id", (), "GetErrorID()"),
-            ("start_drag", (), "StartDrag()"),
-            ("stop_drag", (), "StopDrag()"),
-            ("set_user", (1,), "User(1)"),
-            ("set_tool", (2,), "Tool(2)"),
+            ("enable_robot", (), "EnableRobot()", AckResponse),
+            ("disable_robot", (), "DisableRobot()", AckResponse),
+            ("clear_error", (), "ClearError()", AckResponse),
+            ("reset_robot", (), "ResetRobot()", AckResponse),
+            ("power_on", (), "PowerOn()", AckResponse),
+            ("emergency_stop", (), "EmergencyStop()", AckResponse),
+            ("speed_factor", (40,), "SpeedFactor(40)", AckResponse),
+            ("robot_mode", (), "RobotMode()", IntResponse),
+            ("get_pose", (), "GetPose()", PoseResponse),
+            ("get_angle", (), "GetAngle()", PoseResponse),
+            ("get_error_id", (), "GetErrorID()", ErrorIdResponse),
+            ("start_drag", (), "StartDrag()", AckResponse),
+            ("stop_drag", (), "StopDrag()", AckResponse),
+            ("set_user", (1,), "User(1)", AckResponse),
+            ("set_tool", (2,), "Tool(2)", AckResponse),
         ],
     )
     def test_dashboard_forward(
@@ -448,10 +461,12 @@ class TestForwardedDashboardCommands:
         method: str,
         args: tuple,
         expected_cmd: str,
+        expected_type: type,
     ) -> None:
         robot, dashboard_cmds, _ = mock_robot
-        getattr(robot, method)(*args)
+        result = getattr(robot, method)(*args)
         assert expected_cmd in dashboard_cmds
+        assert isinstance(result, expected_type)
 
 
 # ---------------------------------------------------------------------------
