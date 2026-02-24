@@ -24,7 +24,7 @@ of each subsystem is always reachable.
 
 ### Example
 
-```
+```pycon
 >>> with DobotRobot("192.168.5.1") as robot:
 ...     robot.startup(speed=40)
 ...     robot.mov_j(200, 0, 200, 0, 0, 0)
@@ -99,7 +99,7 @@ skipped and the sequence continues directly with
 
 ### Example
 
-```python
+```pycon
 >>> robot.startup(speed=50, load=1.0, center_z=0.05)
 ```
 
@@ -112,7 +112,7 @@ when finished, or rely on `__exit__` when using as a context manager.
 
 ### Example
 
-```python
+```pycon
 >>> robot.shutdown()
 ```
 
@@ -128,7 +128,7 @@ not been opened (e.g. unrequested feedback ports) are silently skipped.
 
 ### Example
 
-```python
+```pycon
 >>> robot.close()
 ```
 
@@ -149,7 +149,7 @@ feedback ports were previously opened.
 
 ### Example
 
-```python
+```pycon
 >>> robot.reconnect()
 ```
 
@@ -166,7 +166,7 @@ Query and log all current alarms.
 
 ### Example
 
-```python
+```pycon
 >>> has_errors = robot.check_errors(language="en")
 ```
 
@@ -184,7 +184,7 @@ Display current alarm details then send a clear command.
 
 ### Example
 
-```python
+```pycon
 >>> robot.clear_and_recover(language="en")
 ```
 
@@ -204,7 +204,7 @@ For zero-copy NumPy access use `raw_feedback_data()` instead.
 
 ### Example
 
-```python
+```pycon
 >>> data = robot.feedback_data()
 >>> if data is not None:
 ...     print(data.tool_vector_actual)
@@ -227,7 +227,7 @@ method for NumPy-native numeric pipelines; for typed access prefer
 
 ### Example
 
-```python
+```pycon
 >>> raw = robot.raw_feedback_data()
 >>> if raw is not None:
 ...     print(raw[0]["tool_vector_actual"])
@@ -466,7 +466,7 @@ Delegates to `mov_j()`.
 
 ### Example
 
-```python
+```pycon
 >>> robot.mov_j(200, 0, 200, 0, 0, 0)
 >>> robot.mov_j(220, 20, 180, 0, 0, 0, "SpeedJ=40", "AccJ=40")
 ```
@@ -494,7 +494,7 @@ Delegates to `mov_l()`.
 
 ### Example
 
-```python
+```pycon
 >>> robot.mov_l(250, 0, 180, 0, 0, 0)
 ```
 
@@ -521,7 +521,7 @@ Delegates to `joint_mov_j()`.
 
 ### Example
 
-```python
+```pycon
 >>> robot.joint_mov_j(-11.53, 4.64, 87.16, -2.84, -77.71, 0.01)
 ```
 
@@ -548,7 +548,7 @@ Delegates to `rel_mov_j()`.
 
 ### Example
 
-```python
+```pycon
 >>> robot.rel_mov_j(15, 0, 0, 0, 0, 0)
 ```
 
@@ -658,7 +658,7 @@ Delegates to `move_jog()`.
 
 ### Example
 
-```python
+```pycon
 >>> robot.move_jog("J1+")
 >>> robot.move_jog("")  # stop jog
 ```
@@ -678,7 +678,7 @@ Delegates to `sync()`.
 
 ### Example
 
-```python
+```pycon
 >>> robot.mov_j(200, 0, 200, 0, 0, 0)
 >>> robot.sync()
 ```
@@ -775,761 +775,30 @@ Close the socket if connected.
 
 ### *class* dobot_api_v3.DobotApiDashboard(ip, port)
 
-Bases: [`DobotApi`](#dobot_api_v3.base.DobotApi)
+Bases: `_SystemMixin`, `_IOMixin`, `_ConfigMixin`, `_QueryMixin`, [`DobotApi`](#dobot_api_v3.base.DobotApi)
 
 Dashboard command client for Dobot control APIs.
 
 This class sends robot lifecycle, I/O, configuration, and status commands
 over the dashboard TCP port (usually `29999`).
 
+Commands are organized into four categories:
+
+* **System** — `enable_robot`, `disable_robot`, `power_on`,
+  `emergency_stop`, `speed_factor`, `robot_mode`, script control,
+  and queued-motion flow (`wait` / `pause` / `resume`).
+* **I/O** — digital output / input, analog output, DO groups, and Modbus.
+* **Config** — speed / acceleration / jerk ratios, coordinate selection,
+  payload, and collision settings.
+* **Query** — pose / angle / error queries, kinematics solvers, safety
+  configuration, drag mode, trajectory helpers, and terminal RS-485.
+
+The full source for each group lives in the corresponding private mixin
+module under `dobot_api_v3/commands/`.
+
 * **Parameters:**
   * **ip** (*str*)
   * **port** (*int*)
-
-#### enable_robot(load=0.0, center_x=0.0, center_y=0.0, center_z=0.0)
-
-Enable the robot with optional payload parameters.
-
-* **Parameters:**
-  * **load** (*float*) – Payload weight.
-  * **center_x** (*float*) – Payload center offset on X axis.
-  * **center_y** (*float*) – Payload center offset on Y axis.
-  * **center_z** (*float*) – Payload center offset on Z axis.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-### Example
-
-```python
->>> dashboard.enable_robot()
->>> dashboard.enable_robot(load=0.5, center_x=0.0, center_y=0.0, center_z=0.05)
-```
-
-#### disable_robot()
-
-Disable the robot.
-
-* **Return type:**
-  str
-
-#### clear_error()
-
-Clear controller alarm information.
-
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-### Example
-
-```python
->>> dashboard.clear_error()
-```
-
-#### reset_robot()
-
-Stop the robot.
-
-* **Return type:**
-  str
-
-#### speed_factor(speed)
-
-Set global speed factor.
-
-* **Parameters:**
-  **speed** (*int*) – Rate value in range 1-100.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-### Example
-
-```python
->>> dashboard.speed_factor(40)
-```
-
-#### set_user(index)
-
-Select the calibrated user coordinate system.
-
-* **Parameters:**
-  **index** (*int*) – Calibrated user coordinate index.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### set_tool(index)
-
-Select the calibrated tool coordinate system.
-
-* **Parameters:**
-  **index** (*int*) – Calibrated tool coordinate index.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### robot_mode()
-
-View the robot status.
-
-* **Return type:**
-  str
-
-#### payload(weight, inertia)
-
-Set robot load.
-
-* **Parameters:**
-  * **weight** (*float*) – Payload weight.
-  * **inertia** (*float*) – Payload moment of inertia.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### do_output(index, status)
-
-Set digital signal output (queued).
-
-* **Parameters:**
-  * **index** (*int*) – Digital output index (1-24).
-  * **status** (*int*) – Output state (0 for low, 1 for high).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### do_execute(index, status)
-
-Set digital signal output (immediate).
-
-* **Parameters:**
-  * **index** (*int*) – Digital output index (1-24).
-  * **status** (*int*) – Output state (0 for low, 1 for high).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### tool_do(index, status)
-
-Set terminal signal output (queued).
-
-* **Parameters:**
-  * **index** (*int*) – Terminal output index (1-2).
-  * **status** (*int*) – Output state (0 for low, 1 for high).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### tool_do_execute(index, status)
-
-Set terminal signal output (immediate).
-
-* **Parameters:**
-  * **index** (*int*) – Terminal output index (1-2).
-  * **status** (*int*) – Output state (0 for low, 1 for high).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### ao(index, val)
-
-Set analog signal output (queued).
-
-* **Parameters:**
-  * **index** (*int*) – Analog output index (1-2).
-  * **val** (*float*) – Output voltage (0-10).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### ao_execute(index, val)
-
-Set analog signal output (immediate).
-
-* **Parameters:**
-  * **index** (*int*) – Analog output index (1-2).
-  * **val** (*float*) – Output voltage (0-10).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### acc_j(speed)
-
-Set joint acceleration ratio (MovJ / MovJIO / MovJR / JointMovJ).
-
-* **Parameters:**
-  **speed** (*int*) – Joint acceleration ratio (1-100).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### acc_l(speed)
-
-Set Cartesian acceleration ratio (MovL / MovLIO / MovLR / Jump / Arc / Circle).
-
-* **Parameters:**
-  **speed** (*int*) – Cartesian acceleration ratio (1-100).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### speed_j(speed)
-
-Set joint speed ratio (MovJ / MovJIO / MovJR / JointMovJ).
-
-* **Parameters:**
-  **speed** (*int*) – Joint speed ratio (1-100).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### speed_l(speed)
-
-Set Cartesian speed ratio (MovL / MovLIO / MovLR / Jump / Arc / Circle).
-
-* **Parameters:**
-  **speed** (*int*) – Cartesian speed ratio (1-100).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### vel_j(speed)
-
-Alias for `speed_j()` (V4-style name).
-
-* **Parameters:**
-  **speed** (*int*)
-* **Return type:**
-  str
-
-#### vel_l(speed)
-
-Alias for `speed_l()` (V4-style name).
-
-* **Parameters:**
-  **speed** (*int*)
-* **Return type:**
-  str
-
-#### arch(index)
-
-Set Jump gate parameter index (start lift height, max lift, end drop).
-
-* **Parameters:**
-  **index** (*int*) – Jump parameter index (0-9).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### cp(ratio)
-
-Set smooth transition ratio.
-
-* **Parameters:**
-  **ratio** (*int*) – Smooth transition ratio (1-100).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### lim_z(value)
-
-Set maximum lifting height for door-type parameters.
-
-* **Parameters:**
-  **value** (*int*) – Maximum lifting height.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### set_arm_orientation(r, d, n, cfg)
-
-Set the hand command.
-
-* **Parameters:**
-  * **r** (*int*) – Forward/backward selector (1 for forward, -1 for backward).
-  * **d** (*int*) – Elbow orientation (1 for up, -1 for down).
-  * **n** (*int*) – Wrist flip selector (1 for no flip, -1 for flip).
-  * **cfg** (*int*) – Sixth-axis angle configuration identifier.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### power_on()
-
-Power on the robot.
-
-Note: Takes ~10 s before the robot is enabled after power-on.
-
-* **Return type:**
-  str
-
-#### run_script(project_name)
-
-Run a script file.
-
-* **Parameters:**
-  **project_name** (*str*) – Script file name.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### stop_script()
-
-Stop scripts.
-
-* **Return type:**
-  str
-
-#### pause_script()
-
-Pause the script.
-
-* **Return type:**
-  str
-
-#### continue_script()
-
-Continue running the script.
-
-* **Return type:**
-  str
-
-#### get_hold_regs(id, addr, count, type_)
-
-Read hold register.
-
-* **Parameters:**
-  * **id** (*int*) – Secondary device number (0-4, where 0 is controller slave).
-  * **addr** (*int*) – Starting hold-register address (3095-4095).
-  * **count** (*int*) – Number of items to read (1-16).
-  * **type** – Data type, such as `"U16"`, `"U32"`, `"F32"`, or
-    `"F64"`.
-  * **type_** (*str*)
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### set_hold_regs(id, addr, count, table, type_=None)
-
-Write hold register.
-
-* **Parameters:**
-  * **id** (*int*) – Secondary device number (0-4, where 0 is controller slave).
-  * **addr** (*int*) – Starting hold-register address (3095-4095).
-  * **count** (*int*) – Number of items to write (1-16).
-  * **table** (*str*) – Register data payload string.
-  * **type** – Optional data type, such as `"U16"`, `"U32"`,
-    `"F32"`, or `"F64"`.
-  * **type_** (*str* *|* *None*)
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### get_error_id()
-
-Get robot error code.
-
-* **Return type:**
-  str
-
-#### set_payload(offset1, \*dyn_params)
-
-Set payload parameters.
-
-* **Parameters:**
-  * **offset1** (*float*) – Base payload value.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Additional payload arguments.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### positive_solution(offset1, offset2, offset3, offset4, offset5, offset6, user, tool)
-
-Run forward kinematics from joint angles to Cartesian pose.
-
-* **Parameters:**
-  * **offset1** (*float*) – Joint 1 angle.
-  * **offset2** (*float*) – Joint 2 angle.
-  * **offset3** (*float*) – Joint 3 angle.
-  * **offset4** (*float*) – Joint 4 angle.
-  * **offset5** (*float*) – Joint 5 angle.
-  * **offset6** (*float*) – Joint 6 angle.
-  * **user** (*int*) – User coordinate index.
-  * **tool** (*int*) – Tool coordinate index.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### inverse_solution(offset1, offset2, offset3, offset4, offset5, offset6, user, tool, \*dyn_params)
-
-Run inverse kinematics from Cartesian pose to joint angles.
-
-* **Parameters:**
-  * **offset1** (*float*) – X position.
-  * **offset2** (*float*) – Y position.
-  * **offset3** (*float*) – Z position.
-  * **offset4** (*float*) – RX rotation.
-  * **offset5** (*float*) – RY rotation.
-  * **offset6** (*float*) – RZ rotation.
-  * **user** (*int*) – User coordinate index.
-  * **tool** (*int*) – Tool coordinate index.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional solver parameters.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### set_collision_level(offset1)
-
-Set collision detection level.
-
-* **Parameters:**
-  **offset1** (*int*) – Collision level value.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### get_angle()
-
-Get current joint angles.
-
-* **Return type:**
-  str
-
-#### get_pose()
-
-Get current Cartesian pose.
-
-* **Return type:**
-  str
-
-#### emergency_stop()
-
-Trigger emergency stop.
-
-* **Return type:**
-  str
-
-#### modbus_create(ip, port, slave_id, is_rtu)
-
-Create a Modbus connection.
-
-* **Parameters:**
-  * **ip** (*str*) – Modbus device IP address.
-  * **port** (*int*) – Modbus device port.
-  * **slave_id** (*int*) – Slave device identifier.
-  * **is_rtu** (*int*) – Connection mode flag (0 for TCP, 1 for RTU).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### modbus_close(offset1)
-
-Close a Modbus connection.
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### set_safe_skin(offset1)
-
-Configure safe-skin feature.
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### set_obstacle_avoid(offset1)
-
-Configure obstacle avoidance feature.
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### get_trace_start_pose(offset1)
-
-Get starting pose of a Cartesian trajectory file.
-
-* **Parameters:**
-  **offset1** (*str*) – Trajectory file name.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### get_path_start_pose(offset1)
-
-Get starting pose of a joint path file.
-
-* **Parameters:**
-  **offset1** (*str*) – Path file name.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### handle_traj_points(offset1)
-
-Process a trajectory points file.
-
-* **Parameters:**
-  **offset1** (*str*) – Trajectory file name.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### get_six_force_data()
-
-Read six-axis force sensor data.
-
-* **Return type:**
-  str
-
-#### set_collide_drag(offset1)
-
-Configure collision drag mode.
-
-* **Parameters:**
-  **offset1** (*int*) – Drag mode flag.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### set_terminal_keys(offset1)
-
-Configure terminal key behavior.
-
-* **Parameters:**
-  **offset1** (*int*) – Key mode value.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### set_terminal_485(offset1, offset2, offset3, offset4)
-
-Set terminal RS-485 parameters.
-
-* **Parameters:**
-  * **offset1** (*int*) – Baud rate.
-  * **offset2** (*int*) – Data bits.
-  * **offset3** (*str*) – Parity setting.
-  * **offset4** (*int*) – Stop bits.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### get_terminal_485()
-
-Get terminal RS-485 configuration.
-
-* **Return type:**
-  str
-
-#### tcp_speed(offset1)
-
-Set TCP speed.
-
-* **Parameters:**
-  **offset1** (*int*) – TCP speed value.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### tcp_speed_end()
-
-End TCP speed mode.
-
-* **Return type:**
-  str
-
-#### get_in_bits(offset1, offset2, offset3)
-
-Read digital input bits.
-
-* **Parameters:**
-  * **offset1** (*int*) – Device identifier.
-  * **offset2** (*int*) – Start address.
-  * **offset3** (*int*) – Number of bits.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### get_in_regs(offset1, offset2, offset3, \*dyn_params)
-
-Read input registers.
-
-* **Parameters:**
-  * **offset1** (*int*) – Device identifier.
-  * **offset2** (*int*) – Start address.
-  * **offset3** (*int*) – Register count.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional data type and mode parameters.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### get_coils(offset1, offset2, offset3)
-
-Read coil values.
-
-* **Parameters:**
-  * **offset1** (*int*) – Device identifier.
-  * **offset2** (*int*) – Start address.
-  * **offset3** (*int*) – Coil count.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### set_coils(offset1, offset2, offset3, offset4)
-
-Write coil values.
-
-* **Parameters:**
-  * **offset1** (*int*) – Device identifier.
-  * **offset2** (*int*) – Start address.
-  * **offset3** (*int*) – Coil count.
-  * **offset4** (*int*) – Packed coil value.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### di(offset1)
-
-Read a digital input port.
-
-* **Parameters:**
-  **offset1** (*int*) – Digital input index.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### tool_di(offset1)
-
-Read a terminal digital input port.
-
-* **Parameters:**
-  **offset1** (*int*) – Terminal digital input index.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### do_group(\*dyn_params)
-
-Set multiple digital outputs in one command.
-
-* **Parameters:**
-  **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Repeating output pairs such as `(index, status)`.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### brake_control(offset1, offset2)
-
-Control joint brakes.
-
-* **Parameters:**
-  * **offset1** (*int*) – Joint index.
-  * **offset2** (*int*) – Brake control value.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### start_drag()
-
-Enable drag mode.
-
-* **Return type:**
-  str
-
-#### stop_drag()
-
-Disable drag mode.
-
-* **Return type:**
-  str
-
-#### load_switch(offset1)
-
-Switch load configuration.
-
-* **Parameters:**
-  **offset1** (*int*) – Load profile index.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### wait(t)
-
-Wait for specified time (queued command).
-
-* **Parameters:**
-  **t** (*float*) – Wait duration in milliseconds.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### pause()
-
-Pause queued motion execution.
-
-* **Return type:**
-  str
-
-#### resume()
-
-Resume paused motion execution.
-
-Note: maps to the `continue()` protocol command; `continue` is a
-Python keyword so the method is named `resume`.
-
-* **Return type:**
-  str
 
 ### *class* dobot_api_v3.DobotApiMove(ip, port)
 
@@ -1563,7 +832,7 @@ Joint motion interface (point-to-point motion mode).
 
 ### Example
 
-```python
+```pycon
 >>> move.mov_j(200, 0, 200, 0, 0, 0)
 >>> move.mov_j(220, 20, 180, 0, 0, 0, "SpeedJ=40", "AccJ=40")
 ```
@@ -1587,7 +856,7 @@ Linear motion interface.
 
 ### Example
 
-```python
+```pycon
 >>> move.mov_l(250, 0, 180, 0, 0, 0)
 >>> move.mov_l(250, 30, 180, 0, 0, 0, "SpeedL=30", "AccL=30")
 ```
@@ -1795,7 +1064,7 @@ Jog motion along a single axis.
 
 ### Example
 
-```python
+```pycon
 >>> move.move_jog("J1+")
 >>> move.move_jog("")
 ```
@@ -1846,7 +1115,7 @@ Block until all queued commands have been executed.
 
 ### Example
 
-```python
+```pycon
 >>> move.mov_j(200, 0, 200, 0, 0, 0)
 >>> move.mov_l(220, 20, 180, 0, 0, 0)
 >>> move.sync()
@@ -2003,7 +1272,7 @@ For zero-copy NumPy access (e.g., numeric pipelines) use
 
 ### Example
 
-```python
+```pycon
 >>> data = feedback.feedback_data()
 >>> if data is not None:
 ...     print(data.robot_mode)
@@ -2720,7 +1989,7 @@ Reserved bytes (24 bytes).
 
 ### Example
 
-```python
+```pycon
 >>> data = robot.feedback_data()
 >>> if data is not None:
 ...     print(data.robot_mode)
@@ -2894,7 +2163,7 @@ Construct a `FeedbackData` from a raw structured NumPy array.
 
 ### Example
 
-```python
+```pycon
 >>> raw = np.frombuffer(buf, dtype=FeedbackDtype)
 >>> data = FeedbackData.from_numpy(raw)
 >>> data.robot_mode
@@ -3252,7 +2521,7 @@ Accepts both Dobot response formats:
 
 ### Example
 
-```python
+```pycon
 >>> raw = dashboard.robot_mode()
 >>> resp = parse_response(raw, IntResponse)
 >>> print(resp.value)
@@ -3261,7 +2530,102 @@ Accepts both Dobot response formats:
 
 <a id="module-dobot_api_v3.base"></a>
 
-Base classes and data types for Dobot API.
+Base TCP communication class for Dobot API.
+
+Data-type definitions (`FeedbackDtype`, `FeedbackData`,
+`PROTOCOL_FIELD_MAP`) have been extracted to `dobot_api_v3.dtypes`.
+They are re-exported here for backward compatibility so that existing code
+doing `from dobot_api_v3.base import FeedbackDtype` continues to work.
+
+### *class* dobot_api_v3.base.DobotApi(ip, port)
+
+Bases: `object`
+
+Base TCP communication class for Dobot TCP API ports.
+
+This class provides connection lifecycle management, message send/receive
+helpers, and thread-safe request/response behavior for the dashboard,
+movement, and feedback sockets.
+
+* **Parameters:**
+  * **ip** (*str*)
+  * **port** (*int*)
+
+#### \_\_init_\_(ip, port)
+
+Initialize and connect a Dobot TCP socket.
+
+* **Parameters:**
+  * **ip** (*str*) – Robot controller IP address.
+  * **port** (*int*) – Robot TCP port. Supported ports are 29999, 30003, 30004,
+    30005, and 30006.
+* **Raises:**
+  * **ValueError** – If `port` is not a supported Dobot TCP port.
+  * **ConnectionError** – If the socket connection fails.
+* **Return type:**
+  None
+
+#### reconnect()
+
+Reconnect the socket to the original endpoint.
+
+* **Raises:**
+  * **ValueError** – If `self.port` is invalid.
+  * **ConnectionError** – If reconnection fails.
+* **Return type:**
+  None
+
+#### log(text)
+
+Write a log message using the project logger.
+
+* **Parameters:**
+  **text** (*str*) – Message to emit.
+* **Return type:**
+  None
+
+#### send_data(string)
+
+Send a UTF-8 command string to the robot.
+
+* **Parameters:**
+  **string** (*str*) – Command string to send.
+* **Raises:**
+  **RuntimeError** – If the socket is not connected.
+* **Return type:**
+  None
+
+#### wait_reply()
+
+Receive and decode one robot reply frame.
+
+* **Returns:**
+  UTF-8 decoded response string, or an empty string if the socket
+  returns zero bytes.
+* **Raises:**
+  **RuntimeError** – If the socket is not connected.
+* **Return type:**
+  str
+
+#### send_recv_msg(string)
+
+Send one command and wait for one reply atomically.
+
+* **Parameters:**
+  **string** (*str*) – Command string to send.
+* **Returns:**
+  Decoded robot response string.
+* **Raises:**
+  **RuntimeError** – If the socket is not connected.
+* **Return type:**
+  str
+
+#### close()
+
+Close the socket if connected.
+
+* **Return type:**
+  None
 
 ### *class* dobot_api_v3.base.FeedbackData(len, digital_input_bits, digital_output_bits, robot_mode, time_stamp, time_stamp_reserve_bit, test_value, test_value_keep_bit, speed_scaling, linear_momentum_norm, v_main, v_robot, i_robot, i_robot_keep_bit1, i_robot_keep_bit2, tool_accelerometer_values, elbow_position, elbow_velocity, q_target, qd_target, qdd_target, i_target, m_target, q_actual, qd_actual, i_actual, actual_tcp_force, tool_vector_actual, tcp_speed_actual, tcp_force, tool_vector_target, tcp_speed_target, motor_temperatures, joint_modes, v_actual, hand_type, user, tool, run_queued_cmd, pause_cmd_flag, velocity_ratio, acceleration_ratio, jerk_ratio, xyz_velocity_ratio, r_velocity_ratio, xyz_acceleration_ratio, r_acceleration_ratio, xyz_jerk_ratio, r_jerk_ratio, brake_status, enable_status, drag_status, running_status, error_status, jog_status, robot_type, drag_button_signal, enable_button_signal, record_button_signal, reappear_button_signal, jaw_button_signal, six_force_online, reserve2, m_actual, load, center_x, center_y, center_z, user_coords, tool_coords, trace_index, six_force_value, target_quaternion, actual_quaternion, reserve3)
 
@@ -3884,7 +3248,7 @@ Reserved bytes (24 bytes).
 
 ### Example
 
-```python
+```pycon
 >>> data = robot.feedback_data()
 >>> if data is not None:
 ...     print(data.robot_mode)
@@ -4058,867 +3422,62 @@ Construct a [`FeedbackData`](#dobot_api_v3.base.FeedbackData) from a raw structu
 
 ### Example
 
-```python
+```pycon
 >>> raw = np.frombuffer(buf, dtype=FeedbackDtype)
 >>> data = FeedbackData.from_numpy(raw)
 >>> data.robot_mode
 ```
 
-### *class* dobot_api_v3.base.DobotApi(ip, port)
-
-Bases: `object`
-
-Base TCP communication class for Dobot TCP API ports.
-
-This class provides connection lifecycle management, message send/receive
-helpers, and thread-safe request/response behavior for the dashboard,
-movement, and feedback sockets.
-
-* **Parameters:**
-  * **ip** (*str*)
-  * **port** (*int*)
-
-#### \_\_init_\_(ip, port)
-
-Initialize and connect a Dobot TCP socket.
-
-* **Parameters:**
-  * **ip** (*str*) – Robot controller IP address.
-  * **port** (*int*) – Robot TCP port. Supported ports are 29999, 30003, 30004,
-    30005, and 30006.
-* **Raises:**
-  * **ValueError** – If `port` is not a supported Dobot TCP port.
-  * **ConnectionError** – If the socket connection fails.
-* **Return type:**
-  None
-
-#### reconnect()
-
-Reconnect the socket to the original endpoint.
-
-* **Raises:**
-  * **ValueError** – If `self.port` is invalid.
-  * **ConnectionError** – If reconnection fails.
-* **Return type:**
-  None
-
-#### log(text)
-
-Write a log message using the project logger.
-
-* **Parameters:**
-  **text** (*str*) – Message to emit.
-* **Return type:**
-  None
-
-#### send_data(string)
-
-Send a UTF-8 command string to the robot.
-
-* **Parameters:**
-  **string** (*str*) – Command string to send.
-* **Raises:**
-  **RuntimeError** – If the socket is not connected.
-* **Return type:**
-  None
-
-#### wait_reply()
-
-Receive and decode one robot reply frame.
-
-* **Returns:**
-  UTF-8 decoded response string, or an empty string if the socket
-  returns zero bytes.
-* **Raises:**
-  **RuntimeError** – If the socket is not connected.
-* **Return type:**
-  str
-
-#### send_recv_msg(string)
-
-Send one command and wait for one reply atomically.
-
-* **Parameters:**
-  **string** (*str*) – Command string to send.
-* **Returns:**
-  Decoded robot response string.
-* **Raises:**
-  **RuntimeError** – If the socket is not connected.
-* **Return type:**
-  str
-
-#### close()
-
-Close the socket if connected.
-
-* **Return type:**
-  None
-
 <a id="module-dobot_api_v3.dashboard"></a>
 
-Dashboard/control commands for Dobot API.
+Backward-compatible re-export shim for DobotApiDashboard.
+
+The canonical implementation now lives in
+`dobot_api_v3.commands.dashboard`.  This module re-exports
+`DobotApiDashboard` so that existing import paths continue to work:
+
+```default
+from dobot_api_v3.dashboard import DobotApiDashboard  # still valid
+```
 
 ### *class* dobot_api_v3.dashboard.DobotApiDashboard(ip, port)
 
-Bases: [`DobotApi`](#dobot_api_v3.base.DobotApi)
+Bases: `_SystemMixin`, `_IOMixin`, `_ConfigMixin`, `_QueryMixin`, [`DobotApi`](#dobot_api_v3.base.DobotApi)
 
 Dashboard command client for Dobot control APIs.
 
 This class sends robot lifecycle, I/O, configuration, and status commands
 over the dashboard TCP port (usually `29999`).
 
+Commands are organized into four categories:
+
+* **System** — `enable_robot`, `disable_robot`, `power_on`,
+  `emergency_stop`, `speed_factor`, `robot_mode`, script control,
+  and queued-motion flow (`wait` / `pause` / `resume`).
+* **I/O** — digital output / input, analog output, DO groups, and Modbus.
+* **Config** — speed / acceleration / jerk ratios, coordinate selection,
+  payload, and collision settings.
+* **Query** — pose / angle / error queries, kinematics solvers, safety
+  configuration, drag mode, trajectory helpers, and terminal RS-485.
+
+The full source for each group lives in the corresponding private mixin
+module under `dobot_api_v3/commands/`.
+
 * **Parameters:**
   * **ip** (*str*)
   * **port** (*int*)
 
-#### enable_robot(load=0.0, center_x=0.0, center_y=0.0, center_z=0.0)
-
-Enable the robot with optional payload parameters.
-
-* **Parameters:**
-  * **load** (*float*) – Payload weight.
-  * **center_x** (*float*) – Payload center offset on X axis.
-  * **center_y** (*float*) – Payload center offset on Y axis.
-  * **center_z** (*float*) – Payload center offset on Z axis.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-### Example
-
-```python
->>> dashboard.enable_robot()
->>> dashboard.enable_robot(load=0.5, center_x=0.0, center_y=0.0, center_z=0.05)
-```
-
-#### disable_robot()
-
-Disable the robot.
-
-* **Return type:**
-  str
-
-#### clear_error()
-
-Clear controller alarm information.
-
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-### Example
-
-```python
->>> dashboard.clear_error()
-```
-
-#### reset_robot()
-
-Stop the robot.
-
-* **Return type:**
-  str
-
-#### speed_factor(speed)
-
-Set global speed factor.
-
-* **Parameters:**
-  **speed** (*int*) – Rate value in range 1-100.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-### Example
-
-```python
->>> dashboard.speed_factor(40)
-```
-
-#### set_user(index)
-
-Select the calibrated user coordinate system.
-
-* **Parameters:**
-  **index** (*int*) – Calibrated user coordinate index.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### set_tool(index)
-
-Select the calibrated tool coordinate system.
-
-* **Parameters:**
-  **index** (*int*) – Calibrated tool coordinate index.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### robot_mode()
-
-View the robot status.
-
-* **Return type:**
-  str
-
-#### payload(weight, inertia)
-
-Set robot load.
-
-* **Parameters:**
-  * **weight** (*float*) – Payload weight.
-  * **inertia** (*float*) – Payload moment of inertia.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### do_output(index, status)
-
-Set digital signal output (queued).
-
-* **Parameters:**
-  * **index** (*int*) – Digital output index (1-24).
-  * **status** (*int*) – Output state (0 for low, 1 for high).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### do_execute(index, status)
-
-Set digital signal output (immediate).
-
-* **Parameters:**
-  * **index** (*int*) – Digital output index (1-24).
-  * **status** (*int*) – Output state (0 for low, 1 for high).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### tool_do(index, status)
-
-Set terminal signal output (queued).
-
-* **Parameters:**
-  * **index** (*int*) – Terminal output index (1-2).
-  * **status** (*int*) – Output state (0 for low, 1 for high).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### tool_do_execute(index, status)
-
-Set terminal signal output (immediate).
-
-* **Parameters:**
-  * **index** (*int*) – Terminal output index (1-2).
-  * **status** (*int*) – Output state (0 for low, 1 for high).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### ao(index, val)
-
-Set analog signal output (queued).
-
-* **Parameters:**
-  * **index** (*int*) – Analog output index (1-2).
-  * **val** (*float*) – Output voltage (0-10).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### ao_execute(index, val)
-
-Set analog signal output (immediate).
-
-* **Parameters:**
-  * **index** (*int*) – Analog output index (1-2).
-  * **val** (*float*) – Output voltage (0-10).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### acc_j(speed)
-
-Set joint acceleration ratio (MovJ / MovJIO / MovJR / JointMovJ).
-
-* **Parameters:**
-  **speed** (*int*) – Joint acceleration ratio (1-100).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### acc_l(speed)
-
-Set Cartesian acceleration ratio (MovL / MovLIO / MovLR / Jump / Arc / Circle).
-
-* **Parameters:**
-  **speed** (*int*) – Cartesian acceleration ratio (1-100).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### speed_j(speed)
-
-Set joint speed ratio (MovJ / MovJIO / MovJR / JointMovJ).
-
-* **Parameters:**
-  **speed** (*int*) – Joint speed ratio (1-100).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### speed_l(speed)
-
-Set Cartesian speed ratio (MovL / MovLIO / MovLR / Jump / Arc / Circle).
-
-* **Parameters:**
-  **speed** (*int*) – Cartesian speed ratio (1-100).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### vel_j(speed)
-
-Alias for [`speed_j()`](#dobot_api_v3.dashboard.DobotApiDashboard.speed_j) (V4-style name).
-
-* **Parameters:**
-  **speed** (*int*)
-* **Return type:**
-  str
-
-#### vel_l(speed)
-
-Alias for [`speed_l()`](#dobot_api_v3.dashboard.DobotApiDashboard.speed_l) (V4-style name).
-
-* **Parameters:**
-  **speed** (*int*)
-* **Return type:**
-  str
-
-#### arch(index)
-
-Set Jump gate parameter index (start lift height, max lift, end drop).
-
-* **Parameters:**
-  **index** (*int*) – Jump parameter index (0-9).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### cp(ratio)
-
-Set smooth transition ratio.
-
-* **Parameters:**
-  **ratio** (*int*) – Smooth transition ratio (1-100).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### lim_z(value)
-
-Set maximum lifting height for door-type parameters.
-
-* **Parameters:**
-  **value** (*int*) – Maximum lifting height.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### set_arm_orientation(r, d, n, cfg)
-
-Set the hand command.
-
-* **Parameters:**
-  * **r** (*int*) – Forward/backward selector (1 for forward, -1 for backward).
-  * **d** (*int*) – Elbow orientation (1 for up, -1 for down).
-  * **n** (*int*) – Wrist flip selector (1 for no flip, -1 for flip).
-  * **cfg** (*int*) – Sixth-axis angle configuration identifier.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### power_on()
-
-Power on the robot.
-
-Note: Takes ~10 s before the robot is enabled after power-on.
-
-* **Return type:**
-  str
-
-#### run_script(project_name)
-
-Run a script file.
-
-* **Parameters:**
-  **project_name** (*str*) – Script file name.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### stop_script()
-
-Stop scripts.
-
-* **Return type:**
-  str
-
-#### pause_script()
-
-Pause the script.
-
-* **Return type:**
-  str
-
-#### continue_script()
-
-Continue running the script.
-
-* **Return type:**
-  str
-
-#### get_hold_regs(id, addr, count, type_)
-
-Read hold register.
-
-* **Parameters:**
-  * **id** (*int*) – Secondary device number (0-4, where 0 is controller slave).
-  * **addr** (*int*) – Starting hold-register address (3095-4095).
-  * **count** (*int*) – Number of items to read (1-16).
-  * **type** – Data type, such as `"U16"`, `"U32"`, `"F32"`, or
-    `"F64"`.
-  * **type_** (*str*)
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### set_hold_regs(id, addr, count, table, type_=None)
-
-Write hold register.
-
-* **Parameters:**
-  * **id** (*int*) – Secondary device number (0-4, where 0 is controller slave).
-  * **addr** (*int*) – Starting hold-register address (3095-4095).
-  * **count** (*int*) – Number of items to write (1-16).
-  * **table** (*str*) – Register data payload string.
-  * **type** – Optional data type, such as `"U16"`, `"U32"`,
-    `"F32"`, or `"F64"`.
-  * **type_** (*str* *|* *None*)
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### get_error_id()
-
-Get robot error code.
-
-* **Return type:**
-  str
-
-#### set_payload(offset1, \*dyn_params)
-
-Set payload parameters.
-
-* **Parameters:**
-  * **offset1** (*float*) – Base payload value.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Additional payload arguments.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### positive_solution(offset1, offset2, offset3, offset4, offset5, offset6, user, tool)
-
-Run forward kinematics from joint angles to Cartesian pose.
-
-* **Parameters:**
-  * **offset1** (*float*) – Joint 1 angle.
-  * **offset2** (*float*) – Joint 2 angle.
-  * **offset3** (*float*) – Joint 3 angle.
-  * **offset4** (*float*) – Joint 4 angle.
-  * **offset5** (*float*) – Joint 5 angle.
-  * **offset6** (*float*) – Joint 6 angle.
-  * **user** (*int*) – User coordinate index.
-  * **tool** (*int*) – Tool coordinate index.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### inverse_solution(offset1, offset2, offset3, offset4, offset5, offset6, user, tool, \*dyn_params)
-
-Run inverse kinematics from Cartesian pose to joint angles.
-
-* **Parameters:**
-  * **offset1** (*float*) – X position.
-  * **offset2** (*float*) – Y position.
-  * **offset3** (*float*) – Z position.
-  * **offset4** (*float*) – RX rotation.
-  * **offset5** (*float*) – RY rotation.
-  * **offset6** (*float*) – RZ rotation.
-  * **user** (*int*) – User coordinate index.
-  * **tool** (*int*) – Tool coordinate index.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional solver parameters.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### set_collision_level(offset1)
-
-Set collision detection level.
-
-* **Parameters:**
-  **offset1** (*int*) – Collision level value.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### get_angle()
-
-Get current joint angles.
-
-* **Return type:**
-  str
-
-#### get_pose()
-
-Get current Cartesian pose.
-
-* **Return type:**
-  str
-
-#### emergency_stop()
-
-Trigger emergency stop.
-
-* **Return type:**
-  str
-
-#### modbus_create(ip, port, slave_id, is_rtu)
-
-Create a Modbus connection.
-
-* **Parameters:**
-  * **ip** (*str*) – Modbus device IP address.
-  * **port** (*int*) – Modbus device port.
-  * **slave_id** (*int*) – Slave device identifier.
-  * **is_rtu** (*int*) – Connection mode flag (0 for TCP, 1 for RTU).
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### modbus_close(offset1)
-
-Close a Modbus connection.
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### set_safe_skin(offset1)
-
-Configure safe-skin feature.
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### set_obstacle_avoid(offset1)
-
-Configure obstacle avoidance feature.
-
-* **Parameters:**
-  **offset1** (*int*)
-* **Return type:**
-  str
-
-#### get_trace_start_pose(offset1)
-
-Get starting pose of a Cartesian trajectory file.
-
-* **Parameters:**
-  **offset1** (*str*) – Trajectory file name.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### get_path_start_pose(offset1)
-
-Get starting pose of a joint path file.
-
-* **Parameters:**
-  **offset1** (*str*) – Path file name.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### handle_traj_points(offset1)
-
-Process a trajectory points file.
-
-* **Parameters:**
-  **offset1** (*str*) – Trajectory file name.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### get_six_force_data()
-
-Read six-axis force sensor data.
-
-* **Return type:**
-  str
-
-#### set_collide_drag(offset1)
-
-Configure collision drag mode.
-
-* **Parameters:**
-  **offset1** (*int*) – Drag mode flag.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### set_terminal_keys(offset1)
-
-Configure terminal key behavior.
-
-* **Parameters:**
-  **offset1** (*int*) – Key mode value.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### set_terminal_485(offset1, offset2, offset3, offset4)
-
-Set terminal RS-485 parameters.
-
-* **Parameters:**
-  * **offset1** (*int*) – Baud rate.
-  * **offset2** (*int*) – Data bits.
-  * **offset3** (*str*) – Parity setting.
-  * **offset4** (*int*) – Stop bits.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### get_terminal_485()
-
-Get terminal RS-485 configuration.
-
-* **Return type:**
-  str
-
-#### tcp_speed(offset1)
-
-Set TCP speed.
-
-* **Parameters:**
-  **offset1** (*int*) – TCP speed value.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### tcp_speed_end()
-
-End TCP speed mode.
-
-* **Return type:**
-  str
-
-#### get_in_bits(offset1, offset2, offset3)
-
-Read digital input bits.
-
-* **Parameters:**
-  * **offset1** (*int*) – Device identifier.
-  * **offset2** (*int*) – Start address.
-  * **offset3** (*int*) – Number of bits.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### get_in_regs(offset1, offset2, offset3, \*dyn_params)
-
-Read input registers.
-
-* **Parameters:**
-  * **offset1** (*int*) – Device identifier.
-  * **offset2** (*int*) – Start address.
-  * **offset3** (*int*) – Register count.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional data type and mode parameters.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### get_coils(offset1, offset2, offset3)
-
-Read coil values.
-
-* **Parameters:**
-  * **offset1** (*int*) – Device identifier.
-  * **offset2** (*int*) – Start address.
-  * **offset3** (*int*) – Coil count.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### set_coils(offset1, offset2, offset3, offset4)
-
-Write coil values.
-
-* **Parameters:**
-  * **offset1** (*int*) – Device identifier.
-  * **offset2** (*int*) – Start address.
-  * **offset3** (*int*) – Coil count.
-  * **offset4** (*int*) – Packed coil value.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### di(offset1)
-
-Read a digital input port.
-
-* **Parameters:**
-  **offset1** (*int*) – Digital input index.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### tool_di(offset1)
-
-Read a terminal digital input port.
-
-* **Parameters:**
-  **offset1** (*int*) – Terminal digital input index.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### do_group(\*dyn_params)
-
-Set multiple digital outputs in one command.
-
-* **Parameters:**
-  **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Repeating output pairs such as `(index, status)`.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### brake_control(offset1, offset2)
-
-Control joint brakes.
-
-* **Parameters:**
-  * **offset1** (*int*) – Joint index.
-  * **offset2** (*int*) – Brake control value.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### start_drag()
-
-Enable drag mode.
-
-* **Return type:**
-  str
-
-#### stop_drag()
-
-Disable drag mode.
-
-* **Return type:**
-  str
-
-#### load_switch(offset1)
-
-Switch load configuration.
-
-* **Parameters:**
-  **offset1** (*int*) – Load profile index.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### wait(t)
-
-Wait for specified time (queued command).
-
-* **Parameters:**
-  **t** (*float*) – Wait duration in milliseconds.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### pause()
-
-Pause queued motion execution.
-
-* **Return type:**
-  str
-
-#### resume()
-
-Resume paused motion execution.
-
-Note: maps to the `continue()` protocol command; `continue` is a
-Python keyword so the method is named `resume`.
-
-* **Return type:**
-  str
-
 <a id="module-dobot_api_v3.move"></a>
 
-Movement commands for Dobot API (DobotApiMove class).
+Backward-compatible re-export shim for DobotApiMove.
+
+The canonical implementation now lives in
+`dobot_api_v3.commands.move`.  This module re-exports
+`DobotApiMove` so that existing import paths continue to work:
+
+```default
+from dobot_api_v3.move import DobotApiMove  # still valid
+```
 
 ### *class* dobot_api_v3.move.DobotApiMove(ip, port)
 
@@ -4952,7 +3511,7 @@ Joint motion interface (point-to-point motion mode).
 
 ### Example
 
-```python
+```pycon
 >>> move.mov_j(200, 0, 200, 0, 0, 0)
 >>> move.mov_j(220, 20, 180, 0, 0, 0, "SpeedJ=40", "AccJ=40")
 ```
@@ -4976,7 +3535,7 @@ Linear motion interface.
 
 ### Example
 
-```python
+```pycon
 >>> move.mov_l(250, 0, 180, 0, 0, 0)
 >>> move.mov_l(250, 30, 180, 0, 0, 0, "SpeedL=30", "AccL=30")
 ```
@@ -5184,7 +3743,7 @@ Jog motion along a single axis.
 
 ### Example
 
-```python
+```pycon
 >>> move.move_jog("J1+")
 >>> move.move_jog("")
 ```
@@ -5235,7 +3794,7 @@ Block until all queued commands have been executed.
 
 ### Example
 
-```python
+```pycon
 >>> move.mov_j(200, 0, 200, 0, 0, 0)
 >>> move.mov_l(220, 20, 180, 0, 0, 0)
 >>> move.sync()
@@ -5396,7 +3955,7 @@ For zero-copy NumPy access (e.g., numeric pipelines) use
 
 ### Example
 
-```python
+```pycon
 >>> data = feedback.feedback_data()
 >>> if data is not None:
 ...     print(data.robot_mode)
