@@ -1,16 +1,8 @@
 # API Autogen Source
 
 * [dobot_api_v3](modules.md)
-  * [`DobotRobot`](modules.md#dobot_api_v3.robot.DobotRobot)
   * [`DobotApi`](modules.md#dobot_api_v3.base.DobotApi)
-  * [`FeedbackData`](modules.md#dobot_api_v3.dtypes.FeedbackData)
-  * [`DobotApiDashboard`](modules.md#dobot_api_v3.commands.dashboard.DobotApiDashboard)
-  * [`DobotApiMove`](modules.md#dobot_api_v3.commands.move.DobotApiMove)
+  * [`FeedbackData`](modules.md#dobot_api_v3.base.FeedbackData)
   * [`DobotApiFeedback`](modules.md#dobot_api_v3.feedback.DobotApiFeedback)
   * [`RobotErrorMonitor`](modules.md#dobot_api_v3.error_monitor.RobotErrorMonitor)
   * [`AlarmI18n`](modules.md#dobot_api_v3.i18n_manager.AlarmI18n)
-  * [`AckResponse`](modules.md#dobot_api_v3.responses.AckResponse)
-  * [`IntResponse`](modules.md#dobot_api_v3.responses.IntResponse)
-  * [`PoseResponse`](modules.md#dobot_api_v3.responses.PoseResponse)
-  * [`ErrorIdResponse`](modules.md#dobot_api_v3.responses.ErrorIdResponse)
-  * [`DobotApiError`](modules.md#dobot_api_v3.responses.DobotApiError)

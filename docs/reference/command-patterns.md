@@ -1,5 +1,7 @@
 # Command Patterns
 
+<!-- Diátaxis type: Reference -->
+
 Use this page as a quick guide for composing dashboard/move command arguments.
 
 ## Pattern 1: Positional Required Args

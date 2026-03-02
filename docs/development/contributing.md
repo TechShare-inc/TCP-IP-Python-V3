@@ -1,5 +1,7 @@
 # Contributing
 
+<!-- Diátaxis type: How-to -->
+
 ## Setup
 
 ```powershell

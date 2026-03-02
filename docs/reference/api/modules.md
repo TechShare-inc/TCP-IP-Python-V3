@@ -245,11 +245,11 @@ Delegates to `enable_robot()`.
   * **center_y** (*float*) – Payload center offset on Y axis.
   * **center_z** (*float*) – Payload center offset on Z axis.
 * **Returns:**
-  `AckResponse` on success.
+  Command queue ID.
 * **Raises:**
   **DobotApiError** – If the controller returns a non-zero error code.
 * **Return type:**
-  *AckResponse*
+  int
 
 #### disable_robot()
 
@@ -258,11 +258,11 @@ Disable the robot arm.
 Delegates to `disable_robot()`.
 
 * **Returns:**
-  `AckResponse` on success.
+  Command queue ID.
 * **Raises:**
   **DobotApiError** – If the controller returns a non-zero error code.
 * **Return type:**
-  *AckResponse*
+  int
 
 #### clear_error()
 
@@ -271,11 +271,11 @@ Clear controller alarm information.
 Delegates to `clear_error()`.
 
 * **Returns:**
-  `AckResponse` on success.
+  Command queue ID.
 * **Raises:**
   **DobotApiError** – If the controller returns a non-zero error code.
 * **Return type:**
-  *AckResponse*
+  int
 
 #### reset_robot()
 
@@ -284,11 +284,11 @@ Stop the robot.
 Delegates to `reset_robot()`.
 
 * **Returns:**
-  `AckResponse` on success.
+  Command queue ID.
 * **Raises:**
   **DobotApiError** – If the controller returns a non-zero error code.
 * **Return type:**
-  *AckResponse*
+  int
 
 #### power_on()
 
@@ -297,11 +297,11 @@ Power on the controller.
 Delegates to `power_on()`.
 
 * **Returns:**
-  `AckResponse` on success.
+  Command queue ID.
 * **Raises:**
   **DobotApiError** – If the controller returns a non-zero error code.
 * **Return type:**
-  *AckResponse*
+  int
 
 #### emergency_stop()
 
@@ -310,11 +310,11 @@ Trigger an emergency stop.
 Delegates to `emergency_stop()`.
 
 * **Returns:**
-  `AckResponse` on success.
+  Command queue ID.
 * **Raises:**
   **DobotApiError** – If the controller returns a non-zero error code.
 * **Return type:**
-  *AckResponse*
+  int
 
 #### speed_factor(speed)
 
@@ -325,11 +325,11 @@ Delegates to `speed_factor()`.
 * **Parameters:**
   **speed** (*int*) – Rate value in range 1-100.
 * **Returns:**
-  `AckResponse` on success.
+  Command queue ID.
 * **Raises:**
   **DobotApiError** – If the controller returns a non-zero error code.
 * **Return type:**
-  *AckResponse*
+  int
 
 #### robot_mode()
 
@@ -338,12 +338,11 @@ Query the robot operating mode.
 Delegates to `robot_mode()`.
 
 * **Returns:**
-  `IntResponse` with `value` set to the
-  current mode code (e.g. 5 = idle, 7 = running).
+  Current mode code (e.g. 5 = idle, 7 = running).
 * **Raises:**
   **DobotApiError** – If the controller returns a non-zero error code.
 * **Return type:**
-  *IntResponse*
+  int
 
 #### get_pose()
 
@@ -352,12 +351,11 @@ Get current Cartesian pose.
 Delegates to `get_pose()`.
 
 * **Returns:**
-  `PoseResponse` with `x`, `y`, `z`,
-  `rx`, `ry`, `rz` fields populated in mm / degrees.
+  Cartesian pose as `(x, y, z, rx, ry, rz)` in mm / degrees.
 * **Raises:**
   **DobotApiError** – If the controller returns a non-zero error code.
 * **Return type:**
-  *PoseResponse*
+  tuple[float, float, float, float, float, float]
 
 #### get_angle()
 
@@ -366,12 +364,11 @@ Get current joint angles.
 Delegates to `get_angle()`.
 
 * **Returns:**
-  `PoseResponse` with `x`-`rz` fields
-  mapping to joint angles J1-J6 in degrees.
+  Joint angles as `(j1, j2, j3, j4, j5, j6)` in degrees.
 * **Raises:**
   **DobotApiError** – If the controller returns a non-zero error code.
 * **Return type:**
-  *PoseResponse*
+  tuple[float, float, float, float, float, float]
 
 #### get_error_id()
 
@@ -380,12 +377,11 @@ Get current error IDs from the controller.
 Delegates to `get_error_id()`.
 
 * **Returns:**
-  `ErrorIdResponse` with `error_ids` tuple
-  of active non-zero alarm codes.
+  Tuple of non-zero alarm codes (may be empty).
 * **Raises:**
   **DobotApiError** – If the controller returns a non-zero error code.
 * **Return type:**
-  *ErrorIdResponse*
+  tuple[int, …]
 
 #### start_drag()
 
@@ -394,11 +390,11 @@ Enable drag (teach) mode.
 Delegates to `start_drag()`.
 
 * **Returns:**
-  `AckResponse` on success.
+  Command queue ID.
 * **Raises:**
   **DobotApiError** – If the controller returns a non-zero error code.
 * **Return type:**
-  *AckResponse*
+  int
 
 #### stop_drag()
 
@@ -407,11 +403,11 @@ Disable drag (teach) mode.
 Delegates to `stop_drag()`.
 
 * **Returns:**
-  `AckResponse` on success.
+  Command queue ID.
 * **Raises:**
   **DobotApiError** – If the controller returns a non-zero error code.
 * **Return type:**
-  *AckResponse*
+  int
 
 #### set_user(index)
 
@@ -422,11 +418,11 @@ Delegates to `set_user()`.
 * **Parameters:**
   **index** (*int*) – Calibrated user coordinate index.
 * **Returns:**
-  `AckResponse` on success.
+  Command queue ID.
 * **Raises:**
   **DobotApiError** – If the controller returns a non-zero error code.
 * **Return type:**
-  *AckResponse*
+  int
 
 #### set_tool(index)
 
@@ -437,11 +433,11 @@ Delegates to `set_tool()`.
 * **Parameters:**
   **index** (*int*) – Calibrated tool coordinate index.
 * **Returns:**
-  `AckResponse` on success.
+  Command queue ID.
 * **Raises:**
   **DobotApiError** – If the controller returns a non-zero error code.
 * **Return type:**
-  *AckResponse*
+  int
 
 #### mov_j(x, y, z, rx, ry, rz, \*dyn_params)
 
@@ -458,11 +454,11 @@ Delegates to `mov_j()`.
   * **rz** (*float*) – Target RZ rotation.
   * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
 * **Returns:**
-  `AckResponse` on success.
+  Command queue ID.
 * **Raises:**
   **DobotApiError** – If the controller returns a non-zero error code.
 * **Return type:**
-  *AckResponse*
+  int
 
 ### Example
 
@@ -486,11 +482,11 @@ Delegates to `mov_l()`.
   * **rz** (*float*) – Target RZ rotation.
   * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
 * **Returns:**
-  `AckResponse` on success.
+  Command queue ID.
 * **Raises:**
   **DobotApiError** – If the controller returns a non-zero error code.
 * **Return type:**
-  *AckResponse*
+  int
 
 ### Example
 
@@ -513,11 +509,11 @@ Delegates to `joint_mov_j()`.
   * **j6** (*float*) – Target joint 6 angle.
   * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
 * **Returns:**
-  `AckResponse` on success.
+  Command queue ID.
 * **Raises:**
   **DobotApiError** – If the controller returns a non-zero error code.
 * **Return type:**
-  *AckResponse*
+  int
 
 ### Example
 
@@ -540,11 +536,11 @@ Delegates to `rel_mov_j()`.
   * **offset6** (*float*) – Joint 6 offset.
   * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
 * **Returns:**
-  `AckResponse` on success.
+  Command queue ID.
 * **Raises:**
   **DobotApiError** – If the controller returns a non-zero error code.
 * **Return type:**
-  *AckResponse*
+  int
 
 ### Example
 
@@ -564,11 +560,11 @@ Delegates to `rel_mov_l()`.
   * **offset_z** (*float*) – Z-axis offset.
   * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
 * **Returns:**
-  `AckResponse` on success.
+  Command queue ID.
 * **Raises:**
   **DobotApiError** – If the controller returns a non-zero error code.
 * **Return type:**
-  *AckResponse*
+  int
 
 #### arc(x1, y1, z1, a1, b1, c1, x2, y2, z2, a2, b2, c2, \*dyn_params)
 
@@ -591,11 +587,11 @@ Delegates to `arc()`.
   * **c2** (*float*) – End point C.
   * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
 * **Returns:**
-  `AckResponse` on success.
+  Command queue ID.
 * **Raises:**
   **DobotApiError** – If the controller returns a non-zero error code.
 * **Return type:**
-  *AckResponse*
+  int
 
 #### servo_j(j1, j2, j3, j4, j5, j6, t=0.1, lookahead_time=50.0, gain=500.0)
 
@@ -614,11 +610,11 @@ Delegates to `servo_j()`.
   * **lookahead_time** (*float*) – Feed-forward smoothing parameter.
   * **gain** (*float*) – Servo gain parameter.
 * **Returns:**
-  `AckResponse` on success.
+  Command queue ID.
 * **Raises:**
   **DobotApiError** – If the controller returns a non-zero error code.
 * **Return type:**
-  *AckResponse*
+  int
 
 #### servo_p(x, y, z, a, b, c)
 
@@ -634,11 +630,11 @@ Delegates to `servo_p()`.
   * **b** (*float*) – Target B rotation.
   * **c** (*float*) – Target C rotation.
 * **Returns:**
-  `AckResponse` on success.
+  Command queue ID.
 * **Raises:**
   **DobotApiError** – If the controller returns a non-zero error code.
 * **Return type:**
-  *AckResponse*
+  int
 
 #### move_jog(axis_id, \*dyn_params)
 
@@ -650,11 +646,11 @@ Delegates to `move_jog()`.
   * **axis_id** (*str*) – Axis command such as `"J1+"` or `"X-"`.
   * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional jog parameters `(coord_type, user, tool)`.
 * **Returns:**
-  `AckResponse` on success.
+  Command queue ID.
 * **Raises:**
   **DobotApiError** – If the controller returns a non-zero error code.
 * **Return type:**
-  *AckResponse*
+  int
 
 ### Example
 
@@ -670,11 +666,11 @@ Block until all queued motion commands complete.
 Delegates to `sync()`.
 
 * **Returns:**
-  `AckResponse` on success.
+  Command queue ID.
 * **Raises:**
   **DobotApiError** – If the controller returns a non-zero error code.
 * **Return type:**
-  *AckResponse*
+  int
 
 ### Example
 
@@ -773,443 +769,6 @@ Close the socket if connected.
 * **Return type:**
   None
 
-### *class* dobot_api_v3.DobotApiDashboard(ip, port)
-
-Bases: `_SystemMixin`, `_IOMixin`, `_ConfigMixin`, `_QueryMixin`, [`DobotApi`](#dobot_api_v3.base.DobotApi)
-
-Dashboard command client for Dobot control APIs.
-
-This class sends robot lifecycle, I/O, configuration, and status commands
-over the dashboard TCP port (usually `29999`).
-
-Commands are organized into four categories:
-
-* **System** — `enable_robot`, `disable_robot`, `power_on`,
-  `emergency_stop`, `speed_factor`, `robot_mode`, script control,
-  and queued-motion flow (`wait` / `pause` / `resume`).
-* **I/O** — digital output / input, analog output, DO groups, and Modbus.
-* **Config** — speed / acceleration / jerk ratios, coordinate selection,
-  payload, and collision settings.
-* **Query** — pose / angle / error queries, kinematics solvers, safety
-  configuration, drag mode, trajectory helpers, and terminal RS-485.
-
-The full source for each group lives in the corresponding private mixin
-module under `dobot_api_v3/commands/`.
-
-* **Parameters:**
-  * **ip** (*str*)
-  * **port** (*int*)
-
-### *class* dobot_api_v3.DobotApiMove(ip, port)
-
-Bases: [`DobotApi`](#dobot_api_v3.base.DobotApi)
-
-Movement command client for Dobot motion APIs.
-
-This class sends trajectory and servo commands to the move TCP port
-(usually `30003`).
-
-* **Parameters:**
-  * **ip** (*str*)
-  * **port** (*int*)
-
-#### mov_j(x, y, z, rx, ry, rz, \*dyn_params)
-
-Joint motion interface (point-to-point motion mode).
-
-* **Parameters:**
-  * **x** (*float*) – Target X coordinate.
-  * **y** (*float*) – Target Y coordinate.
-  * **z** (*float*) – Target Z coordinate.
-  * **rx** (*float*) – Target RX rotation.
-  * **ry** (*float*) – Target RY rotation.
-  * **rz** (*float*) – Target RZ rotation.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-### Example
-
-```pycon
->>> move.mov_j(200, 0, 200, 0, 0, 0)
->>> move.mov_j(220, 20, 180, 0, 0, 0, "SpeedJ=40", "AccJ=40")
-```
-
-#### mov_l(x, y, z, rx, ry, rz, \*dyn_params)
-
-Linear motion interface.
-
-* **Parameters:**
-  * **x** (*float*) – Target X coordinate.
-  * **y** (*float*) – Target Y coordinate.
-  * **z** (*float*) – Target Z coordinate.
-  * **rx** (*float*) – Target RX rotation.
-  * **ry** (*float*) – Target RY rotation.
-  * **rz** (*float*) – Target RZ rotation.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-### Example
-
-```pycon
->>> move.mov_l(250, 0, 180, 0, 0, 0)
->>> move.mov_l(250, 30, 180, 0, 0, 0, "SpeedL=30", "AccL=30")
-```
-
-#### joint_mov_j(j1, j2, j3, j4, j5, j6, \*dyn_params)
-
-Joint motion interface (joint target).
-
-* **Parameters:**
-  * **j1** (*float*) – Target joint 1 angle.
-  * **j2** (*float*) – Target joint 2 angle.
-  * **j3** (*float*) – Target joint 3 angle.
-  * **j4** (*float*) – Target joint 4 angle.
-  * **j5** (*float*) – Target joint 5 angle.
-  * **j6** (*float*) – Target joint 6 angle.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### jump()
-
-Placeholder for Jump command.
-
-This method is intentionally not implemented in the current version.
-
-* **Return type:**
-  None
-
-#### rel_mov_j(offset1, offset2, offset3, offset4, offset5, offset6, \*dyn_params)
-
-Relative joint offset motion (point-to-point mode).
-
-* **Parameters:**
-  * **offset1** (*float*) – Joint 1 offset.
-  * **offset2** (*float*) – Joint 2 offset.
-  * **offset3** (*float*) – Joint 3 offset.
-  * **offset4** (*float*) – Joint 4 offset.
-  * **offset5** (*float*) – Joint 5 offset.
-  * **offset6** (*float*) – Joint 6 offset.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### rel_mov_l(offset_x, offset_y, offset_z, \*dyn_params)
-
-Relative Cartesian offset motion (linear mode).
-
-* **Parameters:**
-  * **offset_x** (*float*) – X-axis offset.
-  * **offset_y** (*float*) – Y-axis offset.
-  * **offset_z** (*float*) – Z-axis offset.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### mov_l_io(x, y, z, a, b, c, \*dyn_params)
-
-Linear motion with parallel digital output control.
-
-* **Parameters:**
-  * **x** (*float*) – Target X coordinate.
-  * **y** (*float*) – Target Y coordinate.
-  * **z** (*float*) – Target Z coordinate.
-  * **a** (*float*) – Target A rotation.
-  * **b** (*float*) – Target B rotation.
-  * **c** (*float*) – Target C rotation.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Parallel I/O tuples `(mode, distance, index, status)`.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### mov_j_io(x, y, z, a, b, c, \*dyn_params)
-
-Point-to-point motion with parallel digital output control.
-
-* **Parameters:**
-  * **x** (*float*) – Target X coordinate.
-  * **y** (*float*) – Target Y coordinate.
-  * **z** (*float*) – Target Z coordinate.
-  * **a** (*float*) – Target A rotation.
-  * **b** (*float*) – Target B rotation.
-  * **c** (*float*) – Target C rotation.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Parallel I/O tuples `(mode, distance, index, status)`.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### arc(x1, y1, z1, a1, b1, c1, x2, y2, z2, a2, b2, c2, \*dyn_params)
-
-Circular motion through an intermediate point.
-
-* **Parameters:**
-  * **x1** (*float*) – Intermediate point X.
-  * **y1** (*float*) – Intermediate point Y.
-  * **z1** (*float*) – Intermediate point Z.
-  * **a1** (*float*) – Intermediate point A.
-  * **b1** (*float*) – Intermediate point B.
-  * **c1** (*float*) – Intermediate point C.
-  * **x2** (*float*) – End point X.
-  * **y2** (*float*) – End point Y.
-  * **z2** (*float*) – End point Z.
-  * **a2** (*float*) – End point A.
-  * **b2** (*float*) – End point B.
-  * **c2** (*float*) – End point C.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### circle3(x1, y1, z1, a1, b1, c1, x2, y2, z2, a2, b2, c2, count, \*dyn_params)
-
-Full-circle motion command.
-
-* **Parameters:**
-  * **x1** (*float*) – Intermediate point X.
-  * **y1** (*float*) – Intermediate point Y.
-  * **z1** (*float*) – Intermediate point Z.
-  * **a1** (*float*) – Intermediate point A.
-  * **b1** (*float*) – Intermediate point B.
-  * **c1** (*float*) – Intermediate point C.
-  * **x2** (*float*) – End point X.
-  * **y2** (*float*) – End point Y.
-  * **z2** (*float*) – End point Z.
-  * **a2** (*float*) – End point A.
-  * **b2** (*float*) – End point B.
-  * **c2** (*float*) – End point C.
-  * **count** (*int*) – Number of full rotations.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### servo_j(j1, j2, j3, j4, j5, j6, t=0.1, lookahead_time=50.0, gain=500.0)
-
-Dynamic following in joint space.
-
-* **Parameters:**
-  * **j1** (*float*) – Target joint 1 angle.
-  * **j2** (*float*) – Target joint 2 angle.
-  * **j3** (*float*) – Target joint 3 angle.
-  * **j4** (*float*) – Target joint 4 angle.
-  * **j5** (*float*) – Target joint 5 angle.
-  * **j6** (*float*) – Target joint 6 angle.
-  * **t** (*float*) – Point run time in seconds.
-  * **lookahead_time** (*float*) – Feed-forward smoothing parameter.
-  * **gain** (*float*) – Servo gain parameter.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### servo_js(j1, j2, j3, j4, j5, j6)
-
-Dynamic following in joint space (simplified form).
-
-* **Parameters:**
-  * **j1** (*float*) – Target joint 1 angle.
-  * **j2** (*float*) – Target joint 2 angle.
-  * **j3** (*float*) – Target joint 3 angle.
-  * **j4** (*float*) – Target joint 4 angle.
-  * **j5** (*float*) – Target joint 5 angle.
-  * **j6** (*float*) – Target joint 6 angle.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### servo_p(x, y, z, a, b, c)
-
-Dynamic following in Cartesian space.
-
-* **Parameters:**
-  * **x** (*float*) – Target X coordinate.
-  * **y** (*float*) – Target Y coordinate.
-  * **z** (*float*) – Target Z coordinate.
-  * **a** (*float*) – Target A rotation.
-  * **b** (*float*) – Target B rotation.
-  * **c** (*float*) – Target C rotation.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### move_jog(axis_id, \*dyn_params)
-
-Jog motion along a single axis.
-
-* **Parameters:**
-  * **axis_id** (*str*) – Axis command such as `"J1+"` or `"X-"`.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional jog parameters `(coord_type, user, tool)`.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-### Example
-
-```pycon
->>> move.move_jog("J1+")
->>> move.move_jog("")
-```
-
-#### start_trace(trace_name)
-
-Execute a trajectory file (Cartesian points).
-
-* **Parameters:**
-  **trace_name** (*str*) – Trajectory file name including suffix.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### start_path(trace_name, const, cart)
-
-Replay a trajectory file (joint points).
-
-* **Parameters:**
-  * **trace_name** (*str*) – Trajectory file name including suffix.
-  * **const** (*int*) – Constant-speed mode flag.
-  * **cart** (*int*) – Cartesian/joint path flag.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### start_fc_trace(trace_name)
-
-Execute a trajectory file with force control (Cartesian points).
-
-* **Parameters:**
-  **trace_name** (*str*) – Trajectory file name including suffix.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### sync()
-
-Block until all queued commands have been executed.
-
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-### Example
-
-```pycon
->>> move.mov_j(200, 0, 200, 0, 0, 0)
->>> move.mov_l(220, 20, 180, 0, 0, 0)
->>> move.sync()
-```
-
-#### rel_mov_j_tool(offset_x, offset_y, offset_z, offset_rx, offset_ry, offset_rz, tool, \*dyn_params)
-
-Relative joint motion along the tool coordinate system.
-
-* **Parameters:**
-  * **offset_x** (*float*) – X offset in tool frame.
-  * **offset_y** (*float*) – Y offset in tool frame.
-  * **offset_z** (*float*) – Z offset in tool frame.
-  * **offset_rx** (*float*) – RX offset in tool frame.
-  * **offset_ry** (*float*) – RY offset in tool frame.
-  * **offset_rz** (*float*) – RZ offset in tool frame.
-  * **tool** (*int*) – Tool coordinate index.
-  * **\*dyn_params** (*tuple* *[**int* *,* *int* *,* *int* *]*) – Optional tuples `(speed_j, acc_j, user)`.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### rel_mov_l_tool(offset_x, offset_y, offset_z, offset_rx, offset_ry, offset_rz, tool, \*dyn_params)
-
-Relative linear motion along the tool coordinate system.
-
-* **Parameters:**
-  * **offset_x** (*float*) – X offset in tool frame.
-  * **offset_y** (*float*) – Y offset in tool frame.
-  * **offset_z** (*float*) – Z offset in tool frame.
-  * **offset_rx** (*float*) – RX offset in tool frame.
-  * **offset_ry** (*float*) – RY offset in tool frame.
-  * **offset_rz** (*float*) – RZ offset in tool frame.
-  * **tool** (*int*) – Tool coordinate index.
-  * **\*dyn_params** (*tuple* *[**int* *,* *int* *,* *int* *]*) – Optional tuples `(speed_l, acc_l, user)`.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### rel_mov_j_user(offset_x, offset_y, offset_z, offset_rx, offset_ry, offset_rz, user, \*dyn_params)
-
-Relative joint motion along the user coordinate system.
-
-* **Parameters:**
-  * **offset_x** (*float*) – X offset in user frame.
-  * **offset_y** (*float*) – Y offset in user frame.
-  * **offset_z** (*float*) – Z offset in user frame.
-  * **offset_rx** (*float*) – RX offset in user frame.
-  * **offset_ry** (*float*) – RY offset in user frame.
-  * **offset_rz** (*float*) – RZ offset in user frame.
-  * **user** (*int*) – User coordinate index.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional tuples `(speed_j, acc_j, tool)`.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### rel_mov_l_user(offset_x, offset_y, offset_z, offset_rx, offset_ry, offset_rz, user, \*dyn_params)
-
-Relative linear motion along the user coordinate system.
-
-* **Parameters:**
-  * **offset_x** (*float*) – X offset in user frame.
-  * **offset_y** (*float*) – Y offset in user frame.
-  * **offset_z** (*float*) – Z offset in user frame.
-  * **offset_rx** (*float*) – RX offset in user frame.
-  * **offset_ry** (*float*) – RY offset in user frame.
-  * **offset_rz** (*float*) – RZ offset in user frame.
-  * **user** (*int*) – User coordinate index.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional tuples `(speed_l, acc_l, tool)`.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### rel_joint_mov_j(offset1, offset2, offset3, offset4, offset5, offset6, \*dyn_params)
-
-Relative motion along each joint axis (joint motion mode).
-
-* **Parameters:**
-  * **offset1** (*float*) – Joint 1 offset.
-  * **offset2** (*float*) – Joint 2 offset.
-  * **offset3** (*float*) – Joint 3 offset.
-  * **offset4** (*float*) – Joint 4 offset.
-  * **offset5** (*float*) – Joint 5 offset.
-  * **offset6** (*float*) – Joint 6 offset.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional tuples such as `(speed_j, acc_j)`.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
 ### *class* dobot_api_v3.DobotApiFeedback(ip, port)
 
 Bases: [`DobotApi`](#dobot_api_v3.base.DobotApi)
@@ -1299,7 +858,7 @@ dashboard.close()
 ```
 
 * **Parameters:**
-  * **dashboard** ([*DobotApiDashboard*](#dobot_api_v3.dashboard.DobotApiDashboard))
+  * **dashboard** (*DobotApiDashboard*)
   * **language** (*str*)
 
 #### \_\_init_\_(dashboard, \*, language='en')
@@ -1307,7 +866,7 @@ dashboard.close()
 Initialize the error monitor.
 
 * **Parameters:**
-  * **dashboard** ([*DobotApiDashboard*](#dobot_api_v3.dashboard.DobotApiDashboard)) – Shared dashboard client used for alarm queries and clear.
+  * **dashboard** (*DobotApiDashboard*) – Shared dashboard client used for alarm queries and clear.
   * **language** (*str*) – Default alarm translation language.
 * **Return type:**
   None
@@ -3428,467 +2987,6 @@ Construct a [`FeedbackData`](#dobot_api_v3.base.FeedbackData) from a raw structu
 >>> data.robot_mode
 ```
 
-<a id="module-dobot_api_v3.dashboard"></a>
-
-Backward-compatible re-export shim for DobotApiDashboard.
-
-The canonical implementation now lives in
-`dobot_api_v3.commands.dashboard`.  This module re-exports
-`DobotApiDashboard` so that existing import paths continue to work:
-
-```default
-from dobot_api_v3.dashboard import DobotApiDashboard  # still valid
-```
-
-### *class* dobot_api_v3.dashboard.DobotApiDashboard(ip, port)
-
-Bases: `_SystemMixin`, `_IOMixin`, `_ConfigMixin`, `_QueryMixin`, [`DobotApi`](#dobot_api_v3.base.DobotApi)
-
-Dashboard command client for Dobot control APIs.
-
-This class sends robot lifecycle, I/O, configuration, and status commands
-over the dashboard TCP port (usually `29999`).
-
-Commands are organized into four categories:
-
-* **System** — `enable_robot`, `disable_robot`, `power_on`,
-  `emergency_stop`, `speed_factor`, `robot_mode`, script control,
-  and queued-motion flow (`wait` / `pause` / `resume`).
-* **I/O** — digital output / input, analog output, DO groups, and Modbus.
-* **Config** — speed / acceleration / jerk ratios, coordinate selection,
-  payload, and collision settings.
-* **Query** — pose / angle / error queries, kinematics solvers, safety
-  configuration, drag mode, trajectory helpers, and terminal RS-485.
-
-The full source for each group lives in the corresponding private mixin
-module under `dobot_api_v3/commands/`.
-
-* **Parameters:**
-  * **ip** (*str*)
-  * **port** (*int*)
-
-<a id="module-dobot_api_v3.move"></a>
-
-Backward-compatible re-export shim for DobotApiMove.
-
-The canonical implementation now lives in
-`dobot_api_v3.commands.move`.  This module re-exports
-`DobotApiMove` so that existing import paths continue to work:
-
-```default
-from dobot_api_v3.move import DobotApiMove  # still valid
-```
-
-### *class* dobot_api_v3.move.DobotApiMove(ip, port)
-
-Bases: [`DobotApi`](#dobot_api_v3.base.DobotApi)
-
-Movement command client for Dobot motion APIs.
-
-This class sends trajectory and servo commands to the move TCP port
-(usually `30003`).
-
-* **Parameters:**
-  * **ip** (*str*)
-  * **port** (*int*)
-
-#### mov_j(x, y, z, rx, ry, rz, \*dyn_params)
-
-Joint motion interface (point-to-point motion mode).
-
-* **Parameters:**
-  * **x** (*float*) – Target X coordinate.
-  * **y** (*float*) – Target Y coordinate.
-  * **z** (*float*) – Target Z coordinate.
-  * **rx** (*float*) – Target RX rotation.
-  * **ry** (*float*) – Target RY rotation.
-  * **rz** (*float*) – Target RZ rotation.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-### Example
-
-```pycon
->>> move.mov_j(200, 0, 200, 0, 0, 0)
->>> move.mov_j(220, 20, 180, 0, 0, 0, "SpeedJ=40", "AccJ=40")
-```
-
-#### mov_l(x, y, z, rx, ry, rz, \*dyn_params)
-
-Linear motion interface.
-
-* **Parameters:**
-  * **x** (*float*) – Target X coordinate.
-  * **y** (*float*) – Target Y coordinate.
-  * **z** (*float*) – Target Z coordinate.
-  * **rx** (*float*) – Target RX rotation.
-  * **ry** (*float*) – Target RY rotation.
-  * **rz** (*float*) – Target RZ rotation.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-### Example
-
-```pycon
->>> move.mov_l(250, 0, 180, 0, 0, 0)
->>> move.mov_l(250, 30, 180, 0, 0, 0, "SpeedL=30", "AccL=30")
-```
-
-#### joint_mov_j(j1, j2, j3, j4, j5, j6, \*dyn_params)
-
-Joint motion interface (joint target).
-
-* **Parameters:**
-  * **j1** (*float*) – Target joint 1 angle.
-  * **j2** (*float*) – Target joint 2 angle.
-  * **j3** (*float*) – Target joint 3 angle.
-  * **j4** (*float*) – Target joint 4 angle.
-  * **j5** (*float*) – Target joint 5 angle.
-  * **j6** (*float*) – Target joint 6 angle.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### jump()
-
-Placeholder for Jump command.
-
-This method is intentionally not implemented in the current version.
-
-* **Return type:**
-  None
-
-#### rel_mov_j(offset1, offset2, offset3, offset4, offset5, offset6, \*dyn_params)
-
-Relative joint offset motion (point-to-point mode).
-
-* **Parameters:**
-  * **offset1** (*float*) – Joint 1 offset.
-  * **offset2** (*float*) – Joint 2 offset.
-  * **offset3** (*float*) – Joint 3 offset.
-  * **offset4** (*float*) – Joint 4 offset.
-  * **offset5** (*float*) – Joint 5 offset.
-  * **offset6** (*float*) – Joint 6 offset.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### rel_mov_l(offset_x, offset_y, offset_z, \*dyn_params)
-
-Relative Cartesian offset motion (linear mode).
-
-* **Parameters:**
-  * **offset_x** (*float*) – X-axis offset.
-  * **offset_y** (*float*) – Y-axis offset.
-  * **offset_z** (*float*) – Z-axis offset.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### mov_l_io(x, y, z, a, b, c, \*dyn_params)
-
-Linear motion with parallel digital output control.
-
-* **Parameters:**
-  * **x** (*float*) – Target X coordinate.
-  * **y** (*float*) – Target Y coordinate.
-  * **z** (*float*) – Target Z coordinate.
-  * **a** (*float*) – Target A rotation.
-  * **b** (*float*) – Target B rotation.
-  * **c** (*float*) – Target C rotation.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Parallel I/O tuples `(mode, distance, index, status)`.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### mov_j_io(x, y, z, a, b, c, \*dyn_params)
-
-Point-to-point motion with parallel digital output control.
-
-* **Parameters:**
-  * **x** (*float*) – Target X coordinate.
-  * **y** (*float*) – Target Y coordinate.
-  * **z** (*float*) – Target Z coordinate.
-  * **a** (*float*) – Target A rotation.
-  * **b** (*float*) – Target B rotation.
-  * **c** (*float*) – Target C rotation.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Parallel I/O tuples `(mode, distance, index, status)`.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### arc(x1, y1, z1, a1, b1, c1, x2, y2, z2, a2, b2, c2, \*dyn_params)
-
-Circular motion through an intermediate point.
-
-* **Parameters:**
-  * **x1** (*float*) – Intermediate point X.
-  * **y1** (*float*) – Intermediate point Y.
-  * **z1** (*float*) – Intermediate point Z.
-  * **a1** (*float*) – Intermediate point A.
-  * **b1** (*float*) – Intermediate point B.
-  * **c1** (*float*) – Intermediate point C.
-  * **x2** (*float*) – End point X.
-  * **y2** (*float*) – End point Y.
-  * **z2** (*float*) – End point Z.
-  * **a2** (*float*) – End point A.
-  * **b2** (*float*) – End point B.
-  * **c2** (*float*) – End point C.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### circle3(x1, y1, z1, a1, b1, c1, x2, y2, z2, a2, b2, c2, count, \*dyn_params)
-
-Full-circle motion command.
-
-* **Parameters:**
-  * **x1** (*float*) – Intermediate point X.
-  * **y1** (*float*) – Intermediate point Y.
-  * **z1** (*float*) – Intermediate point Z.
-  * **a1** (*float*) – Intermediate point A.
-  * **b1** (*float*) – Intermediate point B.
-  * **c1** (*float*) – Intermediate point C.
-  * **x2** (*float*) – End point X.
-  * **y2** (*float*) – End point Y.
-  * **z2** (*float*) – End point Z.
-  * **a2** (*float*) – End point A.
-  * **b2** (*float*) – End point B.
-  * **c2** (*float*) – End point C.
-  * **count** (*int*) – Number of full rotations.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional motion parameters.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### servo_j(j1, j2, j3, j4, j5, j6, t=0.1, lookahead_time=50.0, gain=500.0)
-
-Dynamic following in joint space.
-
-* **Parameters:**
-  * **j1** (*float*) – Target joint 1 angle.
-  * **j2** (*float*) – Target joint 2 angle.
-  * **j3** (*float*) – Target joint 3 angle.
-  * **j4** (*float*) – Target joint 4 angle.
-  * **j5** (*float*) – Target joint 5 angle.
-  * **j6** (*float*) – Target joint 6 angle.
-  * **t** (*float*) – Point run time in seconds.
-  * **lookahead_time** (*float*) – Feed-forward smoothing parameter.
-  * **gain** (*float*) – Servo gain parameter.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### servo_js(j1, j2, j3, j4, j5, j6)
-
-Dynamic following in joint space (simplified form).
-
-* **Parameters:**
-  * **j1** (*float*) – Target joint 1 angle.
-  * **j2** (*float*) – Target joint 2 angle.
-  * **j3** (*float*) – Target joint 3 angle.
-  * **j4** (*float*) – Target joint 4 angle.
-  * **j5** (*float*) – Target joint 5 angle.
-  * **j6** (*float*) – Target joint 6 angle.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### servo_p(x, y, z, a, b, c)
-
-Dynamic following in Cartesian space.
-
-* **Parameters:**
-  * **x** (*float*) – Target X coordinate.
-  * **y** (*float*) – Target Y coordinate.
-  * **z** (*float*) – Target Z coordinate.
-  * **a** (*float*) – Target A rotation.
-  * **b** (*float*) – Target B rotation.
-  * **c** (*float*) – Target C rotation.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### move_jog(axis_id, \*dyn_params)
-
-Jog motion along a single axis.
-
-* **Parameters:**
-  * **axis_id** (*str*) – Axis command such as `"J1+"` or `"X-"`.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional jog parameters `(coord_type, user, tool)`.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-### Example
-
-```pycon
->>> move.move_jog("J1+")
->>> move.move_jog("")
-```
-
-#### start_trace(trace_name)
-
-Execute a trajectory file (Cartesian points).
-
-* **Parameters:**
-  **trace_name** (*str*) – Trajectory file name including suffix.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### start_path(trace_name, const, cart)
-
-Replay a trajectory file (joint points).
-
-* **Parameters:**
-  * **trace_name** (*str*) – Trajectory file name including suffix.
-  * **const** (*int*) – Constant-speed mode flag.
-  * **cart** (*int*) – Cartesian/joint path flag.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### start_fc_trace(trace_name)
-
-Execute a trajectory file with force control (Cartesian points).
-
-* **Parameters:**
-  **trace_name** (*str*) – Trajectory file name including suffix.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### sync()
-
-Block until all queued commands have been executed.
-
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-### Example
-
-```pycon
->>> move.mov_j(200, 0, 200, 0, 0, 0)
->>> move.mov_l(220, 20, 180, 0, 0, 0)
->>> move.sync()
-```
-
-#### rel_mov_j_tool(offset_x, offset_y, offset_z, offset_rx, offset_ry, offset_rz, tool, \*dyn_params)
-
-Relative joint motion along the tool coordinate system.
-
-* **Parameters:**
-  * **offset_x** (*float*) – X offset in tool frame.
-  * **offset_y** (*float*) – Y offset in tool frame.
-  * **offset_z** (*float*) – Z offset in tool frame.
-  * **offset_rx** (*float*) – RX offset in tool frame.
-  * **offset_ry** (*float*) – RY offset in tool frame.
-  * **offset_rz** (*float*) – RZ offset in tool frame.
-  * **tool** (*int*) – Tool coordinate index.
-  * **\*dyn_params** (*tuple* *[**int* *,* *int* *,* *int* *]*) – Optional tuples `(speed_j, acc_j, user)`.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### rel_mov_l_tool(offset_x, offset_y, offset_z, offset_rx, offset_ry, offset_rz, tool, \*dyn_params)
-
-Relative linear motion along the tool coordinate system.
-
-* **Parameters:**
-  * **offset_x** (*float*) – X offset in tool frame.
-  * **offset_y** (*float*) – Y offset in tool frame.
-  * **offset_z** (*float*) – Z offset in tool frame.
-  * **offset_rx** (*float*) – RX offset in tool frame.
-  * **offset_ry** (*float*) – RY offset in tool frame.
-  * **offset_rz** (*float*) – RZ offset in tool frame.
-  * **tool** (*int*) – Tool coordinate index.
-  * **\*dyn_params** (*tuple* *[**int* *,* *int* *,* *int* *]*) – Optional tuples `(speed_l, acc_l, user)`.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### rel_mov_j_user(offset_x, offset_y, offset_z, offset_rx, offset_ry, offset_rz, user, \*dyn_params)
-
-Relative joint motion along the user coordinate system.
-
-* **Parameters:**
-  * **offset_x** (*float*) – X offset in user frame.
-  * **offset_y** (*float*) – Y offset in user frame.
-  * **offset_z** (*float*) – Z offset in user frame.
-  * **offset_rx** (*float*) – RX offset in user frame.
-  * **offset_ry** (*float*) – RY offset in user frame.
-  * **offset_rz** (*float*) – RZ offset in user frame.
-  * **user** (*int*) – User coordinate index.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional tuples `(speed_j, acc_j, tool)`.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### rel_mov_l_user(offset_x, offset_y, offset_z, offset_rx, offset_ry, offset_rz, user, \*dyn_params)
-
-Relative linear motion along the user coordinate system.
-
-* **Parameters:**
-  * **offset_x** (*float*) – X offset in user frame.
-  * **offset_y** (*float*) – Y offset in user frame.
-  * **offset_z** (*float*) – Z offset in user frame.
-  * **offset_rx** (*float*) – RX offset in user frame.
-  * **offset_ry** (*float*) – RY offset in user frame.
-  * **offset_rz** (*float*) – RZ offset in user frame.
-  * **user** (*int*) – User coordinate index.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional tuples `(speed_l, acc_l, tool)`.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
-#### rel_joint_mov_j(offset1, offset2, offset3, offset4, offset5, offset6, \*dyn_params)
-
-Relative motion along each joint axis (joint motion mode).
-
-* **Parameters:**
-  * **offset1** (*float*) – Joint 1 offset.
-  * **offset2** (*float*) – Joint 2 offset.
-  * **offset3** (*float*) – Joint 3 offset.
-  * **offset4** (*float*) – Joint 4 offset.
-  * **offset5** (*float*) – Joint 5 offset.
-  * **offset6** (*float*) – Joint 6 offset.
-  * **\*dyn_params** (*int* *|* *float* *|* *str* *|* *tuple*) – Optional tuples such as `(speed_j, acc_j)`.
-* **Returns:**
-  Robot response string.
-* **Return type:**
-  str
-
 <a id="module-dobot_api_v3.feedback"></a>
 
 Feedback interface for Dobot API.
@@ -3986,7 +3084,7 @@ dashboard.close()
 ```
 
 * **Parameters:**
-  * **dashboard** ([*DobotApiDashboard*](#dobot_api_v3.dashboard.DobotApiDashboard))
+  * **dashboard** (*DobotApiDashboard*)
   * **language** (*str*)
 
 #### \_\_init_\_(dashboard, \*, language='en')
@@ -3994,7 +3092,7 @@ dashboard.close()
 Initialize the error monitor.
 
 * **Parameters:**
-  * **dashboard** ([*DobotApiDashboard*](#dobot_api_v3.dashboard.DobotApiDashboard)) – Shared dashboard client used for alarm queries and clear.
+  * **dashboard** (*DobotApiDashboard*) – Shared dashboard client used for alarm queries and clear.
   * **language** (*str*) – Default alarm translation language.
 * **Return type:**
   None

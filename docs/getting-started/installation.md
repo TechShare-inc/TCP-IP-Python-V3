@@ -1,5 +1,7 @@
 # Installation
 
+<!-- Diátaxis type: How-to -->
+
 ## Requirements
 
 - Python 3.10+

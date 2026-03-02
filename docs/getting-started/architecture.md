@@ -1,5 +1,7 @@
 # Architecture
 
+<!-- Diátaxis type: Explanation -->
+
 ## Connections
 
 - Dashboard commands: port `29999`

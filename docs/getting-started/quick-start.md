@@ -1,5 +1,7 @@
 # Quick Start
 
+<!-- Diátaxis type: Tutorial -->
+
 ## Using `DobotRobot` (recommended)
 
 ```python

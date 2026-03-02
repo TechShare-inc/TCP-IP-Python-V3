@@ -1,6 +1,9 @@
 # Testing
 
-See [testing_architecture.md](../testing_architecture.md) for test strategy.
+<!-- Diátaxis type: How-to -->
+
+See [About the Testing Strategy](../explanation/testing-strategy.md) for the
+rationale behind the three-layer approach.
 
 Run all unit and integration tests:
 

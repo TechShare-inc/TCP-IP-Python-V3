@@ -1,5 +1,7 @@
 # Feedback Fields
 
+<!-- Diátaxis type: Reference -->
+
 ## Overview
 
 The Dobot controller streams a 1440-byte binary feedback packet on ports 30004, 30005, and 30006. There are two ways to access this data:

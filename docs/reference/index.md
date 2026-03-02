@@ -1,5 +1,7 @@
 # API Reference
 
+<!-- Diátaxis type: Reference -->
+
 This section contains generated API reference pages from Sphinx and curated
 reference notes.
 
@@ -38,9 +40,9 @@ reference notes.
 
 Generate and sync with:
 
-```bash
+```powershell
 npm run docs:sync-api
 ```
 
-This command writes Sphinx markdown output to `_autogen` and syncs it into
+This command writes Sphinx markdown output to `_autogen/` and syncs it into
 `docs/reference/api/` for VitePress routing.
