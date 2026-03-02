@@ -57,7 +57,7 @@ include = ["dobot_api_v3*"]
 [tool.setuptools.package-data]
 dobot_api_v3 = ["py.typed", "locales/*.yml"]
 
-[tool.ruff]
+[tool.ruff.lint]
 ignore = [
     "F541",  # f-string with backslash is not a syntax error but Ruff doesn't know that yet
 ]
@@ -76,7 +76,7 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--strict-markers"
+addopts = "--strict-markers --import-mode=importlib"
 markers = [
     "unit: fast unit tests (no network, no hardware)",
     "integration: loopback integration tests using a local TCP stub server",

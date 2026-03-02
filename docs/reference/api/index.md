@@ -1,8 +1,8 @@
 # API Autogen Source
 
 * [dobot_api_v3](modules.md)
-  * [`FeedbackData`](modules.md#dobot_api_v3.base.FeedbackData)
   * [`DobotApi`](modules.md#dobot_api_v3.base.DobotApi)
+  * [`FeedbackData`](modules.md#dobot_api_v3.base.FeedbackData)
   * [`DobotApiDashboard`](modules.md#dobot_api_v3.dashboard.DobotApiDashboard)
   * [`DobotApiMove`](modules.md#dobot_api_v3.move.DobotApiMove)
   * [`DobotApiFeedback`](modules.md#dobot_api_v3.feedback.DobotApiFeedback)

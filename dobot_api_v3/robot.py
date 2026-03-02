@@ -27,6 +27,7 @@ from typing import Optional
 import numpy as np
 from loguru import logger
 
+from ._forward import forward_to
 from .base import FeedbackData
 from .dashboard import DobotApiDashboard
 from .error_monitor import RobotErrorMonitor
@@ -37,7 +38,6 @@ from .responses import (
     ErrorIdResponse,
     IntResponse,
     PoseResponse,
-    parse_response,
 )
 from .utils import DynParam
 
@@ -345,6 +345,7 @@ class DobotRobot:
     # Forwarded dashboard commands
     # ------------------------------------------------------------------
 
+    @forward_to("dashboard", AckResponse)
     def enable_robot(
         self,
         load: float = 0.0,
@@ -368,11 +369,9 @@ class DobotRobot:
         Raises:
             DobotApiError: If the controller returns a non-zero error code.
         """
-        raw = self.dashboard.enable_robot(
-            load=load, center_x=center_x, center_y=center_y, center_z=center_z
-        )
-        return parse_response(raw, AckResponse)
+        raise NotImplementedError
 
+    @forward_to("dashboard", AckResponse)
     def disable_robot(self) -> AckResponse:
         """Disable the robot arm.
 
@@ -384,8 +383,9 @@ class DobotRobot:
         Raises:
             DobotApiError: If the controller returns a non-zero error code.
         """
-        return parse_response(self.dashboard.disable_robot(), AckResponse)
+        raise NotImplementedError
 
+    @forward_to("dashboard", AckResponse)
     def clear_error(self) -> AckResponse:
         """Clear controller alarm information.
 
@@ -397,8 +397,9 @@ class DobotRobot:
         Raises:
             DobotApiError: If the controller returns a non-zero error code.
         """
-        return parse_response(self.dashboard.clear_error(), AckResponse)
+        raise NotImplementedError
 
+    @forward_to("dashboard", AckResponse)
     def reset_robot(self) -> AckResponse:
         """Stop the robot.
 
@@ -410,8 +411,9 @@ class DobotRobot:
         Raises:
             DobotApiError: If the controller returns a non-zero error code.
         """
-        return parse_response(self.dashboard.reset_robot(), AckResponse)
+        raise NotImplementedError
 
+    @forward_to("dashboard", AckResponse)
     def power_on(self) -> AckResponse:
         """Power on the controller.
 
@@ -423,8 +425,9 @@ class DobotRobot:
         Raises:
             DobotApiError: If the controller returns a non-zero error code.
         """
-        return parse_response(self.dashboard.power_on(), AckResponse)
+        raise NotImplementedError
 
+    @forward_to("dashboard", AckResponse)
     def emergency_stop(self) -> AckResponse:
         """Trigger an emergency stop.
 
@@ -436,8 +439,9 @@ class DobotRobot:
         Raises:
             DobotApiError: If the controller returns a non-zero error code.
         """
-        return parse_response(self.dashboard.emergency_stop(), AckResponse)
+        raise NotImplementedError
 
+    @forward_to("dashboard", AckResponse)
     def speed_factor(self, speed: int) -> AckResponse:
         """Set global speed factor.
 
@@ -452,8 +456,9 @@ class DobotRobot:
         Raises:
             DobotApiError: If the controller returns a non-zero error code.
         """
-        return parse_response(self.dashboard.speed_factor(speed), AckResponse)
+        raise NotImplementedError
 
+    @forward_to("dashboard", IntResponse)
     def robot_mode(self) -> IntResponse:
         """Query the robot operating mode.
 
@@ -466,8 +471,9 @@ class DobotRobot:
         Raises:
             DobotApiError: If the controller returns a non-zero error code.
         """
-        return parse_response(self.dashboard.robot_mode(), IntResponse)
+        raise NotImplementedError
 
+    @forward_to("dashboard", PoseResponse)
     def get_pose(self) -> PoseResponse:
         """Get current Cartesian pose.
 
@@ -480,8 +486,9 @@ class DobotRobot:
         Raises:
             DobotApiError: If the controller returns a non-zero error code.
         """
-        return parse_response(self.dashboard.get_pose(), PoseResponse)
+        raise NotImplementedError
 
+    @forward_to("dashboard", PoseResponse)
     def get_angle(self) -> PoseResponse:
         """Get current joint angles.
 
@@ -494,8 +501,9 @@ class DobotRobot:
         Raises:
             DobotApiError: If the controller returns a non-zero error code.
         """
-        return parse_response(self.dashboard.get_angle(), PoseResponse)
+        raise NotImplementedError
 
+    @forward_to("dashboard", ErrorIdResponse)
     def get_error_id(self) -> ErrorIdResponse:
         """Get current error IDs from the controller.
 
@@ -508,8 +516,9 @@ class DobotRobot:
         Raises:
             DobotApiError: If the controller returns a non-zero error code.
         """
-        return parse_response(self.dashboard.get_error_id(), ErrorIdResponse)
+        raise NotImplementedError
 
+    @forward_to("dashboard", AckResponse)
     def start_drag(self) -> AckResponse:
         """Enable drag (teach) mode.
 
@@ -521,8 +530,9 @@ class DobotRobot:
         Raises:
             DobotApiError: If the controller returns a non-zero error code.
         """
-        return parse_response(self.dashboard.start_drag(), AckResponse)
+        raise NotImplementedError
 
+    @forward_to("dashboard", AckResponse)
     def stop_drag(self) -> AckResponse:
         """Disable drag (teach) mode.
 
@@ -534,8 +544,9 @@ class DobotRobot:
         Raises:
             DobotApiError: If the controller returns a non-zero error code.
         """
-        return parse_response(self.dashboard.stop_drag(), AckResponse)
+        raise NotImplementedError
 
+    @forward_to("dashboard", AckResponse)
     def set_user(self, index: int) -> AckResponse:
         """Select the calibrated user coordinate system.
 
@@ -550,8 +561,9 @@ class DobotRobot:
         Raises:
             DobotApiError: If the controller returns a non-zero error code.
         """
-        return parse_response(self.dashboard.set_user(index), AckResponse)
+        raise NotImplementedError
 
+    @forward_to("dashboard", AckResponse)
     def set_tool(self, index: int) -> AckResponse:
         """Select the calibrated tool coordinate system.
 
@@ -566,12 +578,13 @@ class DobotRobot:
         Raises:
             DobotApiError: If the controller returns a non-zero error code.
         """
-        return parse_response(self.dashboard.set_tool(index), AckResponse)
+        raise NotImplementedError
 
     # ------------------------------------------------------------------
     # Forwarded move commands
     # ------------------------------------------------------------------
 
+    @forward_to("move", AckResponse)
     def mov_j(
         self,
         x: float,
@@ -605,10 +618,9 @@ class DobotRobot:
             >>> robot.mov_j(200, 0, 200, 0, 0, 0)
             >>> robot.mov_j(220, 20, 180, 0, 0, 0, "SpeedJ=40", "AccJ=40")
         """
-        return parse_response(
-            self.move.mov_j(x, y, z, rx, ry, rz, *dyn_params), AckResponse
-        )
+        raise NotImplementedError
 
+    @forward_to("move", AckResponse)
     def mov_l(
         self,
         x: float,
@@ -641,10 +653,9 @@ class DobotRobot:
         Example:
             >>> robot.mov_l(250, 0, 180, 0, 0, 0)
         """
-        return parse_response(
-            self.move.mov_l(x, y, z, rx, ry, rz, *dyn_params), AckResponse
-        )
+        raise NotImplementedError
 
+    @forward_to("move", AckResponse)
     def joint_mov_j(
         self,
         j1: float,
@@ -677,10 +688,9 @@ class DobotRobot:
         Example:
             >>> robot.joint_mov_j(-11.53, 4.64, 87.16, -2.84, -77.71, 0.01)
         """
-        return parse_response(
-            self.move.joint_mov_j(j1, j2, j3, j4, j5, j6, *dyn_params), AckResponse
-        )
+        raise NotImplementedError
 
+    @forward_to("move", AckResponse)
     def rel_mov_j(
         self,
         offset1: float,
@@ -713,13 +723,9 @@ class DobotRobot:
         Example:
             >>> robot.rel_mov_j(15, 0, 0, 0, 0, 0)
         """
-        return parse_response(
-            self.move.rel_mov_j(
-                offset1, offset2, offset3, offset4, offset5, offset6, *dyn_params
-            ),
-            AckResponse,
-        )
+        raise NotImplementedError
 
+    @forward_to("move", AckResponse)
     def rel_mov_l(
         self,
         offset_x: float,
@@ -743,10 +749,9 @@ class DobotRobot:
         Raises:
             DobotApiError: If the controller returns a non-zero error code.
         """
-        return parse_response(
-            self.move.rel_mov_l(offset_x, offset_y, offset_z, *dyn_params), AckResponse
-        )
+        raise NotImplementedError
 
+    @forward_to("move", AckResponse)
     def arc(
         self,
         x1: float,
@@ -788,11 +793,9 @@ class DobotRobot:
         Raises:
             DobotApiError: If the controller returns a non-zero error code.
         """
-        return parse_response(
-            self.move.arc(x1, y1, z1, a1, b1, c1, x2, y2, z2, a2, b2, c2, *dyn_params),
-            AckResponse,
-        )
+        raise NotImplementedError
 
+    @forward_to("move", AckResponse)
     def servo_j(
         self,
         j1: float,
@@ -826,11 +829,9 @@ class DobotRobot:
         Raises:
             DobotApiError: If the controller returns a non-zero error code.
         """
-        return parse_response(
-            self.move.servo_j(j1, j2, j3, j4, j5, j6, t, lookahead_time, gain),
-            AckResponse,
-        )
+        raise NotImplementedError
 
+    @forward_to("move", AckResponse)
     def servo_p(
         self,
         x: float,
@@ -858,8 +859,9 @@ class DobotRobot:
         Raises:
             DobotApiError: If the controller returns a non-zero error code.
         """
-        return parse_response(self.move.servo_p(x, y, z, a, b, c), AckResponse)
+        raise NotImplementedError
 
+    @forward_to("move", AckResponse)
     def move_jog(self, axis_id: str, *dyn_params: DynParam) -> AckResponse:
         """Jog motion along a single axis.
 
@@ -879,8 +881,9 @@ class DobotRobot:
             >>> robot.move_jog("J1+")
             >>> robot.move_jog("")  # stop jog
         """
-        return parse_response(self.move.move_jog(axis_id, *dyn_params), AckResponse)
+        raise NotImplementedError
 
+    @forward_to("move", AckResponse)
     def sync(self) -> AckResponse:
         """Block until all queued motion commands complete.
 
@@ -896,7 +899,7 @@ class DobotRobot:
             >>> robot.mov_j(200, 0, 200, 0, 0, 0)
             >>> robot.sync()
         """
-        return parse_response(self.move.sync(), AckResponse)
+        raise NotImplementedError
 
     def __repr__(self) -> str:
         return f"DobotRobot(ip={self.ip!r})"
