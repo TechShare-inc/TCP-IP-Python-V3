@@ -16,11 +16,12 @@ reference notes.
 | Symbol | Module | Description |
 |---|---|---|
 | `DobotRobot` | `robot` | Unified high-level entry point (recommended) |
-| `DobotApiDashboard` | `dashboard` | Dashboard command connection |
-| `DobotApiMove` | `move` | Motion command connection |
+| `DobotApiDashboard` | `commands.dashboard` | Dashboard command connection (mixin-composed) |
+| `DobotApiMove` | `commands.move` | Motion command connection (mixin-composed) |
 | `DobotApiFeedback` | `feedback` | Feedback stream reader |
-| `FeedbackData` | `base` | Typed feedback packet snapshot (frozen dataclass) |
-| `FeedbackDtype` | `base` | NumPy structured dtype for raw feedback |
+| `FeedbackData` | `dtypes` | Typed feedback packet snapshot (frozen dataclass) |
+| `FeedbackDtype` | `dtypes` | NumPy structured dtype for raw feedback |
+| `PROTOCOL_FIELD_MAP` | `dtypes` | Snake_case → protocol name mapping |
 | `AckResponse` | `responses` | Ack from lifecycle/motion commands |
 | `IntResponse` | `responses` | Single integer value response |
 | `PoseResponse` | `responses` | 6-DOF pose/angle response |
@@ -29,6 +30,9 @@ reference notes.
 | `DobotApiError` | `responses` | Exception for controller errors |
 | `RobotErrorMonitor` | `error_monitor` | Alarm polling and logging |
 | `AlarmI18n` | `i18n_manager` | Localized alarm metadata |
+| `DynParam` | `utils` | Type alias for dynamic command parameters |
+| `ToolDynParam` | `utils` | Type alias for tool relative move params |
+| `Pose` | `utils` | 6-DOF pose/joint-angle tuple alias |
 
 ## Generated API docs
 

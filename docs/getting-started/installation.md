@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- Python 3.9+
+- Python 3.10+
 - Network access to the robot controller
 
 ## Install
@@ -17,6 +17,8 @@ uv pip install -e .
 ```powershell
 uv pip install -e .[dev]
 ```
+
+This installs `pytest`, `pytest-cov`, and `pytest-mock`.
 
 ## Documentation dependencies
 
