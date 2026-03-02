@@ -8,15 +8,22 @@ Run with::
     DOBOT_TEST_IP=192.168.1.6 pytest tests/hil -v -m hil
 
 See tests/hil/conftest.py for connection configuration.
+
+Return type expectations
+------------------------
+Dashboard/move methods now return **parsed Python types** (``int``,
+``tuple[float, ...]``, ``tuple[int, ...]``) rather than raw response strings.
+All assertions in this module use the parsed types.
 """
 
 from __future__ import annotations
 
 import pytest
 
-from dobot_api_v3.dashboard import DobotApiDashboard
+from dobot_api_v3.base import FeedbackData, FeedbackDtype
+from dobot_api_v3.commands.dashboard import DobotApiDashboard
 from dobot_api_v3.feedback import DobotApiFeedback
-from dobot_api_v3.move import DobotApiMove
+from dobot_api_v3.commands.move import DobotApiMove
 from dobot_api_v3.robot import DobotRobot
 from tests.hil.conftest import requires_hardware
 
@@ -24,41 +31,49 @@ pytestmark = [pytest.mark.hil, requires_hardware]
 
 
 # ---------------------------------------------------------------------------
-# Dashboard — basic state queries
+# Dashboard — basic state queries (all return parsed types)
 # ---------------------------------------------------------------------------
 
 
 class TestDashboardHIL:
     def test_enable_disable_cycle(self, real_dashboard: DobotApiDashboard) -> None:
         """Enable the robot, read its mode, then disable it."""
-        result = real_dashboard.enable_robot()
-        assert "0" in result, f"enable_robot() returned: {result!r}"
+        cmd_id = real_dashboard.enable_robot()
+        assert isinstance(cmd_id, int)
 
         mode = real_dashboard.robot_mode()
-        assert isinstance(mode, str)
+        assert isinstance(mode, int)
+        assert mode >= 0
 
-        result = real_dashboard.disable_robot()
-        assert "0" in result, f"disable_robot() returned: {result!r}"
+        cmd_id = real_dashboard.disable_robot()
+        assert isinstance(cmd_id, int)
 
-    def test_get_angle_returns_string(self, real_dashboard: DobotApiDashboard) -> None:
-        response = real_dashboard.get_angle()
-        assert isinstance(response, str)
-        assert len(response) > 0
-
-    def test_get_pose_returns_string(self, real_dashboard: DobotApiDashboard) -> None:
-        response = real_dashboard.get_pose()
-        assert isinstance(response, str)
-        assert len(response) > 0
-
-    def test_get_error_id_returns_string(
+    def test_get_angle_returns_pose_tuple(
         self, real_dashboard: DobotApiDashboard
     ) -> None:
-        response = real_dashboard.get_error_id()
-        assert isinstance(response, str)
+        response = real_dashboard.get_angle()
+        assert isinstance(response, tuple)
+        assert len(response) == 6
+        assert all(isinstance(v, float) for v in response)
+
+    def test_get_pose_returns_pose_tuple(
+        self, real_dashboard: DobotApiDashboard
+    ) -> None:
+        response = real_dashboard.get_pose()
+        assert isinstance(response, tuple)
+        assert len(response) == 6
+        assert all(isinstance(v, float) for v in response)
+
+    def test_get_error_id_returns_tuple(
+        self, real_dashboard: DobotApiDashboard
+    ) -> None:
+        result = real_dashboard.get_error_id()
+        assert isinstance(result, tuple)
+        assert all(isinstance(v, int) for v in result)
 
     def test_speed_factor_accepted(self, real_dashboard: DobotApiDashboard) -> None:
-        response = real_dashboard.speed_factor(50)
-        assert "0" in response
+        cmd_id = real_dashboard.speed_factor(50)
+        assert isinstance(cmd_id, int)
 
 
 # ---------------------------------------------------------------------------
@@ -67,27 +82,32 @@ class TestDashboardHIL:
 
 
 class TestFeedbackHIL:
-    def test_reads_10_valid_feedback_packets(
+    def test_reads_10_valid_feedback_data(
         self, real_feedback: DobotApiFeedback
     ) -> None:
-        """Read 10 consecutive packets and verify they are non-None numpy arrays."""
-        import numpy as np
-        from dobot_api_v3.base import FeedbackDtype
-
+        """Read 10 consecutive packets as typed FeedbackData instances."""
         for i in range(10):
-            packet = real_feedback.feedback_data()
-            assert packet is not None, f"Packet {i} was None"
-            assert packet.dtype == FeedbackDtype
-            assert packet.shape == (1,)
+            data = real_feedback.feedback_data()
+            assert data is not None, f"Packet {i} was None"
+            assert isinstance(data, FeedbackData)
+
+    def test_raw_feedback_returns_numpy(self, real_feedback: DobotApiFeedback) -> None:
+        """raw_feedback_data() must return a structured NumPy array."""
+        import numpy as np
+
+        raw = real_feedback.raw_feedback_data()
+        assert raw is not None
+        assert raw.dtype == FeedbackDtype
+        assert raw.shape == (1,)
 
     def test_robot_mode_field_is_plausible(
         self, real_feedback: DobotApiFeedback
     ) -> None:
         """robot_mode should be a non-negative integer."""
-        packet = real_feedback.feedback_data()
-        assert packet is not None
-        mode = int(packet[0]["robot_mode"])
-        assert mode >= 0, f"Unexpected robot_mode: {mode}"
+        data = real_feedback.feedback_data()
+        assert data is not None
+        assert isinstance(data.robot_mode, int)
+        assert data.robot_mode >= 0
 
 
 # ---------------------------------------------------------------------------
@@ -96,13 +116,13 @@ class TestFeedbackHIL:
 
 
 class TestErrorMonitorHIL:
-    def test_get_error_id_format(self, real_dashboard: DobotApiDashboard) -> None:
-        """GetErrorID() response must be parseable (contains digits)."""
-        import re
-
-        response = real_dashboard.get_error_id()
-        codes = re.findall(r"-?\d+", response)
-        assert len(codes) > 0, f"No numeric codes in response: {response!r}"
+    def test_get_error_id_returns_int_tuple(
+        self, real_dashboard: DobotApiDashboard
+    ) -> None:
+        """get_error_id() must return a tuple of ints."""
+        result = real_dashboard.get_error_id()
+        assert isinstance(result, tuple)
+        assert all(isinstance(v, int) for v in result)
 
 
 # ---------------------------------------------------------------------------
@@ -118,8 +138,8 @@ class TestReconnectHIL:
         real_dashboard.socket_dobot.close()  # type: ignore[union-attr]
         real_dashboard.socket_dobot = None
         real_dashboard.reconnect()
-        response = real_dashboard.robot_mode()
-        assert isinstance(response, str)
+        mode = real_dashboard.robot_mode()
+        assert isinstance(mode, int)
 
 
 # ---------------------------------------------------------------------------
@@ -134,7 +154,7 @@ class TestDobotRobotHIL:
         """Full startup/shutdown cycle must complete without errors."""
         real_robot.startup(speed=30)
         mode = real_robot.robot_mode()
-        assert isinstance(mode, str)
+        assert isinstance(mode, int)
         real_robot.shutdown()
 
     def test_check_errors_returns_bool(self, real_robot: DobotRobot) -> None:
@@ -142,24 +162,24 @@ class TestDobotRobotHIL:
         result = real_robot.check_errors(language="en")
         assert isinstance(result, bool)
 
-    def test_get_pose_returns_string(self, real_robot: DobotRobot) -> None:
+    def test_get_pose_returns_pose_tuple(self, real_robot: DobotRobot) -> None:
         response = real_robot.get_pose()
-        assert isinstance(response, str)
-        assert len(response) > 0
+        assert isinstance(response, tuple)
+        assert len(response) == 6
+        assert all(isinstance(v, float) for v in response)
 
-    def test_get_angle_returns_string(self, real_robot: DobotRobot) -> None:
+    def test_get_angle_returns_pose_tuple(self, real_robot: DobotRobot) -> None:
         response = real_robot.get_angle()
-        assert isinstance(response, str)
-        assert len(response) > 0
+        assert isinstance(response, tuple)
+        assert len(response) == 6
+        assert all(isinstance(v, float) for v in response)
 
     def test_speed_factor_accepted(self, real_robot: DobotRobot) -> None:
-        response = real_robot.speed_factor(40)
-        assert "0" in response
+        cmd_id = real_robot.speed_factor(40)
+        assert isinstance(cmd_id, int)
 
     def test_feedback_data_returns_valid_packet(self, real_robot: DobotRobot) -> None:
         """feedback_data() should lazily connect and return a FeedbackData."""
-        from dobot_api_v3.base import FeedbackData
-
         data = real_robot.feedback_data()
         assert data is not None
         assert isinstance(data, FeedbackData)
@@ -167,7 +187,6 @@ class TestDobotRobotHIL:
     def test_raw_feedback_data_returns_numpy(self, real_robot: DobotRobot) -> None:
         """raw_feedback_data() should return a structured NumPy array."""
         import numpy as np
-        from dobot_api_v3.base import FeedbackDtype
 
         raw = real_robot.raw_feedback_data()
         assert raw is not None
@@ -177,5 +196,5 @@ class TestDobotRobotHIL:
     def test_reconnect_restores_communication(self, real_robot: DobotRobot) -> None:
         """After reconnect(), forwarded commands must still work."""
         real_robot.reconnect()
-        response = real_robot.robot_mode()
-        assert isinstance(response, str)
+        mode = real_robot.robot_mode()
+        assert isinstance(mode, int)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from dobot_api_v3.dashboard import DobotApiDashboard
+from dobot_api_v3.commands.dashboard import DobotApiDashboard
 
 pytestmark = pytest.mark.unit
 

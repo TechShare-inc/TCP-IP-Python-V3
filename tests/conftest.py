@@ -10,9 +10,9 @@ import numpy as np
 import pytest
 
 from dobot_api_v3.base import DobotApi, FeedbackDtype
-from dobot_api_v3.dashboard import DobotApiDashboard
+from dobot_api_v3.commands.dashboard import DobotApiDashboard
 from dobot_api_v3.feedback import DobotApiFeedback
-from dobot_api_v3.move import DobotApiMove
+from dobot_api_v3.commands.move import DobotApiMove
 
 # ---------------------------------------------------------------------------
 # Mock response routing — maps command prefixes to realistic response strings

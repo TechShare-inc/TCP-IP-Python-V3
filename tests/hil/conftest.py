@@ -22,9 +22,9 @@ from typing import Generator
 
 import pytest
 
-from dobot_api_v3.dashboard import DobotApiDashboard
+from dobot_api_v3.commands.dashboard import DobotApiDashboard
 from dobot_api_v3.feedback import DobotApiFeedback
-from dobot_api_v3.move import DobotApiMove
+from dobot_api_v3.commands.move import DobotApiMove
 from dobot_api_v3.robot import DobotRobot
 
 # ---------------------------------------------------------------------------

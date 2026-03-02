@@ -8,12 +8,6 @@ import numpy as np
 import pytest
 
 from dobot_api_v3.base import DobotApi, FeedbackData, FeedbackDtype
-from dobot_api_v3.responses import (
-    AckResponse,
-    ErrorIdResponse,
-    IntResponse,
-    PoseResponse,
-)
 from dobot_api_v3.robot import DobotRobot
 
 pytestmark = pytest.mark.unit
@@ -233,10 +227,6 @@ class TestClose:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(
-    reason="Mixin methods now return parsed types; "
-    "DobotRobot not yet updated. Deferred.",
-)
 class TestStartup:
     def test_startup_command_sequence_with_errors(self, mock_robot: tuple) -> None:
         """When errors are present, startup runs the full clear→power→disable→enable→speed sequence."""
@@ -317,10 +307,6 @@ class TestStartup:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(
-    reason="Mixin methods now return parsed types; "
-    "DobotRobot not yet updated. Deferred.",
-)
 class TestShutdown:
     def test_shutdown_sends_disable_robot(self, mock_robot: tuple) -> None:
         robot, dashboard_cmds, _ = mock_robot
@@ -442,29 +428,25 @@ class TestFeedbackData:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(
-    reason="Mixin methods now return parsed types; "
-    "@forward_to still calls parse_response expecting str. Deferred.",
-)
 class TestForwardedDashboardCommands:
     @pytest.mark.parametrize(
         "method,args,expected_cmd,expected_type",
         [
-            ("enable_robot", (), "EnableRobot()", AckResponse),
-            ("disable_robot", (), "DisableRobot()", AckResponse),
-            ("clear_error", (), "ClearError()", AckResponse),
-            ("reset_robot", (), "ResetRobot()", AckResponse),
-            ("power_on", (), "PowerOn()", AckResponse),
-            ("emergency_stop", (), "EmergencyStop()", AckResponse),
-            ("speed_factor", (40,), "SpeedFactor(40)", AckResponse),
-            ("robot_mode", (), "RobotMode()", IntResponse),
-            ("get_pose", (), "GetPose()", PoseResponse),
-            ("get_angle", (), "GetAngle()", PoseResponse),
-            ("get_error_id", (), "GetErrorID()", ErrorIdResponse),
-            ("start_drag", (), "StartDrag()", AckResponse),
-            ("stop_drag", (), "StopDrag()", AckResponse),
-            ("set_user", (1,), "User(1)", AckResponse),
-            ("set_tool", (2,), "Tool(2)", AckResponse),
+            ("enable_robot", (), "EnableRobot()", int),
+            ("disable_robot", (), "DisableRobot()", int),
+            ("clear_error", (), "ClearError()", int),
+            ("reset_robot", (), "ResetRobot()", int),
+            ("power_on", (), "PowerOn()", int),
+            ("emergency_stop", (), "EmergencyStop()", int),
+            ("speed_factor", (40,), "SpeedFactor(40)", int),
+            ("robot_mode", (), "RobotMode()", int),
+            ("get_pose", (), "GetPose()", tuple),
+            ("get_angle", (), "GetAngle()", tuple),
+            ("get_error_id", (), "GetErrorID()", tuple),
+            ("start_drag", (), "StartDrag()", int),
+            ("stop_drag", (), "StopDrag()", int),
+            ("set_user", (1,), "User(1)", int),
+            ("set_tool", (2,), "Tool(2)", int),
         ],
     )
     def test_dashboard_forward(
@@ -486,10 +468,6 @@ class TestForwardedDashboardCommands:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(
-    reason="Mixin methods now return parsed types; "
-    "@forward_to still calls parse_response expecting str. Deferred.",
-)
 class TestForwardedMoveCommands:
     def test_mov_j(self, mock_robot: tuple) -> None:
         robot, _, move_cmds = mock_robot
