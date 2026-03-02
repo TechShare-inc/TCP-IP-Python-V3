@@ -27,7 +27,7 @@ logger.add(
     colorize=True,
 )
 
-__version__ = "3.0.0"
+__version__ = "3.0.0a2"
 
 __all__ = [
     # Primary names — use these in new code.

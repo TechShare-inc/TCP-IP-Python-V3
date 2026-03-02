@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dobot_api_v3"
-version = "3.0.0"
+version = "3.0.0a2"
 description = "Dobot Robot API with V3-style modular architecture and V3 protocol semantics"
 readme = "README.md"
 requires-python = ">=3.10"
