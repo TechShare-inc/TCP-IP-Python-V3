@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dobot_api_v3"
-version = "3.0.0"
+version = "3.0.0a3"
 description = "Dobot Robot API with V3-style modular architecture and V3 protocol semantics"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
     {name = "Dobot", email = "support@dobot.cc"},
@@ -18,7 +18,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -57,13 +56,13 @@ include = ["dobot_api_v3*"]
 [tool.setuptools.package-data]
 dobot_api_v3 = ["py.typed", "locales/*.yml"]
 
-[tool.ruff]
+[tool.ruff.lint]
 ignore = [
     "F541",  # f-string with backslash is not a syntax error but Ruff doesn't know that yet
 ]
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.10"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
@@ -76,7 +75,7 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--strict-markers"
+addopts = "--strict-markers --import-mode=importlib"
 markers = [
     "unit: fast unit tests (no network, no hardware)",
     "integration: loopback integration tests using a local TCP stub server",

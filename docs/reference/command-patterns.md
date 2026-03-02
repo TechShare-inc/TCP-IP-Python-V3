@@ -1,5 +1,7 @@
 # Command Patterns
 
+<!-- Diátaxis type: Reference -->
+
 Use this page as a quick guide for composing dashboard/move command arguments.
 
 ## Pattern 1: Positional Required Args
@@ -60,12 +62,22 @@ no errors are detected, reducing startup time on a clean controller.
 
 If you need fine-grained control, use subsystem classes directly:
 
-1. `dashboard.clear_error()`
-2. `dashboard.enable_robot()`
-3. Configure speed/acceleration (`speed_factor`, `speed_j`)
-4. Issue move commands (`mov_j`, `mov_l`, …)
-5. `move.sync()`
-6. `dashboard.disable_robot()`
+```python
+from dobot_api_v3.commands import DobotApiDashboard, DobotApiMove
+
+dashboard = DobotApiDashboard("192.168.5.1", 29999)
+move = DobotApiMove("192.168.5.1", 30003)
+try:
+    dashboard.clear_error()
+    dashboard.enable_robot()
+    dashboard.speed_factor(40)
+    move.mov_j(200, 0, 200, 0, 0, 0)
+    move.sync()
+    dashboard.disable_robot()
+finally:
+    move.close()
+    dashboard.close()
+```
 
 ## Pattern 6: Typed Responses
 
@@ -99,6 +111,9 @@ with DobotRobot("192.168.5.1", language="en") as robot:
 Or use separate connections for advanced scenarios:
 
 ```python
+from dobot_api_v3.commands import DobotApiDashboard, DobotApiMove
+from dobot_api_v3 import DobotApiFeedback, RobotErrorMonitor
+
 dashboard = DobotApiDashboard(ip, 29999)
 move = DobotApiMove(ip, 30003)
 feedback = DobotApiFeedback(ip, 30004)
@@ -110,4 +125,5 @@ monitor = RobotErrorMonitor(dashboard, language="en")
 - Prefer the `DobotRobot` wrapper for new code.
 - Use `snake_case` API names exclusively — PascalCase aliases have been removed.
 - Always close sockets in `finally` blocks or use `with` statements.
+- Subsystem classes live in `dobot_api_v3.commands` (not the package root).
 

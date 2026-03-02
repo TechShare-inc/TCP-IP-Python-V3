@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import json
-import re
 import time
 from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
-from .dashboard import DobotApiDashboard
+from .commands.dashboard import DobotApiDashboard
 from .i18n_manager import AlarmI18n
 
 
@@ -55,18 +54,14 @@ class RobotErrorMonitor:
         try:
             self.i18n.set_language(language)
 
-            # Get error ID string from dashboard
-            error_response = self.dashboard.get_error_id()
-            if not error_response:
+            # Get error IDs from dashboard (returns tuple[int, ...])
+            error_codes = self.dashboard.get_error_id()
+            if not error_codes:
                 return {"errMsg": []}
-
-            # Parse error codes from the response using regex
-            error_codes = re.findall(r"-?\d+", str(error_response))
 
             # Build error message list with enriched alarm data
             error_list: List[Dict[str, Any]] = []
-            for error_code in error_codes:
-                error_id = int(error_code)
+            for error_id in error_codes:
                 # Skip error code 0 (no error)
                 if error_id == 0:
                     continue

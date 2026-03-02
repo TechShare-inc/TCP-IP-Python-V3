@@ -2,121 +2,115 @@
 
 Modern Python API for Dobot NOVA-series robots with modular TCP clients and V3 protocol semantics.
 
-[![Python Version](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
-[![Version](https://img.shields.io/badge/version-3.0.0-green.svg)](https://github.com/TechShare-inc/TCP-IP-Python-V3)
+[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![Version](https://img.shields.io/badge/version-3.0.0--alpha.2-green.svg)](https://github.com/TechShare-inc/TCP-IP-Python-V3)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ## Features
 
-- Modular package: `base`, `dashboard`, `move`, `feedback`, `error_monitor`, `i18n_manager`
-- Separate TCP connections by responsibility:
-  - `DobotApiDashboard` on port `29999`
-  - `DobotApiMove` on port `30003`
-  - `DobotApiFeedback` on port `30004`
-- Localized alarm metadata (`en`, `zh_CN`) via YAML locale files
-- Error monitoring helper based on dashboard `get_error_id()`
+- **`DobotRobot` unified entry point** — manages all TCP connections behind
+  a single context-manager interface with `startup()`/`shutdown()` lifecycle.
+- Modular package organized by responsibility:
+  - `commands/dashboard` — `DobotApiDashboard` (port `29999`) composed from
+    system, I/O, config, and query mixins
+  - `commands/move` — `DobotApiMove` (port `30003`) composed from basic motion,
+    relative motion, servo/jog, and trajectory mixins
+  - `feedback` — `DobotApiFeedback` (ports `30004`–`30006`)
+  - `error_monitor` — `RobotErrorMonitor`
+  - `i18n_manager` — `AlarmI18n` with `en` and `zh_CN` locale files
+- **Typed responses** — `AckResponse`, `IntResponse`, `PoseResponse`,
+  `ErrorIdResponse` frozen dataclasses instead of raw strings
+- **`FeedbackData` dataclass** — immutable typed snapshot of the 1440-byte
+  feedback packet with full IDE autocompletion
 - Structured logging with `loguru`
 
 ## Installation
 
-```bash
+```powershell
 git clone https://github.com/TechShare-inc/TCP-IP-Python-V3.git
 cd TCP-IP-Python-V3
-pip install -e .
+uv venv
+uv pip install -e .
 ```
 
-Optional dependencies:
+Development dependencies:
 
-```bash
-pip install -e .[dev]
-pip install -e .[docs]
+```powershell
+uv pip install -e .[dev]
 ```
+
+> **Note:** Always use `uv` for environment and package management.
 
 ## Quick Start
 
 ```python
-from dobot_api_v3 import DobotApiDashboard, DobotApiMove, DobotApiFeedback
+from dobot_api_v3 import DobotRobot
 
-ip = "192.168.5.1"
-dashboard = DobotApiDashboard(ip, 29999)
-move = DobotApiMove(ip, 30003)
-feedback = DobotApiFeedback(ip, 30004)
+with DobotRobot("192.168.5.1") as robot:
+    robot.startup(speed=40)
 
-try:
-    print(dashboard.clear_error())
-    print(dashboard.enable_robot())
-    print(dashboard.speed_factor(40))
+    print(robot.robot_mode())   # IntResponse(value=5)
+    print(robot.get_pose())     # PoseResponse(x=..., y=..., ...)
 
-    print(move.mov_j(200, 0, 200, 0, 0, 0))
-    print(move.sync())
+    robot.mov_j(200, 0, 200, 0, 0, 0)
+    robot.sync()
 
-    feedback_data = feedback.feedback_data()
-    if feedback_data is not None:
-        print("enable_status:", feedback_data["enable_status"][0])
+    data = robot.feedback_data()
+    if data is not None:
+        print("enable_status:", data.enable_status)
 
-    print(dashboard.disable_robot())
-finally:
-    feedback.close()
-    move.close()
-    dashboard.close()
+    robot.shutdown()
+```
+
+For advanced use cases, subsystem classes are accessible directly:
+
+```python
+from dobot_api_v3.commands import DobotApiDashboard, DobotApiMove
 ```
 
 ## Core Components
 
-- `DobotApiDashboard`: robot lifecycle, status, I/O, kinematics, safety, and scripting commands.
-- `DobotApiMove`: point-to-point, linear, relative, servo, jog, trajectory, and sync commands.
-- `DobotApiFeedback`: reads and parses the 1440-byte realtime feedback packet.
-- `RobotErrorMonitor`: error query/log/clear helper using dashboard connection.
-- `AlarmI18n`: alarm localization helper with `en` and `zh_CN` support.
+| Class | Module | Purpose |
+|---|---|---|
+| `DobotRobot` | `robot` | Unified high-level entry point (recommended) |
+| `DobotApiDashboard` | `commands.dashboard` | Lifecycle, status, I/O, config, and query commands |
+| `DobotApiMove` | `commands.move` | Point-to-point, linear, relative, servo, jog, trajectory |
+| `DobotApiFeedback` | `feedback` | 1440-byte realtime feedback packet reader |
+| `RobotErrorMonitor` | `error_monitor` | Error query/log/clear helper |
+| `AlarmI18n` | `i18n_manager` | Alarm localization (`en`, `zh_CN`) |
 
 ## Example Scripts
 
 Numbered examples are in `examples/`:
 
-1. `01_basic_connection.py`
-2. `02_basic_motion.py`
-3. `03_feedback.py`
-4. `04_error_handling.py`
-5. `05_io_and_modbus.py`
-6. `06_i18n_alarms.py`
-
-## Documentation Workflow
-
-Project docs use a hybrid workflow:
-
-1. Sphinx + MyST generate API markdown pages
-2. Manually authored markdown covers Basics/Tutorial/Development docs
-3. VitePress builds the final static site
-
-Generate API markdown:
-
-```bash
-sphinx-build -b markdown docs/sphinx docs/_autogen
-```
-
-Run docs site locally:
-
-```bash
-cd docs
-npm install
-npm run docs:dev
-```
+1. `01_basic_connection.py` — connect, startup, query status, shutdown
+2. `02_basic_motion.py` — joint and relative motion with `sync()`
+3. `03_feedback.py` — read feedback frames via `DobotRobot`
+4. `04_error_handling.py` — check and clear alarms
+5. `05_io_and_modbus.py` — digital I/O and Modbus operations
+6. `06_i18n_alarms.py` — alarm localization
+7. `07_drag_mode.py` — drag (teach) mode
 
 ## Development
 
-Run tests:
-
-```bash
-python -m pytest
+```powershell
+uv run ruff check .
+uv run ruff format .
+uv run mypy dobot_api_v3
+uv run pytest
 ```
 
-Type-check and lint with your configured tools (`mypy`, `ruff`) in your local workflow or CI pipeline.
+See `docs/` for full documentation including architecture, tutorials, and
+API reference.
 
 ## Compatibility Notes
 
-- New code should use `snake_case` method names.
-- PascalCase command aliases are kept only for backward compatibility and emit `DeprecationWarning`.
-- Keep robot/controller firmware and network configuration aligned with Dobot V3 expectations.
+- The API is exclusively `snake_case` — all PascalCase aliases have been removed.
+- `DobotApiDashboard` and `DobotApiMove` have moved from the package root to
+  the `commands` sub-package.
+- `FeedbackDtype` and `FeedbackData` are now defined in `dtypes.py`
+  (re-exported from `base.py` for backward compatibility).
+- For new code, prefer `DobotRobot` over direct subsystem instantiation.
 
 ## License
 

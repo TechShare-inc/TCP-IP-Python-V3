@@ -1,5 +1,7 @@
 # Feedback Fields
 
+<!-- Diátaxis type: Reference -->
+
 ## Overview
 
 The Dobot controller streams a 1440-byte binary feedback packet on ports 30004, 30005, and 30006. There are two ways to access this data:
@@ -164,7 +166,10 @@ with DobotRobot("192.168.5.1") as robot:
 
 ## `FeedbackDtype` — raw NumPy access
 
-`FeedbackDtype` is the NumPy structured dtype for the 1440-byte packet.  Use it with `raw_feedback_data()` when you need zero-copy array operations.
+`FeedbackDtype` is the NumPy structured dtype for the 1440-byte packet.  It is
+defined in `dobot_api_v3.dtypes` and re-exported from `dobot_api_v3.base` for
+backward compatibility.  Use it with `raw_feedback_data()` when you need
+zero-copy array operations.
 
 ```python
 raw = robot.raw_feedback_data()

@@ -1,5 +1,7 @@
 # Quick Start
 
+<!-- Diátaxis type: Tutorial -->
+
 ## Using `DobotRobot` (recommended)
 
 ```python
@@ -24,7 +26,7 @@ dataclasses (`AckResponse`, `IntResponse`, `PoseResponse`, `ErrorIdResponse`).
 For advanced use cases you can still instantiate subsystem classes directly:
 
 ```python
-from dobot_api_v3 import DobotApiDashboard, DobotApiMove
+from dobot_api_v3.commands import DobotApiDashboard, DobotApiMove
 
 ip = "192.168.5.1"
 dashboard = DobotApiDashboard(ip, 29999)
@@ -41,6 +43,9 @@ finally:
     move.close()
     dashboard.close()
 ```
+
+Subsystem classes now live in the `dobot_api_v3.commands` sub-package
+(`commands.dashboard` and `commands.move`).
 
 See the full scripts in the `examples/` directory for complete workflows.
 

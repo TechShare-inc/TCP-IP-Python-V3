@@ -5,15 +5,16 @@ export default defineConfig({
   description: "Documentation for the dobot_api_v3 package",
   themeConfig: {
     nav: [
-      { text: "The Basics", link: "/getting-started/installation" },
-      { text: "Tutorial", link: "/tutorial/basic-motion" },
+      { text: "Getting Started", link: "/getting-started/installation" },
+      { text: "Tutorials", link: "/tutorial/basic-motion" },
       { text: "Reference", link: "/reference/" },
+      { text: "Explanation", link: "/explanation/" },
       { text: "Changelog", link: "/changelog" },
       { text: "Dev Guide", link: "/development/contributing" }
     ],
     sidebar: [
       {
-        text: "The Basics",
+        text: "Getting Started",
         items: [
           { text: "Installation", link: "/getting-started/installation" },
           { text: "Quick Start", link: "/getting-started/quick-start" },
@@ -21,7 +22,7 @@ export default defineConfig({
         ]
       },
       {
-        text: "Tutorial",
+        text: "Tutorials",
         items: [
           { text: "Basic Motion", link: "/tutorial/basic-motion" },
           { text: "Feedback and Monitoring", link: "/tutorial/feedback-monitoring" },
@@ -38,6 +39,14 @@ export default defineConfig({
           { text: "Command Patterns", link: "/reference/command-patterns" },
           { text: "Deprecations", link: "/reference/deprecations" },
           { text: "Feedback Fields", link: "/reference/feedback-fields" }
+        ]
+      },
+      {
+        text: "Explanation",
+        items: [
+          { text: "Overview", link: "/explanation/" },
+          { text: "Architecture Design", link: "/explanation/architecture-design" },
+          { text: "Testing Strategy", link: "/explanation/testing-strategy" }
         ]
       },
       {
