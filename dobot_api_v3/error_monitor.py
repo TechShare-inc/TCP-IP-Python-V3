@@ -8,9 +8,8 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
-from .dashboard import DobotApiDashboard
+from .commands.dashboard import DobotApiDashboard
 from .i18n_manager import AlarmI18n
-from .responses import ErrorIdResponse, parse_response
 
 
 class RobotErrorMonitor:
@@ -55,14 +54,10 @@ class RobotErrorMonitor:
         try:
             self.i18n.set_language(language)
 
-            # Get error ID string from dashboard
-            error_response = self.dashboard.get_error_id()
-            if not error_response:
+            # Get error IDs from dashboard (returns tuple[int, ...])
+            error_codes = self.dashboard.get_error_id()
+            if not error_codes:
                 return {"errMsg": []}
-
-            # Parse error codes with the typed response parser
-            parsed = parse_response(error_response, ErrorIdResponse)
-            error_codes = list(parsed.error_ids)
 
             # Build error message list with enriched alarm data
             error_list: List[Dict[str, Any]] = []

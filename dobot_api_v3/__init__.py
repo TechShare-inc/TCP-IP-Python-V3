@@ -6,11 +6,9 @@ import sys
 from loguru import logger
 
 from .base import PROTOCOL_FIELD_MAP, DobotApi, FeedbackData, FeedbackDtype
-from .dashboard import DobotApiDashboard
 from .error_monitor import RobotErrorMonitor
 from .feedback import DobotApiFeedback
 from .i18n_manager import AlarmI18n
-from .move import DobotApiMove
 from .responses import (
     AckResponse,
     DobotApiError,
@@ -35,8 +33,6 @@ __all__ = [
     # Primary names — use these in new code.
     "DobotRobot",
     "DobotApi",
-    "DobotApiDashboard",
-    "DobotApiMove",
     "DobotApiFeedback",
     "RobotErrorMonitor",
     "FeedbackData",
