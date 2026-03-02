@@ -1,21 +1,9 @@
 # Changelog
 
-## 3.0.0-alpha.2 (`1410a8d`)
+## 3.0.0-alpha.3 (`5f86eaa`)
 
 ### Added
 
-- **`DobotRobot` high-level wrapper** — a single unified entry point that
-  composes `DobotApiDashboard`, `DobotApiMove`, `DobotApiFeedback`, and
-  `RobotErrorMonitor` behind one object.  Supports context-manager usage
-  (`with DobotRobot(ip) as robot:`), lazy feedback connections, and a
-  `startup()`/`shutdown()` lifecycle.
-- **`responses` module** — typed frozen dataclasses for controller responses:
-  `AckResponse`, `IntResponse`, `PoseResponse`, `ErrorIdResponse`, plus the
-  `parse_response()` regex-based parser and `DobotApiError` exception.
-  `DobotRobot` methods return these typed responses instead of raw strings.
-- **`FeedbackData` dataclass** — immutable `@dataclass(frozen=True, slots=True)`
-  snapshot of the 1440-byte feedback packet with full IDE autocompletion.
-  Constructed via `FeedbackData.from_numpy()`.
 - **`commands` sub-package** — `DobotApiDashboard` and `DobotApiMove` are now
   assembled via multiple inheritance from focused command-category mixins:
   - `_SystemMixin` — lifecycle, script, motion-flow commands
@@ -32,6 +20,42 @@
   Re-exported from `base.py` for backward compatibility.
 - **`_forward` module** — `@forward_to` decorator for `DobotRobot` method
   delegation, preserving signatures and docstrings.
+
+### Changed
+
+- `DobotApiDashboard` moved from `dobot_api_v3.dashboard` to
+  `dobot_api_v3.commands.dashboard`.
+- `DobotApiMove` moved from `dobot_api_v3.move` to
+  `dobot_api_v3.commands.move`.
+- `base.py` significantly refactored — dtype definitions extracted to `dtypes`
+  module.
+- `DobotRobot` refactored to use `@forward_to` delegation.
+- Documentation overhauled — README, tutorials, reference pages, and
+  architecture docs updated for the new package structure.
+
+### Removed
+
+- Deleted root-level `dobot_api_v3/dashboard.py` and `dobot_api_v3/move.py`
+  (replaced by `commands/` sub-package).
+
+---
+
+## 3.0.0-alpha.2 (`cb4dc28`)
+
+### Added
+
+- **`DobotRobot` high-level wrapper** — a single unified entry point that
+  composes `DobotApiDashboard`, `DobotApiMove`, `DobotApiFeedback`, and
+  `RobotErrorMonitor` behind one object.  Supports context-manager usage
+  (`with DobotRobot(ip) as robot:`), lazy feedback connections, and a
+  `startup()`/`shutdown()` lifecycle.
+- **`responses` module** — typed frozen dataclasses for controller responses:
+  `AckResponse`, `IntResponse`, `PoseResponse`, `ErrorIdResponse`, plus the
+  `parse_response()` regex-based parser and `DobotApiError` exception.
+  `DobotRobot` methods return these typed responses instead of raw strings.
+- **`FeedbackData` dataclass** — immutable `@dataclass(frozen=True, slots=True)`
+  snapshot of the 1440-byte feedback packet with full IDE autocompletion.
+  Constructed via `FeedbackData.from_numpy()`.
 - **`utils` module** — `DynParam`, `ToolDynParam`, `Pose`, and `Joints` type
   aliases.
 - `feedback_data()` now returns a typed `FeedbackData` instance; the previous
@@ -45,10 +69,6 @@
 ### Changed
 
 - **Python requirement raised to `>=3.10`** (was `>=3.9`).
-- `DobotApiDashboard` moved from `dobot_api_v3.dashboard` to
-  `dobot_api_v3.commands.dashboard`.
-- `DobotApiMove` moved from `dobot_api_v3.move` to
-  `dobot_api_v3.commands.move`.
 - All examples updated to use the `DobotRobot` unified API.
 - `startup()` now checks for controller errors first; skips `clear_error` and
   `power_on` when no alarms are present, reducing startup time.
@@ -62,8 +82,6 @@
   `MyType`, `feedBackData()`, `RobotErrorMonitor.from_connection()`, and all
   PascalCase method aliases.  The API is now exclusively `snake_case`.
 - Deleted `api.py` internal compatibility shim.
-- Deleted root-level `dobot_api_v3/dashboard.py` and `dobot_api_v3/move.py`
-  (replaced by `commands/` sub-package).
 - Deleted `tests/unit/test_deprecations.py` and `tests/unit/test_utils.py`
   (covered by new tests).
 

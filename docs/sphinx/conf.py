@@ -9,7 +9,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 project = "Dobot API v3"
 author = "Dobot"
-release = "3.0.0"
+release = "3.0.0a3"
 
 extensions = [
     "myst_parser",

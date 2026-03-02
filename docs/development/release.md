@@ -10,7 +10,7 @@ Bump the version in `pyproject.toml`:
 
 ```toml
 [project]
-version = "3.0.0"
+version = "3.0.0a3"
 ```
 
 ## 2. Update the changelog
@@ -43,8 +43,8 @@ Verify the build completes without warnings.
 
 ```powershell
 git add -A
-git commit -m "chore: release v3.0.0"
-git tag v3.0.0
+git commit -m "chore: release v3.0.0-alpha.3"
+git tag v3.0.0-alpha.3
 git push origin main --tags
 ```
 
