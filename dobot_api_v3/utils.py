@@ -16,3 +16,12 @@ DynParam = Union[int, float, str, tuple]  # type: ignore[type-arg]
 # Pattern B — Structured (speed, acc, coord_index) tuples expected by
 # RelMovJTool and RelMovLTool when optional parameters are provided.
 ToolDynParam = tuple[int, int, int]
+
+# ---------------------------------------------------------------------------
+# Return type aliases
+# ---------------------------------------------------------------------------
+
+# Six-degree-of-freedom pose or joint-angle vector returned by query commands
+# such as ``get_pose``, ``get_angle``, ``positive_solution``, etc.
+Pose = tuple[float, float, float, float, float, float]
+Joints = tuple[float, float, float, float, float, float]

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Callable
 from unittest.mock import MagicMock
 
@@ -12,6 +13,64 @@ from dobot_api_v3.base import DobotApi, FeedbackDtype
 from dobot_api_v3.dashboard import DobotApiDashboard
 from dobot_api_v3.feedback import DobotApiFeedback
 from dobot_api_v3.move import DobotApiMove
+
+# ---------------------------------------------------------------------------
+# Mock response routing — maps command prefixes to realistic response strings
+# so that _recv_int / _recv_pose / etc. don't crash in serialization tests.
+# ---------------------------------------------------------------------------
+
+# Commands whose response carries a single integer in brace payload.
+_INT_COMMANDS = {"RobotMode", "DI", "ToolDI", "ModbusCreate"}
+
+# Commands whose response carries six floats (pose / angle / force).
+_POSE_COMMANDS = {
+    "GetAngle",
+    "GetPose",
+    "GetSixForceData",
+    "GetTraceStartPose",
+    "GetPathStartPose",
+    "PositiveSolution",
+    "InverseSolution",
+}
+
+# Commands whose response carries an int list (coils, bits).
+_INT_LIST_COMMANDS = {"GetCoils", "GetInBits"}
+
+# Commands whose response carries a float list (registers).
+_FLOAT_LIST_COMMANDS = {"GetHoldRegs", "GetInRegs"}
+
+# Commands whose response carries error IDs.
+_ERROR_ID_COMMANDS = {"GetErrorID"}
+
+# Commands whose response carries a comma-separated string list.
+_STR_LIST_COMMANDS = {"GetTerminal485"}
+
+_CMD_PREFIX_RE = re.compile(r"^(\w+)\(")
+
+
+def _mock_response(cmd: str) -> str:
+    """Return a realistic mock response string for *cmd*.
+
+    The response is chosen based on the protocol command prefix so that
+    the ``_recv_*`` helpers in ``_SerializationMixin`` parse successfully.
+    """
+    m = _CMD_PREFIX_RE.match(cmd)
+    prefix = m.group(1) if m else ""
+
+    if prefix in _INT_COMMANDS:
+        return "0,{0};"
+    if prefix in _POSE_COMMANDS:
+        return "0,{0.0,0.0,0.0,0.0,0.0,0.0};"
+    if prefix in _INT_LIST_COMMANDS:
+        return "0,{0};"
+    if prefix in _FLOAT_LIST_COMMANDS:
+        return "0,{0.0};"
+    if prefix in _ERROR_ID_COMMANDS:
+        return "0,{0};"
+    if prefix in _STR_LIST_COMMANDS:
+        return "0,{9600,8,N,1};"
+    # Default: 3-field ack response.
+    return "0,0,ok;"
 
 
 # ---------------------------------------------------------------------------
@@ -48,7 +107,7 @@ def mock_dashboard(
 
     def _capture(cmd: str) -> str:
         sent.append(cmd)
-        return f"0,0,{cmd};"
+        return _mock_response(cmd)
 
     monkeypatch.setattr(db, "send_recv_msg", _capture)
     return db, sent
@@ -70,7 +129,7 @@ def mock_move(monkeypatch: pytest.MonkeyPatch) -> tuple[DobotApiMove, list[str]]
 
     def _capture(cmd: str) -> str:
         sent.append(cmd)
-        return f"0,0,{cmd};"
+        return _mock_response(cmd)
 
     monkeypatch.setattr(mv, "send_recv_msg", _capture)
     return mv, sent

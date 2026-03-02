@@ -18,7 +18,7 @@ class _SystemMixin(_SerializationMixin):
         center_x: float = 0.0,
         center_y: float = 0.0,
         center_z: float = 0.0,
-    ) -> str:
+    ) -> int:
         """Enable the robot with optional payload parameters.
 
         Args:
@@ -28,7 +28,7 @@ class _SystemMixin(_SerializationMixin):
             center_z: Payload center offset on Z axis.
 
         Returns:
-            Robot response string.
+            Command queue ID.
 
         Example:
             >>> dashboard.enable_robot()
@@ -40,98 +40,136 @@ class _SystemMixin(_SerializationMixin):
             if center_x != 0 or center_y != 0 or center_z != 0:
                 string = string + ",{:f},{:f},{:f}".format(center_x, center_y, center_z)
         string = string + ")"
-        return self.send_recv_msg(string)
+        return self._recv_ack(string)
 
-    def disable_robot(self) -> str:
-        """Disable the robot arm."""
-        return self.send_recv_msg("DisableRobot()")
+    def disable_robot(self) -> int:
+        """Disable the robot arm.
 
-    def clear_error(self) -> str:
+        Returns:
+            Command queue ID.
+        """
+        return self._recv_ack("DisableRobot()")
+
+    def clear_error(self) -> int:
         """Clear controller alarm information.
 
         Returns:
-            Robot response string.
+            Command queue ID.
 
         Example:
             >>> dashboard.clear_error()
         """
-        return self.send_recv_msg("ClearError()")
+        return self._recv_ack("ClearError()")
 
-    def reset_robot(self) -> str:
-        """Stop the robot."""
-        return self.send_recv_msg("ResetRobot()")
+    def reset_robot(self) -> int:
+        """Stop the robot.
 
-    def power_on(self) -> str:
+        Returns:
+            Command queue ID.
+        """
+        return self._recv_ack("ResetRobot()")
+
+    def power_on(self) -> int:
         """Power on the robot.
 
         Note: Takes ~10 s before the robot is enabled after power-on.
+
+        Returns:
+            Command queue ID.
         """
-        return self.send_recv_msg("PowerOn()")
+        return self._recv_ack("PowerOn()")
 
-    def emergency_stop(self) -> str:
-        """Trigger emergency stop."""
-        return self.send_recv_msg("EmergencyStop()")
+    def emergency_stop(self) -> int:
+        """Trigger emergency stop.
 
-    def speed_factor(self, speed: int) -> str:
+        Returns:
+            Command queue ID.
+        """
+        return self._recv_ack("EmergencyStop()")
+
+    def speed_factor(self, speed: int) -> int:
         """Set global speed factor.
 
         Args:
             speed: Rate value in range 1-100.
 
         Returns:
-            Robot response string.
+            Command queue ID.
 
         Example:
             >>> dashboard.speed_factor(40)
         """
-        return self.send_recv_msg("SpeedFactor({:d})".format(speed))
+        return self._recv_ack("SpeedFactor({:d})".format(speed))
 
-    def robot_mode(self) -> str:
-        """View the robot status."""
-        return self.send_recv_msg("RobotMode()")
+    def robot_mode(self) -> int:
+        """View the robot status.
 
-    def run_script(self, project_name: str) -> str:
+        Returns:
+            Robot mode value as integer.
+        """
+        return self._recv_int("RobotMode()")
+
+    def run_script(self, project_name: str) -> int:
         """Run a script file.
 
         Args:
             project_name: Script file name.
 
         Returns:
-            Robot response string.
+            Command queue ID.
         """
-        return self.send_recv_msg("RunScript({:s})".format(project_name))
+        return self._recv_ack("RunScript({:s})".format(project_name))
 
-    def stop_script(self) -> str:
-        """Stop scripts."""
-        return self.send_recv_msg("StopScript()")
+    def stop_script(self) -> int:
+        """Stop scripts.
 
-    def pause_script(self) -> str:
-        """Pause the script."""
-        return self.send_recv_msg("PauseScript()")
+        Returns:
+            Command queue ID.
+        """
+        return self._recv_ack("StopScript()")
 
-    def continue_script(self) -> str:
-        """Continue running the script."""
-        return self.send_recv_msg("ContinueScript()")
+    def pause_script(self) -> int:
+        """Pause the script.
 
-    def wait(self, t: float) -> str:
+        Returns:
+            Command queue ID.
+        """
+        return self._recv_ack("PauseScript()")
+
+    def continue_script(self) -> int:
+        """Continue running the script.
+
+        Returns:
+            Command queue ID.
+        """
+        return self._recv_ack("ContinueScript()")
+
+    def wait(self, t: float) -> int:
         """Wait for specified time (queued command).
 
         Args:
             t: Wait duration in milliseconds.
 
         Returns:
-            Robot response string.
+            Command queue ID.
         """
-        return self.send_recv_msg("wait({:d})".format(t))
+        return self._recv_ack("wait({:d})".format(t))
 
-    def pause(self) -> str:
-        """Pause queued motion execution."""
-        return self.send_recv_msg("pause()")
+    def pause(self) -> int:
+        """Pause queued motion execution.
 
-    def resume(self) -> str:
+        Returns:
+            Command queue ID.
+        """
+        return self._recv_ack("pause()")
+
+    def resume(self) -> int:
         """Resume paused motion execution.
 
         Note: maps to the ``continue()`` protocol command; ``continue`` is a
         Python keyword so the method is named ``resume``.
+
+        Returns:
+            Command queue ID.
         """
-        return self.send_recv_msg("continue()")
+        return self._recv_ack("continue()")

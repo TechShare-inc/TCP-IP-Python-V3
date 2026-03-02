@@ -9,92 +9,92 @@ from ._serialization import _SerializationMixin
 class _ConfigMixin(_SerializationMixin):
     """Speed, acceleration, jerk, coordinate, and payload configuration commands."""
 
-    def acc_j(self, speed: int) -> str:
+    def acc_j(self, speed: int) -> int:
         """Set joint acceleration ratio (MovJ / MovJIO / MovJR / JointMovJ).
 
         Args:
             speed: Joint acceleration ratio (1-100).
 
         Returns:
-            Robot response string.
+            Command queue ID.
         """
-        return self.send_recv_msg("AccJ({:d})".format(speed))
+        return self._recv_ack("AccJ({:d})".format(speed))
 
-    def acc_l(self, speed: int) -> str:
+    def acc_l(self, speed: int) -> int:
         """Set Cartesian acceleration ratio (MovL / MovLIO / MovLR / Jump / Arc / Circle).
 
         Args:
             speed: Cartesian acceleration ratio (1-100).
 
         Returns:
-            Robot response string.
+            Command queue ID.
         """
-        return self.send_recv_msg("AccL({:d})".format(speed))
+        return self._recv_ack("AccL({:d})".format(speed))
 
-    def speed_j(self, speed: int) -> str:
+    def speed_j(self, speed: int) -> int:
         """Set joint speed ratio (MovJ / MovJIO / MovJR / JointMovJ).
 
         Args:
             speed: Joint speed ratio (1-100).
 
         Returns:
-            Robot response string.
+            Command queue ID.
         """
-        return self.send_recv_msg("SpeedJ({:d})".format(speed))
+        return self._recv_ack("SpeedJ({:d})".format(speed))
 
-    def speed_l(self, speed: int) -> str:
+    def speed_l(self, speed: int) -> int:
         """Set Cartesian speed ratio (MovL / MovLIO / MovLR / Jump / Arc / Circle).
 
         Args:
             speed: Cartesian speed ratio (1-100).
 
         Returns:
-            Robot response string.
+            Command queue ID.
         """
-        return self.send_recv_msg("SpeedL({:d})".format(speed))
+        return self._recv_ack("SpeedL({:d})".format(speed))
 
-    def vel_j(self, speed: int) -> str:
+    def vel_j(self, speed: int) -> int:
         """Alias for :meth:`speed_j` (V4-style name)."""
         return self.speed_j(speed)
 
-    def vel_l(self, speed: int) -> str:
+    def vel_l(self, speed: int) -> int:
         """Alias for :meth:`speed_l` (V4-style name)."""
         return self.speed_l(speed)
 
-    def arch(self, index: int) -> str:
+    def arch(self, index: int) -> int:
         """Set Jump gate parameter index (start lift height, max lift, end drop).
 
         Args:
             index: Jump parameter index (0-9).
 
         Returns:
-            Robot response string.
+            Command queue ID.
         """
-        return self.send_recv_msg("Arch({:d})".format(index))
+        return self._recv_ack("Arch({:d})".format(index))
 
-    def cp(self, ratio: int) -> str:
+    def cp(self, ratio: int) -> int:
         """Set smooth transition ratio.
 
         Args:
             ratio: Smooth transition ratio (1-100).
 
         Returns:
-            Robot response string.
+            Command queue ID.
         """
-        return self.send_recv_msg("CP({:d})".format(ratio))
+        return self._recv_ack("CP({:d})".format(ratio))
 
-    def lim_z(self, value: int) -> str:
+    def lim_z(self, value: int) -> int:
         """Set maximum lifting height for door-type parameters.
 
         Args:
             value: Maximum lifting height.
 
         Returns:
-            Robot response string.
+            Command queue ID.
         """
-        return self.send_recv_msg("LimZ({:d})".format(value))
+        return self._recv_ack("LimZ({:d})".format(value))
 
-    def set_arm_orientation(self, r: int, d: int, n: int, cfg: int) -> str:
+    def set_arm_orientation(self, r: int, d: int, n: int, cfg: int) -> int:
         """Set the hand command.
 
         Args:
@@ -104,13 +104,13 @@ class _ConfigMixin(_SerializationMixin):
             cfg: Sixth-axis angle configuration identifier.
 
         Returns:
-            Robot response string.
+            Command queue ID.
         """
-        return self.send_recv_msg(
+        return self._recv_ack(
             "SetArmOrientation({:d},{:d},{:d},{:d})".format(r, d, n, cfg)
         )
 
-    def payload(self, weight: float, inertia: float) -> str:
+    def payload(self, weight: float, inertia: float) -> int:
         """Set robot load.
 
         Args:
@@ -118,11 +118,11 @@ class _ConfigMixin(_SerializationMixin):
             inertia: Payload moment of inertia.
 
         Returns:
-            Robot response string.
+            Command queue ID.
         """
-        return self.send_recv_msg("PayLoad({:f},{:f})".format(weight, inertia))
+        return self._recv_ack("PayLoad({:f},{:f})".format(weight, inertia))
 
-    def set_payload(self, offset1: float, *dyn_params: DynParam) -> str:
+    def set_payload(self, offset1: float, *dyn_params: DynParam) -> int:
         """Set payload parameters.
 
         Args:
@@ -130,54 +130,54 @@ class _ConfigMixin(_SerializationMixin):
             *dyn_params: Additional payload arguments.
 
         Returns:
-            Robot response string.
+            Command queue ID.
         """
         string = "SetPayload({:f}".format(offset1)
         for params in dyn_params:
             string = string + str(params) + ","
         string = string + ")"
-        return self.send_recv_msg(string)
+        return self._recv_ack(string)
 
-    def set_collision_level(self, offset1: int) -> str:
+    def set_collision_level(self, offset1: int) -> int:
         """Set collision detection level.
 
         Args:
             offset1: Collision level value.
 
         Returns:
-            Robot response string.
+            Command queue ID.
         """
-        return self.send_recv_msg("SetCollisionLevel({:d})".format(offset1))
+        return self._recv_ack("SetCollisionLevel({:d})".format(offset1))
 
-    def set_user(self, index: int) -> str:
+    def set_user(self, index: int) -> int:
         """Select the calibrated user coordinate system.
 
         Args:
             index: Calibrated user coordinate index.
 
         Returns:
-            Robot response string.
+            Command queue ID.
         """
-        return self.send_recv_msg("User({:d})".format(index))
+        return self._recv_ack("User({:d})".format(index))
 
-    def set_tool(self, index: int) -> str:
+    def set_tool(self, index: int) -> int:
         """Select the calibrated tool coordinate system.
 
         Args:
             index: Calibrated tool coordinate index.
 
         Returns:
-            Robot response string.
+            Command queue ID.
         """
-        return self.send_recv_msg("Tool({:d})".format(index))
+        return self._recv_ack("Tool({:d})".format(index))
 
-    def load_switch(self, offset1: int) -> str:
+    def load_switch(self, offset1: int) -> int:
         """Switch load configuration.
 
         Args:
             offset1: Load profile index.
 
         Returns:
-            Robot response string.
+            Command queue ID.
         """
-        return self.send_recv_msg("LoadSwitch({:d})".format(offset1))
+        return self._recv_ack("LoadSwitch({:d})".format(offset1))

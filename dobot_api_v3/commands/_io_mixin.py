@@ -11,7 +11,7 @@ from ._serialization import _SerializationMixin
 class _IOMixin(_SerializationMixin):
     """Digital output, analog output, digital input, and Modbus commands."""
 
-    def do_output(self, index: int, status: int) -> str:
+    def do_output(self, index: int, status: int) -> int:
         """Set digital signal output (queued).
 
         Args:
@@ -19,11 +19,11 @@ class _IOMixin(_SerializationMixin):
             status: Output state (0 for low, 1 for high).
 
         Returns:
-            Robot response string.
+            Command queue ID.
         """
-        return self.send_recv_msg("DO({:d},{:d})".format(index, status))
+        return self._recv_ack("DO({:d},{:d})".format(index, status))
 
-    def do_execute(self, index: int, status: int) -> str:
+    def do_execute(self, index: int, status: int) -> int:
         """Set digital signal output (immediate).
 
         Args:
@@ -31,11 +31,11 @@ class _IOMixin(_SerializationMixin):
             status: Output state (0 for low, 1 for high).
 
         Returns:
-            Robot response string.
+            Command queue ID.
         """
-        return self.send_recv_msg("DOExecute({:d},{:d})".format(index, status))
+        return self._recv_ack("DOExecute({:d},{:d})".format(index, status))
 
-    def tool_do(self, index: int, status: int) -> str:
+    def tool_do(self, index: int, status: int) -> int:
         """Set terminal signal output (queued).
 
         Args:
@@ -43,11 +43,11 @@ class _IOMixin(_SerializationMixin):
             status: Output state (0 for low, 1 for high).
 
         Returns:
-            Robot response string.
+            Command queue ID.
         """
-        return self.send_recv_msg("ToolDO({:d},{:d})".format(index, status))
+        return self._recv_ack("ToolDO({:d},{:d})".format(index, status))
 
-    def tool_do_execute(self, index: int, status: int) -> str:
+    def tool_do_execute(self, index: int, status: int) -> int:
         """Set terminal signal output (immediate).
 
         Args:
@@ -55,11 +55,11 @@ class _IOMixin(_SerializationMixin):
             status: Output state (0 for low, 1 for high).
 
         Returns:
-            Robot response string.
+            Command queue ID.
         """
-        return self.send_recv_msg("ToolDOExecute({:d},{:d})".format(index, status))
+        return self._recv_ack("ToolDOExecute({:d},{:d})".format(index, status))
 
-    def ao(self, index: int, val: float) -> str:
+    def ao(self, index: int, val: float) -> int:
         """Set analog signal output (queued).
 
         Args:
@@ -67,11 +67,11 @@ class _IOMixin(_SerializationMixin):
             val: Output voltage (0-10).
 
         Returns:
-            Robot response string.
+            Command queue ID.
         """
-        return self.send_recv_msg("AO({:d},{:f})".format(index, val))
+        return self._recv_ack("AO({:d},{:f})".format(index, val))
 
-    def ao_execute(self, index: int, val: float) -> str:
+    def ao_execute(self, index: int, val: float) -> int:
         """Set analog signal output (immediate).
 
         Args:
@@ -79,49 +79,49 @@ class _IOMixin(_SerializationMixin):
             val: Output voltage (0-10).
 
         Returns:
-            Robot response string.
+            Command queue ID.
         """
-        return self.send_recv_msg("AOExecute({:d},{:f})".format(index, val))
+        return self._recv_ack("AOExecute({:d},{:f})".format(index, val))
 
-    def di(self, offset1: int) -> str:
+    def di(self, offset1: int) -> int:
         """Read a digital input port.
 
         Args:
             offset1: Digital input index.
 
         Returns:
-            Robot response string.
+            Digital input state (0 or 1).
         """
-        return self.send_recv_msg("DI({:d})".format(offset1))
+        return self._recv_int("DI({:d})".format(offset1))
 
-    def tool_di(self, offset1: int) -> str:
+    def tool_di(self, offset1: int) -> int:
         """Read a terminal digital input port.
 
         Args:
             offset1: Terminal digital input index.
 
         Returns:
-            Robot response string.
+            Digital input state (0 or 1).
         """
-        return self.send_recv_msg("ToolDI({:d})".format(offset1))
+        return self._recv_int("ToolDI({:d})".format(offset1))
 
-    def do_group(self, *dyn_params: DynParam) -> str:
+    def do_group(self, *dyn_params: DynParam) -> int:
         """Set multiple digital outputs in one command.
 
         Args:
             *dyn_params: Repeating output pairs such as ``(index, status)``.
 
         Returns:
-            Robot response string.
+            Command queue ID.
         """
         string = "DOGroup("
         for params in dyn_params:
             string = string + str(params) + ","
         string = string + ")"
         logger.debug(f"DOGroup command: {string}")
-        return self.send_recv_msg(string)
+        return self._recv_ack(string)
 
-    def modbus_create(self, ip: str, port: int, slave_id: int, is_rtu: int) -> str:
+    def modbus_create(self, ip: str, port: int, slave_id: int, is_rtu: int) -> int:
         """Create a Modbus connection.
 
         Args:
@@ -131,17 +131,23 @@ class _IOMixin(_SerializationMixin):
             is_rtu: Connection mode flag (0 for TCP, 1 for RTU).
 
         Returns:
-            Robot response string.
+            Created Modbus connection index.
         """
-        return self.send_recv_msg(
+        return self._recv_int(
             "ModbusCreate({:s},{:d},{:d},{:d})".format(ip, port, slave_id, is_rtu)
         )
 
-    def modbus_close(self, offset1: int) -> str:
-        """Close a Modbus connection."""
-        return self.send_recv_msg("ModbusClose({:d})".format(offset1))
+    def modbus_close(self, offset1: int) -> int:
+        """Close a Modbus connection.
 
-    def get_hold_regs(self, id: int, addr: int, count: int, type_: str) -> str:
+        Returns:
+            Command queue ID.
+        """
+        return self._recv_ack("ModbusClose({:d})".format(offset1))
+
+    def get_hold_regs(
+        self, id: int, addr: int, count: int, type_: str
+    ) -> tuple[float, ...]:
         """Read hold register.
 
         Args:
@@ -152,15 +158,15 @@ class _IOMixin(_SerializationMixin):
                 ``"F64"``.
 
         Returns:
-            Robot response string.
+            Tuple of register values as floats.
         """
-        return self.send_recv_msg(
+        return self._recv_float_list(
             "GetHoldRegs({:d},{:d},{:d},{:s})".format(id, addr, count, type_)
         )
 
     def set_hold_regs(
         self, id: int, addr: int, count: int, table: str, type_: str | None = None
-    ) -> str:
+    ) -> int:
         """Write hold register.
 
         Args:
@@ -172,7 +178,7 @@ class _IOMixin(_SerializationMixin):
                 ``"F32"``, or ``"F64"``.
 
         Returns:
-            Robot response string.
+            Command queue ID.
         """
         if type_ is not None:
             string = "SetHoldRegs({:d},{:d},{:d},{:s},{:s})".format(
@@ -180,9 +186,9 @@ class _IOMixin(_SerializationMixin):
             )
         else:
             string = "SetHoldRegs({:d},{:d},{:d},{:s})".format(id, addr, count, table)
-        return self.send_recv_msg(string)
+        return self._recv_ack(string)
 
-    def get_coils(self, offset1: int, offset2: int, offset3: int) -> str:
+    def get_coils(self, offset1: int, offset2: int, offset3: int) -> tuple[int, ...]:
         """Read coil values.
 
         Args:
@@ -191,13 +197,13 @@ class _IOMixin(_SerializationMixin):
             offset3: Coil count.
 
         Returns:
-            Robot response string.
+            Tuple of coil values as integers.
         """
-        return self.send_recv_msg(
+        return self._recv_int_list(
             "GetCoils({:d},{:d},{:d})".format(offset1, offset2, offset3)
         )
 
-    def set_coils(self, offset1: int, offset2: int, offset3: int, offset4: int) -> str:
+    def set_coils(self, offset1: int, offset2: int, offset3: int, offset4: int) -> int:
         """Write coil values.
 
         Args:
@@ -207,7 +213,7 @@ class _IOMixin(_SerializationMixin):
             offset4: Packed coil value.
 
         Returns:
-            Robot response string.
+            Command queue ID.
         """
         string = (
             "SetCoils({:d},{:d},{:d}".format(offset1, offset2, offset3)
@@ -216,9 +222,9 @@ class _IOMixin(_SerializationMixin):
             + ")"
         )
         logger.debug(f"SetCoils offset4 value: {offset4}")
-        return self.send_recv_msg(string)
+        return self._recv_ack(string)
 
-    def get_in_bits(self, offset1: int, offset2: int, offset3: int) -> str:
+    def get_in_bits(self, offset1: int, offset2: int, offset3: int) -> tuple[int, ...]:
         """Read digital input bits.
 
         Args:
@@ -227,15 +233,15 @@ class _IOMixin(_SerializationMixin):
             offset3: Number of bits.
 
         Returns:
-            Robot response string.
+            Tuple of bit values as integers.
         """
-        return self.send_recv_msg(
+        return self._recv_int_list(
             "GetInBits({:d},{:d},{:d})".format(offset1, offset2, offset3)
         )
 
     def get_in_regs(
         self, offset1: int, offset2: int, offset3: int, *dyn_params: DynParam
-    ) -> str:
+    ) -> tuple[float, ...]:
         """Read input registers.
 
         Args:
@@ -245,11 +251,11 @@ class _IOMixin(_SerializationMixin):
             *dyn_params: Optional data type and mode parameters.
 
         Returns:
-            Robot response string.
+            Tuple of register values as floats.
         """
         string = "GetInRegs({:d},{:d},{:d}".format(offset1, offset2, offset3)
         for params in dyn_params:
             logger.debug(f"GetInRegs params: type={type(params)}, value={params}")
             string = string + "," + str(params)
         string = string + ")"
-        return self.send_recv_msg(string)
+        return self._recv_float_list(string)
