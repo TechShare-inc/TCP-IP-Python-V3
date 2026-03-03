@@ -17,6 +17,12 @@ Example::
         robot.joint_mov_j(-11.53, 4.64, 87.16, -2.84, -77.71, 0.01)
         robot.sync()
         robot.shutdown()
+
+The forwarded command methods (everything below the ``# --- BEGIN
+AUTO-GENERATED ---`` marker) are produced by ``dobot_api_v3/_codegen.py``.
+Re-run the generator after adding commands to a mixin::
+
+    uv run python -m dobot_api_v3._codegen
 """
 
 from __future__ import annotations
@@ -27,13 +33,12 @@ from typing import Optional
 import numpy as np
 from loguru import logger
 
-from ._forward import forward_to
 from .base import FeedbackData
 from .commands.dashboard import DobotApiDashboard
+from .commands.move import DobotApiMove
 from .error_monitor import RobotErrorMonitor
 from .feedback import DobotApiFeedback
-from .commands.move import DobotApiMove
-from .utils import DynParam, Pose
+from .utils import DynParam, Pose, ToolDynParam
 
 
 class DobotRobot:
@@ -47,6 +52,11 @@ class DobotRobot:
     The individual component objects remain accessible as public attributes
     (``robot.dashboard``, ``robot.move``, etc.) so that the full API surface
     of each subsystem is always reachable.
+
+    All public methods of :class:`~dobot_api_v3.DobotApiDashboard` and
+    :class:`~dobot_api_v3.DobotApiMove` are mirrored directly on this class
+    as one-liner forwarding methods so users never need to reach through
+    ``robot.dashboard`` or ``robot.move`` for day-to-day use.
 
     Args:
         ip: Robot controller IP address.
@@ -336,10 +346,57 @@ class DobotRobot:
         return self.feedback.raw_feedback_data()
 
     # ------------------------------------------------------------------
-    # Forwarded dashboard commands
+    # Forwarded dashboard and move commands
+    # (auto-generated — do not edit by hand; run _codegen.py to refresh)
     # ------------------------------------------------------------------
 
-    @forward_to(DobotApiDashboard.enable_robot)
+    # --- BEGIN AUTO-GENERATED ---
+    # -- dashboard --------------------------------------------------------
+    def acc_j(self, speed: int) -> int:
+        return self.dashboard.acc_j(speed)
+
+    def acc_l(self, speed: int) -> int:
+        return self.dashboard.acc_l(speed)
+
+    def ao(self, index: int, val: float) -> int:
+        return self.dashboard.ao(index, val)
+
+    def ao_execute(self, index: int, val: float) -> int:
+        return self.dashboard.ao_execute(index, val)
+
+    def arch(self, index: int) -> int:
+        return self.dashboard.arch(index)
+
+    def brake_control(self, offset1: int, offset2: int) -> int:
+        return self.dashboard.brake_control(offset1, offset2)
+
+    def clear_error(self) -> int:
+        return self.dashboard.clear_error()
+
+    def continue_script(self) -> int:
+        return self.dashboard.continue_script()
+
+    def cp(self, ratio: int) -> int:
+        return self.dashboard.cp(ratio)
+
+    def di(self, offset1: int) -> int:
+        return self.dashboard.di(offset1)
+
+    def disable_robot(self) -> int:
+        return self.dashboard.disable_robot()
+
+    def do_execute(self, index: int, status: int) -> int:
+        return self.dashboard.do_execute(index, status)
+
+    def do_group(self, *dyn_params: DynParam) -> int:
+        return self.dashboard.do_group(*dyn_params)
+
+    def do_output(self, index: int, status: int) -> int:
+        return self.dashboard.do_output(index, status)
+
+    def emergency_stop(self) -> int:
+        return self.dashboard.emergency_stop()
+
     def enable_robot(
         self,
         load: float = 0.0,
@@ -347,341 +404,49 @@ class DobotRobot:
         center_y: float = 0.0,
         center_z: float = 0.0,
     ) -> int:
-        """Enable the robot with optional payload parameters.
+        return self.dashboard.enable_robot(load, center_x, center_y, center_z)
 
-        Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.enable_robot`.
-
-        Args:
-            load: Payload weight.
-            center_x: Payload center offset on X axis.
-            center_y: Payload center offset on Y axis.
-            center_z: Payload center offset on Z axis.
-
-        Returns:
-            Command queue ID.
-
-        Raises:
-            DobotApiError: If the controller returns a non-zero error code.
-        """
-        ...
-
-    @forward_to(DobotApiDashboard.disable_robot)
-    def disable_robot(self) -> int:
-        """Disable the robot arm.
-
-        Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.disable_robot`.
-
-        Returns:
-            Command queue ID.
-
-        Raises:
-            DobotApiError: If the controller returns a non-zero error code.
-        """
-        ...
-
-    @forward_to(DobotApiDashboard.clear_error)
-    def clear_error(self) -> int:
-        """Clear controller alarm information.
-
-        Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.clear_error`.
-
-        Returns:
-            Command queue ID.
-
-        Raises:
-            DobotApiError: If the controller returns a non-zero error code.
-        """
-        ...
-
-    @forward_to(DobotApiDashboard.reset_robot)
-    def reset_robot(self) -> int:
-        """Stop the robot.
-
-        Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.reset_robot`.
-
-        Returns:
-            Command queue ID.
-
-        Raises:
-            DobotApiError: If the controller returns a non-zero error code.
-        """
-        ...
-
-    @forward_to(DobotApiDashboard.power_on)
-    def power_on(self) -> int:
-        """Power on the controller.
-
-        Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.power_on`.
-
-        Returns:
-            Command queue ID.
-
-        Raises:
-            DobotApiError: If the controller returns a non-zero error code.
-        """
-        ...
-
-    @forward_to(DobotApiDashboard.emergency_stop)
-    def emergency_stop(self) -> int:
-        """Trigger an emergency stop.
-
-        Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.emergency_stop`.
-
-        Returns:
-            Command queue ID.
-
-        Raises:
-            DobotApiError: If the controller returns a non-zero error code.
-        """
-        ...
-
-    @forward_to(DobotApiDashboard.speed_factor)
-    def speed_factor(self, speed: int) -> int:
-        """Set global speed factor.
-
-        Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.speed_factor`.
-
-        Args:
-            speed: Rate value in range 1-100.
-
-        Returns:
-            Command queue ID.
-
-        Raises:
-            DobotApiError: If the controller returns a non-zero error code.
-        """
-        ...
-
-    @forward_to(DobotApiDashboard.robot_mode)
-    def robot_mode(self) -> int:
-        """Query the robot operating mode.
-
-        Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.robot_mode`.
-
-        Returns:
-            Current mode code (e.g. 5 = idle, 7 = running).
-
-        Raises:
-            DobotApiError: If the controller returns a non-zero error code.
-        """
-        ...
-
-    @forward_to(DobotApiDashboard.get_pose)
-    def get_pose(self) -> Pose:
-        """Get current Cartesian pose.
-
-        Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.get_pose`.
-
-        Returns:
-            Cartesian pose as ``(x, y, z, rx, ry, rz)`` in mm / degrees.
-
-        Raises:
-            DobotApiError: If the controller returns a non-zero error code.
-        """
-        ...
-
-    @forward_to(DobotApiDashboard.get_angle)
     def get_angle(self) -> Pose:
-        """Get current joint angles.
+        return self.dashboard.get_angle()
 
-        Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.get_angle`.
+    def get_coils(self, offset1: int, offset2: int, offset3: int) -> tuple[int, ...]:
+        return self.dashboard.get_coils(offset1, offset2, offset3)
 
-        Returns:
-            Joint angles as ``(j1, j2, j3, j4, j5, j6)`` in degrees.
-
-        Raises:
-            DobotApiError: If the controller returns a non-zero error code.
-        """
-        ...
-
-    @forward_to(DobotApiDashboard.get_error_id)
     def get_error_id(self) -> tuple[int, ...]:
-        """Get current error IDs from the controller.
+        return self.dashboard.get_error_id()
 
-        Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.get_error_id`.
+    def get_hold_regs(
+        self, id: int, addr: int, count: int, type_: str
+    ) -> tuple[float, ...]:
+        return self.dashboard.get_hold_regs(id, addr, count, type_)
 
-        Returns:
-            Tuple of non-zero alarm codes (may be empty).
+    def get_in_bits(self, offset1: int, offset2: int, offset3: int) -> tuple[int, ...]:
+        return self.dashboard.get_in_bits(offset1, offset2, offset3)
 
-        Raises:
-            DobotApiError: If the controller returns a non-zero error code.
-        """
-        ...
+    def get_in_regs(
+        self, offset1: int, offset2: int, offset3: int, *dyn_params: DynParam
+    ) -> tuple[float, ...]:
+        return self.dashboard.get_in_regs(offset1, offset2, offset3, *dyn_params)
 
-    @forward_to(DobotApiDashboard.start_drag)
-    def start_drag(self) -> int:
-        """Enable drag (teach) mode.
+    def get_path_start_pose(self, offset1: str) -> Pose:
+        return self.dashboard.get_path_start_pose(offset1)
 
-        Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.start_drag`.
+    def get_pose(self) -> Pose:
+        return self.dashboard.get_pose()
 
-        Returns:
-            Command queue ID.
+    def get_six_force_data(self) -> Pose:
+        return self.dashboard.get_six_force_data()
 
-        Raises:
-            DobotApiError: If the controller returns a non-zero error code.
-        """
-        ...
+    def get_terminal_485(self) -> tuple[str, ...]:
+        return self.dashboard.get_terminal_485()
 
-    @forward_to(DobotApiDashboard.stop_drag)
-    def stop_drag(self) -> int:
-        """Disable drag (teach) mode.
+    def get_trace_start_pose(self, offset1: str) -> Pose:
+        return self.dashboard.get_trace_start_pose(offset1)
 
-        Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.stop_drag`.
+    def handle_traj_points(self, offset1: str) -> int:
+        return self.dashboard.handle_traj_points(offset1)
 
-        Returns:
-            Command queue ID.
-
-        Raises:
-            DobotApiError: If the controller returns a non-zero error code.
-        """
-        ...
-
-    @forward_to(DobotApiDashboard.set_user)
-    def set_user(self, index: int) -> int:
-        """Select the calibrated user coordinate system.
-
-        Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.set_user`.
-
-        Args:
-            index: Calibrated user coordinate index.
-
-        Returns:
-            Command queue ID.
-
-        Raises:
-            DobotApiError: If the controller returns a non-zero error code.
-        """
-        ...
-
-    @forward_to(DobotApiDashboard.set_tool)
-    def set_tool(self, index: int) -> int:
-        """Select the calibrated tool coordinate system.
-
-        Delegates to :meth:`~dobot_api_v3.DobotApiDashboard.set_tool`.
-
-        Args:
-            index: Calibrated tool coordinate index.
-
-        Returns:
-            Command queue ID.
-
-        Raises:
-            DobotApiError: If the controller returns a non-zero error code.
-        """
-        ...
-
-    # ------------------------------------------------------------------
-    # Forwarded move commands
-    # ------------------------------------------------------------------
-
-    @forward_to(DobotApiMove.mov_j, target_attr="move")
-    def mov_j(
-        self,
-        x: float,
-        y: float,
-        z: float,
-        rx: float,
-        ry: float,
-        rz: float,
-        *dyn_params: DynParam,
-    ) -> int:
-        """Joint motion interface (point-to-point motion mode).
-
-        Delegates to :meth:`~dobot_api_v3.DobotApiMove.mov_j`.
-
-        Args:
-            x: Target X coordinate.
-            y: Target Y coordinate.
-            z: Target Z coordinate.
-            rx: Target RX rotation.
-            ry: Target RY rotation.
-            rz: Target RZ rotation.
-            *dyn_params: Optional motion parameters.
-
-        Returns:
-            Command queue ID.
-
-        Raises:
-            DobotApiError: If the controller returns a non-zero error code.
-
-        Example:
-            >>> robot.mov_j(200, 0, 200, 0, 0, 0)
-            >>> robot.mov_j(220, 20, 180, 0, 0, 0, "SpeedJ=40", "AccJ=40")
-        """
-        ...
-
-    @forward_to(DobotApiMove.mov_l, target_attr="move")
-    def mov_l(
-        self,
-        x: float,
-        y: float,
-        z: float,
-        rx: float,
-        ry: float,
-        rz: float,
-        *dyn_params: DynParam,
-    ) -> int:
-        """Linear motion interface.
-
-        Delegates to :meth:`~dobot_api_v3.DobotApiMove.mov_l`.
-
-        Args:
-            x: Target X coordinate.
-            y: Target Y coordinate.
-            z: Target Z coordinate.
-            rx: Target RX rotation.
-            ry: Target RY rotation.
-            rz: Target RZ rotation.
-            *dyn_params: Optional motion parameters.
-
-        Returns:
-            Command queue ID.
-
-        Raises:
-            DobotApiError: If the controller returns a non-zero error code.
-
-        Example:
-            >>> robot.mov_l(250, 0, 180, 0, 0, 0)
-        """
-        ...
-
-    @forward_to(DobotApiMove.joint_mov_j, target_attr="move")
-    def joint_mov_j(
-        self,
-        j1: float,
-        j2: float,
-        j3: float,
-        j4: float,
-        j5: float,
-        j6: float,
-        *dyn_params: DynParam,
-    ) -> int:
-        """Joint motion interface (joint target).
-
-        Delegates to :meth:`~dobot_api_v3.DobotApiMove.joint_mov_j`.
-
-        Args:
-            j1: Target joint 1 angle.
-            j2: Target joint 2 angle.
-            j3: Target joint 3 angle.
-            j4: Target joint 4 angle.
-            j5: Target joint 5 angle.
-            j6: Target joint 6 angle.
-            *dyn_params: Optional motion parameters.
-
-        Returns:
-            Command queue ID.
-
-        Raises:
-            DobotApiError: If the controller returns a non-zero error code.
-
-        Example:
-            >>> robot.joint_mov_j(-11.53, 4.64, 87.16, -2.84, -77.71, 0.01)
-        """
-        ...
-
-    @forward_to(DobotApiMove.rel_mov_j, target_attr="move")
-    def rel_mov_j(
+    def inverse_solution(
         self,
         offset1: float,
         offset2: float,
@@ -689,59 +454,156 @@ class DobotRobot:
         offset4: float,
         offset5: float,
         offset6: float,
+        user: int,
+        tool: int,
         *dyn_params: DynParam,
-    ) -> int:
-        """Relative joint offset motion (point-to-point mode).
+    ) -> Pose:
+        return self.dashboard.inverse_solution(
+            offset1,
+            offset2,
+            offset3,
+            offset4,
+            offset5,
+            offset6,
+            user,
+            tool,
+            *dyn_params,
+        )
 
-        Delegates to :meth:`~dobot_api_v3.DobotApiMove.rel_mov_j`.
+    def lim_z(self, value: int) -> int:
+        return self.dashboard.lim_z(value)
 
-        Args:
-            offset1: Joint 1 offset.
-            offset2: Joint 2 offset.
-            offset3: Joint 3 offset.
-            offset4: Joint 4 offset.
-            offset5: Joint 5 offset.
-            offset6: Joint 6 offset.
-            *dyn_params: Optional motion parameters.
+    def load_switch(self, offset1: int) -> int:
+        return self.dashboard.load_switch(offset1)
 
-        Returns:
-            Command queue ID.
+    def modbus_close(self, offset1: int) -> int:
+        return self.dashboard.modbus_close(offset1)
 
-        Raises:
-            DobotApiError: If the controller returns a non-zero error code.
+    def modbus_create(self, ip: str, port: int, slave_id: int, is_rtu: int) -> int:
+        return self.dashboard.modbus_create(ip, port, slave_id, is_rtu)
 
-        Example:
-            >>> robot.rel_mov_j(15, 0, 0, 0, 0, 0)
-        """
-        ...
+    def pause(self) -> int:
+        return self.dashboard.pause()
 
-    @forward_to(DobotApiMove.rel_mov_l, target_attr="move")
-    def rel_mov_l(
+    def pause_script(self) -> int:
+        return self.dashboard.pause_script()
+
+    def payload(self, weight: float, inertia: float) -> int:
+        return self.dashboard.payload(weight, inertia)
+
+    def positive_solution(
         self,
-        offset_x: float,
-        offset_y: float,
-        offset_z: float,
-        *dyn_params: DynParam,
+        offset1: float,
+        offset2: float,
+        offset3: float,
+        offset4: float,
+        offset5: float,
+        offset6: float,
+        user: int,
+        tool: int,
+    ) -> Pose:
+        return self.dashboard.positive_solution(
+            offset1, offset2, offset3, offset4, offset5, offset6, user, tool
+        )
+
+    def power_on(self) -> int:
+        return self.dashboard.power_on()
+
+    def reset_robot(self) -> int:
+        return self.dashboard.reset_robot()
+
+    def resume(self) -> int:
+        return self.dashboard.resume()
+
+    def robot_mode(self) -> int:
+        return self.dashboard.robot_mode()
+
+    def run_script(self, project_name: str) -> int:
+        return self.dashboard.run_script(project_name)
+
+    def set_arm_orientation(self, r: int, d: int, n: int, cfg: int) -> int:
+        return self.dashboard.set_arm_orientation(r, d, n, cfg)
+
+    def set_coils(self, offset1: int, offset2: int, offset3: int, offset4: int) -> int:
+        return self.dashboard.set_coils(offset1, offset2, offset3, offset4)
+
+    def set_collide_drag(self, offset1: int) -> int:
+        return self.dashboard.set_collide_drag(offset1)
+
+    def set_collision_level(self, offset1: int) -> int:
+        return self.dashboard.set_collision_level(offset1)
+
+    def set_hold_regs(
+        self, id: int, addr: int, count: int, table: str, type_: str | None = None
     ) -> int:
-        """Relative Cartesian offset motion (linear mode).
+        return self.dashboard.set_hold_regs(id, addr, count, table, type_)
 
-        Delegates to :meth:`~dobot_api_v3.DobotApiMove.rel_mov_l`.
+    def set_obstacle_avoid(self, offset1: int) -> int:
+        return self.dashboard.set_obstacle_avoid(offset1)
 
-        Args:
-            offset_x: X-axis offset.
-            offset_y: Y-axis offset.
-            offset_z: Z-axis offset.
-            *dyn_params: Optional motion parameters.
+    def set_payload(self, offset1: float, *dyn_params: DynParam) -> int:
+        return self.dashboard.set_payload(offset1, *dyn_params)
 
-        Returns:
-            Command queue ID.
+    def set_safe_skin(self, offset1: int) -> int:
+        return self.dashboard.set_safe_skin(offset1)
 
-        Raises:
-            DobotApiError: If the controller returns a non-zero error code.
-        """
-        ...
+    def set_terminal_485(
+        self, offset1: int, offset2: int, offset3: str, offset4: int
+    ) -> int:
+        return self.dashboard.set_terminal_485(offset1, offset2, offset3, offset4)
 
-    @forward_to(DobotApiMove.arc, target_attr="move")
+    def set_terminal_keys(self, offset1: int) -> int:
+        return self.dashboard.set_terminal_keys(offset1)
+
+    def set_tool(self, index: int) -> int:
+        return self.dashboard.set_tool(index)
+
+    def set_user(self, index: int) -> int:
+        return self.dashboard.set_user(index)
+
+    def speed_factor(self, speed: int) -> int:
+        return self.dashboard.speed_factor(speed)
+
+    def speed_j(self, speed: int) -> int:
+        return self.dashboard.speed_j(speed)
+
+    def speed_l(self, speed: int) -> int:
+        return self.dashboard.speed_l(speed)
+
+    def start_drag(self) -> int:
+        return self.dashboard.start_drag()
+
+    def stop_drag(self) -> int:
+        return self.dashboard.stop_drag()
+
+    def stop_script(self) -> int:
+        return self.dashboard.stop_script()
+
+    def tcp_speed(self, offset1: int) -> int:
+        return self.dashboard.tcp_speed(offset1)
+
+    def tcp_speed_end(self) -> int:
+        return self.dashboard.tcp_speed_end()
+
+    def tool_di(self, offset1: int) -> int:
+        return self.dashboard.tool_di(offset1)
+
+    def tool_do(self, index: int, status: int) -> int:
+        return self.dashboard.tool_do(index, status)
+
+    def tool_do_execute(self, index: int, status: int) -> int:
+        return self.dashboard.tool_do_execute(index, status)
+
+    def vel_j(self, speed: int) -> int:
+        return self.dashboard.vel_j(speed)
+
+    def vel_l(self, speed: int) -> int:
+        return self.dashboard.vel_l(speed)
+
+    def wait(self, t: float) -> int:
+        return self.dashboard.wait(t)
+
+    # -- move -------------------------------------------------------------
     def arc(
         self,
         x1: float,
@@ -758,34 +620,218 @@ class DobotRobot:
         c2: float,
         *dyn_params: DynParam,
     ) -> int:
-        """Circular motion through an intermediate point.
+        return self.move.arc(
+            x1, y1, z1, a1, b1, c1, x2, y2, z2, a2, b2, c2, *dyn_params
+        )
 
-        Delegates to :meth:`~dobot_api_v3.DobotApiMove.arc`.
+    def circle3(
+        self,
+        x1: float,
+        y1: float,
+        z1: float,
+        a1: float,
+        b1: float,
+        c1: float,
+        x2: float,
+        y2: float,
+        z2: float,
+        a2: float,
+        b2: float,
+        c2: float,
+        count: int,
+        *dyn_params: DynParam,
+    ) -> int:
+        return self.move.circle3(
+            x1, y1, z1, a1, b1, c1, x2, y2, z2, a2, b2, c2, count, *dyn_params
+        )
 
-        Args:
-            x1: Intermediate point X.
-            y1: Intermediate point Y.
-            z1: Intermediate point Z.
-            a1: Intermediate point A.
-            b1: Intermediate point B.
-            c1: Intermediate point C.
-            x2: End point X.
-            y2: End point Y.
-            z2: End point Z.
-            a2: End point A.
-            b2: End point B.
-            c2: End point C.
-            *dyn_params: Optional motion parameters.
+    def joint_mov_j(
+        self,
+        j1: float,
+        j2: float,
+        j3: float,
+        j4: float,
+        j5: float,
+        j6: float,
+        *dyn_params: DynParam,
+    ) -> int:
+        return self.move.joint_mov_j(j1, j2, j3, j4, j5, j6, *dyn_params)
 
-        Returns:
-            Command queue ID.
+    def jump(self) -> None:
+        self.move.jump()
 
-        Raises:
-            DobotApiError: If the controller returns a non-zero error code.
-        """
-        ...
+    def mov_j(
+        self,
+        x: float,
+        y: float,
+        z: float,
+        rx: float,
+        ry: float,
+        rz: float,
+        *dyn_params: DynParam,
+    ) -> int:
+        return self.move.mov_j(x, y, z, rx, ry, rz, *dyn_params)
 
-    @forward_to(DobotApiMove.servo_j, target_attr="move")
+    def mov_j_io(
+        self,
+        x: float,
+        y: float,
+        z: float,
+        a: float,
+        b: float,
+        c: float,
+        *dyn_params: DynParam,
+    ) -> int:
+        return self.move.mov_j_io(x, y, z, a, b, c, *dyn_params)
+
+    def mov_l(
+        self,
+        x: float,
+        y: float,
+        z: float,
+        rx: float,
+        ry: float,
+        rz: float,
+        *dyn_params: DynParam,
+    ) -> int:
+        return self.move.mov_l(x, y, z, rx, ry, rz, *dyn_params)
+
+    def mov_l_io(
+        self,
+        x: float,
+        y: float,
+        z: float,
+        a: float,
+        b: float,
+        c: float,
+        *dyn_params: DynParam,
+    ) -> int:
+        return self.move.mov_l_io(x, y, z, a, b, c, *dyn_params)
+
+    def move_jog(self, axis_id: str, *dyn_params: DynParam) -> int:
+        return self.move.move_jog(axis_id, *dyn_params)
+
+    def rel_joint_mov_j(
+        self,
+        offset1: float,
+        offset2: float,
+        offset3: float,
+        offset4: float,
+        offset5: float,
+        offset6: float,
+        *dyn_params: DynParam,
+    ) -> int:
+        return self.move.rel_joint_mov_j(
+            offset1, offset2, offset3, offset4, offset5, offset6, *dyn_params
+        )
+
+    def rel_mov_j(
+        self,
+        offset1: float,
+        offset2: float,
+        offset3: float,
+        offset4: float,
+        offset5: float,
+        offset6: float,
+        *dyn_params: DynParam,
+    ) -> int:
+        return self.move.rel_mov_j(
+            offset1, offset2, offset3, offset4, offset5, offset6, *dyn_params
+        )
+
+    def rel_mov_j_tool(
+        self,
+        offset_x: float,
+        offset_y: float,
+        offset_z: float,
+        offset_rx: float,
+        offset_ry: float,
+        offset_rz: float,
+        tool: int,
+        *dyn_params: ToolDynParam,
+    ) -> int:
+        return self.move.rel_mov_j_tool(
+            offset_x,
+            offset_y,
+            offset_z,
+            offset_rx,
+            offset_ry,
+            offset_rz,
+            tool,
+            *dyn_params,
+        )
+
+    def rel_mov_j_user(
+        self,
+        offset_x: float,
+        offset_y: float,
+        offset_z: float,
+        offset_rx: float,
+        offset_ry: float,
+        offset_rz: float,
+        user: int,
+        *dyn_params: DynParam,
+    ) -> int:
+        return self.move.rel_mov_j_user(
+            offset_x,
+            offset_y,
+            offset_z,
+            offset_rx,
+            offset_ry,
+            offset_rz,
+            user,
+            *dyn_params,
+        )
+
+    def rel_mov_l(
+        self, offset_x: float, offset_y: float, offset_z: float, *dyn_params: DynParam
+    ) -> int:
+        return self.move.rel_mov_l(offset_x, offset_y, offset_z, *dyn_params)
+
+    def rel_mov_l_tool(
+        self,
+        offset_x: float,
+        offset_y: float,
+        offset_z: float,
+        offset_rx: float,
+        offset_ry: float,
+        offset_rz: float,
+        tool: int,
+        *dyn_params: ToolDynParam,
+    ) -> int:
+        return self.move.rel_mov_l_tool(
+            offset_x,
+            offset_y,
+            offset_z,
+            offset_rx,
+            offset_ry,
+            offset_rz,
+            tool,
+            *dyn_params,
+        )
+
+    def rel_mov_l_user(
+        self,
+        offset_x: float,
+        offset_y: float,
+        offset_z: float,
+        offset_rx: float,
+        offset_ry: float,
+        offset_rz: float,
+        user: int,
+        *dyn_params: DynParam,
+    ) -> int:
+        return self.move.rel_mov_l_user(
+            offset_x,
+            offset_y,
+            offset_z,
+            offset_rx,
+            offset_ry,
+            offset_rz,
+            user,
+            *dyn_params,
+        )
+
     def servo_j(
         self,
         j1: float,
@@ -798,98 +844,31 @@ class DobotRobot:
         lookahead_time: float = 50.0,
         gain: float = 500.0,
     ) -> int:
-        """Dynamic following in joint space.
+        return self.move.servo_j(j1, j2, j3, j4, j5, j6, t, lookahead_time, gain)
 
-        Delegates to :meth:`~dobot_api_v3.DobotApiMove.servo_j`.
-
-        Args:
-            j1: Target joint 1 angle.
-            j2: Target joint 2 angle.
-            j3: Target joint 3 angle.
-            j4: Target joint 4 angle.
-            j5: Target joint 5 angle.
-            j6: Target joint 6 angle.
-            t: Point run time in seconds.
-            lookahead_time: Feed-forward smoothing parameter.
-            gain: Servo gain parameter.
-
-        Returns:
-            Command queue ID.
-
-        Raises:
-            DobotApiError: If the controller returns a non-zero error code.
-        """
-        ...
-
-    @forward_to(DobotApiMove.servo_p, target_attr="move")
-    def servo_p(
-        self,
-        x: float,
-        y: float,
-        z: float,
-        a: float,
-        b: float,
-        c: float,
+    def servo_js(
+        self, j1: float, j2: float, j3: float, j4: float, j5: float, j6: float
     ) -> int:
-        """Dynamic following in Cartesian space.
+        return self.move.servo_js(j1, j2, j3, j4, j5, j6)
 
-        Delegates to :meth:`~dobot_api_v3.DobotApiMove.servo_p`.
+    def servo_p(
+        self, x: float, y: float, z: float, a: float, b: float, c: float
+    ) -> int:
+        return self.move.servo_p(x, y, z, a, b, c)
 
-        Args:
-            x: Target X coordinate.
-            y: Target Y coordinate.
-            z: Target Z coordinate.
-            a: Target A rotation.
-            b: Target B rotation.
-            c: Target C rotation.
+    def start_fc_trace(self, trace_name: str) -> int:
+        return self.move.start_fc_trace(trace_name)
 
-        Returns:
-            Command queue ID.
+    def start_path(self, trace_name: str, const: int, cart: int) -> int:
+        return self.move.start_path(trace_name, const, cart)
 
-        Raises:
-            DobotApiError: If the controller returns a non-zero error code.
-        """
-        ...
+    def start_trace(self, trace_name: str) -> int:
+        return self.move.start_trace(trace_name)
 
-    @forward_to(DobotApiMove.move_jog, target_attr="move")
-    def move_jog(self, axis_id: str, *dyn_params: DynParam) -> int:
-        """Jog motion along a single axis.
-
-        Delegates to :meth:`~dobot_api_v3.DobotApiMove.move_jog`.
-
-        Args:
-            axis_id: Axis command such as ``"J1+"`` or ``"X-"``.
-            *dyn_params: Optional jog parameters ``(coord_type, user, tool)``.
-
-        Returns:
-            Command queue ID.
-
-        Raises:
-            DobotApiError: If the controller returns a non-zero error code.
-
-        Example:
-            >>> robot.move_jog("J1+")
-            >>> robot.move_jog("")  # stop jog
-        """
-        ...
-
-    @forward_to(DobotApiMove.sync, target_attr="move")
     def sync(self) -> int:
-        """Block until all queued motion commands complete.
+        return self.move.sync()
 
-        Delegates to :meth:`~dobot_api_v3.DobotApiMove.sync`.
-
-        Returns:
-            Command queue ID.
-
-        Raises:
-            DobotApiError: If the controller returns a non-zero error code.
-
-        Example:
-            >>> robot.mov_j(200, 0, 200, 0, 0, 0)
-            >>> robot.sync()
-        """
-        ...
+    # --- END AUTO-GENERATED ---
 
     def __repr__(self) -> str:
         return f"DobotRobot(ip={self.ip!r})"

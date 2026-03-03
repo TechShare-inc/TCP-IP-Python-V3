@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pytest
 
-from dobot_api_v3.base import DobotApi
 from tests.integration.conftest import _AnyPortApi, make_api
 from tests.integration.stub_server import StubServer
 

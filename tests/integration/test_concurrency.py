@@ -75,9 +75,10 @@ class TestConcurrency:
 
         api.close()
 
-        assert (
-            not mismatches
-        ), "Response cross-talk detected (lock not working?):\n" + "\n".join(mismatches)
+        assert not mismatches, (
+            "Response cross-talk detected (lock not working?):\n"
+            + "\n".join(mismatches)
+        )
 
     def test_feedback_data_thread_isolation(
         self, stub: StubServer, monkeypatch: pytest.MonkeyPatch

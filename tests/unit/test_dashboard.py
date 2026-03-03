@@ -220,9 +220,9 @@ def test_command_serialization(
     """Calling ``method(*args, **kwargs)`` must send exactly ``expected`` string."""
     db, sent = mock_dashboard
     getattr(db, method)(*args, **kwargs)
-    assert (
-        sent[-1] == expected
-    ), f"{method}({args}, {kwargs}) → got {sent[-1]!r}, want {expected!r}"
+    assert sent[-1] == expected, (
+        f"{method}({args}, {kwargs}) → got {sent[-1]!r}, want {expected!r}"
+    )
 
 
 # ---------------------------------------------------------------------------

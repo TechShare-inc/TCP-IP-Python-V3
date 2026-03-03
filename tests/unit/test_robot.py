@@ -351,7 +351,9 @@ class TestErrorConvenience:
     def test_check_errors_delegates_to_error_monitor(self, mock_robot: tuple) -> None:
         robot, _, _ = mock_robot
         results = []
-        robot.errors.check_errors = lambda language="en": results.append(language) or False  # type: ignore[method-assign]
+        robot.errors.check_errors = lambda language="en": (
+            results.append(language) or False
+        )  # type: ignore[method-assign]
         robot.check_errors(language="en")
         assert "en" in results
 
@@ -360,7 +362,9 @@ class TestErrorConvenience:
     ) -> None:
         robot, _, _ = mock_robot
         results = []
-        robot.errors.clear_robot_error = lambda language="en": results.append(language) or False  # type: ignore[method-assign]
+        robot.errors.clear_robot_error = lambda language="en": (
+            results.append(language) or False
+        )  # type: ignore[method-assign]
         robot.clear_and_recover(language="zh_CN")
         assert "zh_CN" in results
 
@@ -432,6 +436,7 @@ class TestForwardedDashboardCommands:
     @pytest.mark.parametrize(
         "method,args,expected_cmd,expected_type",
         [
+            # --- system --------------------------------------------------
             ("enable_robot", (), "EnableRobot()", int),
             ("disable_robot", (), "DisableRobot()", int),
             ("clear_error", (), "ClearError()", int),
@@ -440,13 +445,46 @@ class TestForwardedDashboardCommands:
             ("emergency_stop", (), "EmergencyStop()", int),
             ("speed_factor", (40,), "SpeedFactor(40)", int),
             ("robot_mode", (), "RobotMode()", int),
+            ("run_script", ("prog",), "RunScript(prog)", int),
+            ("stop_script", (), "StopScript()", int),
+            ("pause_script", (), "PauseScript()", int),
+            ("continue_script", (), "ContinueScript()", int),
+            ("pause", (), "pause()", int),
+            ("resume", (), "continue()", int),
+            ("wait", (1,), "wait(1)", int),
+            # --- query ---------------------------------------------------
             ("get_pose", (), "GetPose()", tuple),
             ("get_angle", (), "GetAngle()", tuple),
             ("get_error_id", (), "GetErrorID()", tuple),
             ("start_drag", (), "StartDrag()", int),
             ("stop_drag", (), "StopDrag()", int),
+            ("set_safe_skin", (1,), "SetSafeSkin(1)", int),
+            ("set_obstacle_avoid", (1,), "SetObstacleAvoid(1)", int),
+            ("tcp_speed", (100,), "TCPSpeed(100)", int),
+            ("tcp_speed_end", (), "TCPSpeedEnd()", int),
+            ("brake_control", (1, 0), "BrakeControl(1,0)", int),
+            # --- config --------------------------------------------------
+            ("acc_j", (50,), "AccJ(50)", int),
+            ("acc_l", (50,), "AccL(50)", int),
+            ("speed_j", (60,), "SpeedJ(60)", int),
+            ("speed_l", (60,), "SpeedL(60)", int),
+            ("lim_z", (-100,), "LimZ(-100)", int),
+            ("cp", (80,), "CP(80)", int),
+            ("arch", (0,), "Arch(0)", int),
+            ("set_collision_level", (2,), "SetCollisionLevel(2)", int),
+            ("load_switch", (1,), "LoadSwitch(1)", int),
             ("set_user", (1,), "User(1)", int),
             ("set_tool", (2,), "Tool(2)", int),
+            # --- I/O -----------------------------------------------------
+            ("do_output", (1, 1), "DO(1,1)", int),
+            ("do_execute", (1, 1), "DOExecute(1,1)", int),
+            ("tool_do", (1, 1), "ToolDO(1,1)", int),
+            ("ao", (1, 0.5), "AO(1", int),
+            ("ao_execute", (1, 0.5), "AOExecute(1", int),
+            ("di", (1,), "DI(1)", int),
+            ("tool_di", (1,), "ToolDI(1)", int),
+            ("modbus_create", ("192.168.1.2", 502, 1, 0), "ModbusCreate(", int),
+            ("modbus_close", (0,), "ModbusClose(0)", int),
         ],
     )
     def test_dashboard_forward(
@@ -459,7 +497,7 @@ class TestForwardedDashboardCommands:
     ) -> None:
         robot, dashboard_cmds, _ = mock_robot
         result = getattr(robot, method)(*args)
-        assert expected_cmd in dashboard_cmds
+        assert any(expected_cmd in c for c in dashboard_cmds)
         assert isinstance(result, expected_type)
 
 
@@ -525,6 +563,103 @@ class TestForwardedMoveCommands:
         cmd = next(c for c in move_cmds if "MovJ(" in c)
         assert "SpeedJ=40" in cmd
         assert "AccJ=40" in cmd
+
+    def test_circle3(self, mock_robot: tuple) -> None:
+        robot, _, move_cmds = mock_robot
+        robot.circle3(100, 50, 200, 0, 0, 0, 200, 0, 200, 0, 0, 0, 2)
+        assert any("Circle3(" in c for c in move_cmds)
+
+    def test_mov_l_io(self, mock_robot: tuple) -> None:
+        robot, _, move_cmds = mock_robot
+        robot.mov_l_io(200, 0, 200, 0, 0, 0)
+        assert any("MovLIO(" in c for c in move_cmds)
+
+    def test_mov_j_io(self, mock_robot: tuple) -> None:
+        robot, _, move_cmds = mock_robot
+        robot.mov_j_io(200, 0, 200, 0, 0, 0)
+        assert any("MovJIO(" in c for c in move_cmds)
+
+    def test_servo_js(self, mock_robot: tuple) -> None:
+        robot, _, move_cmds = mock_robot
+        robot.servo_js(0, 0, 90, 0, -90, 0)
+        assert any("ServoJS(" in c for c in move_cmds)
+
+    def test_rel_mov_j_tool(self, mock_robot: tuple) -> None:
+        robot, _, move_cmds = mock_robot
+        robot.rel_mov_j_tool(10, 0, 0, 0, 0, 0, 0)
+        assert any("RelMovJTool(" in c for c in move_cmds)
+
+    def test_rel_mov_l_tool(self, mock_robot: tuple) -> None:
+        robot, _, move_cmds = mock_robot
+        robot.rel_mov_l_tool(10, 0, 0, 0, 0, 0, 0)
+        assert any("RelMovLTool(" in c for c in move_cmds)
+
+    def test_rel_joint_mov_j(self, mock_robot: tuple) -> None:
+        robot, _, move_cmds = mock_robot
+        robot.rel_joint_mov_j(5, 0, 0, 0, 0, 0)
+        assert any("RelJointMovJ(" in c for c in move_cmds)
+
+    def test_start_trace(self, mock_robot: tuple) -> None:
+        robot, _, move_cmds = mock_robot
+        robot.start_trace("trace.json")
+        assert any("StartTrace(" in c for c in move_cmds)
+
+    def test_start_fc_trace(self, mock_robot: tuple) -> None:
+        robot, _, move_cmds = mock_robot
+        robot.start_fc_trace("fc.json")
+        assert any("StartFCTrace(" in c for c in move_cmds)
+
+
+# ---------------------------------------------------------------------------
+# All dashboard/move methods mirrored on DobotRobot
+# ---------------------------------------------------------------------------
+
+
+class TestAllMethodsForwarded:
+    """Verify every public method on DobotApiDashboard and DobotApiMove
+    is accessible directly on DobotRobot.
+
+    This test catches cases where a new command is added to a mixin but
+    the auto-generation script (``_codegen.py``) has not been re-run.
+    """
+
+    def _excluded_names(self) -> frozenset[str]:
+        from dobot_api_v3.base import DobotApi
+        from dobot_api_v3.commands._serialization import _SerializationMixin
+
+        return frozenset(dir(DobotApi)) | frozenset(dir(_SerializationMixin))
+
+    def test_all_dashboard_methods_present(self) -> None:
+        from dobot_api_v3.commands.dashboard import DobotApiDashboard
+
+        exclude = self._excluded_names()
+        missing = [
+            name
+            for name in dir(DobotApiDashboard)
+            if not name.startswith("_")
+            and name not in exclude
+            and not hasattr(DobotRobot, name)
+        ]
+        assert missing == [], (
+            f"DobotRobot is missing these DobotApiDashboard methods: {missing!r}.\n"
+            "Run `uv run python -m dobot_api_v3._codegen` to regenerate."
+        )
+
+    def test_all_move_methods_present(self) -> None:
+        from dobot_api_v3.commands.move import DobotApiMove
+
+        exclude = self._excluded_names()
+        missing = [
+            name
+            for name in dir(DobotApiMove)
+            if not name.startswith("_")
+            and name not in exclude
+            and not hasattr(DobotRobot, name)
+        ]
+        assert missing == [], (
+            f"DobotRobot is missing these DobotApiMove methods: {missing!r}.\n"
+            "Run `uv run python -m dobot_api_v3._codegen` to regenerate."
+        )
 
 
 # ---------------------------------------------------------------------------

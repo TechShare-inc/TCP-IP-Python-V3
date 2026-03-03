@@ -120,9 +120,9 @@ def test_move_command_serialization(
     """Calling move.``method(*args)`` must send exactly ``expected`` to the robot."""
     mv, sent = mock_move
     getattr(mv, method)(*args, **kwargs)
-    assert (
-        sent[-1] == expected
-    ), f"{method}({args}) → got {sent[-1]!r}, want {expected!r}"
+    assert sent[-1] == expected, (
+        f"{method}({args}) → got {sent[-1]!r}, want {expected!r}"
+    )
 
 
 # ---------------------------------------------------------------------------

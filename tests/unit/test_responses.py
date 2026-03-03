@@ -23,9 +23,7 @@ pytestmark = pytest.mark.unit
 
 class TestDobotApiError:
     def test_attributes_set(self) -> None:
-        err = DobotApiError(
-            error_code=-1, command_id=0, message="bad", raw="raw_str"
-        )
+        err = DobotApiError(error_code=-1, command_id=0, message="bad", raw="raw_str")
         assert err.error_code == -1
         assert err.command_id == 0
         assert err.message == "bad"

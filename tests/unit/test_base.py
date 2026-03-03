@@ -21,7 +21,9 @@ class TestPortValidation:
     """The port whitelist rejects everything outside the five approved ports."""
 
     @pytest.mark.parametrize("port", [29999, 30003, 30004, 30005, 30006])
-    def test_valid_port_accepted(self, port: int, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_valid_port_accepted(
+        self, port: int, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         mock_sock = MagicMock()
         monkeypatch.setattr("socket.socket", mock_sock)
         DobotApi("127.0.0.1", port)

@@ -23,7 +23,6 @@ import pytest
 from dobot_api_v3.base import FeedbackData, FeedbackDtype
 from dobot_api_v3.commands.dashboard import DobotApiDashboard
 from dobot_api_v3.feedback import DobotApiFeedback
-from dobot_api_v3.commands.move import DobotApiMove
 from dobot_api_v3.robot import DobotRobot
 from tests.hil.conftest import requires_hardware
 
@@ -93,7 +92,6 @@ class TestFeedbackHIL:
 
     def test_raw_feedback_returns_numpy(self, real_feedback: DobotApiFeedback) -> None:
         """raw_feedback_data() must return a structured NumPy array."""
-        import numpy as np
 
         raw = real_feedback.raw_feedback_data()
         assert raw is not None
@@ -186,7 +184,6 @@ class TestDobotRobotHIL:
 
     def test_raw_feedback_data_returns_numpy(self, real_robot: DobotRobot) -> None:
         """raw_feedback_data() should return a structured NumPy array."""
-        import numpy as np
 
         raw = real_robot.raw_feedback_data()
         assert raw is not None
