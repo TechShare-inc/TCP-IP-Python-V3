@@ -13,8 +13,8 @@ how to read inputs, set outputs, and communicate with Modbus slave devices.
 
 ## Step 1 — Set digital outputs
 
-I/O commands are accessed through `robot.dashboard` because they are not
-forwarded at the `DobotRobot` top level:
+I/O commands are forwarded directly to `DobotRobot`, so you can call them
+without going through `robot.dashboard`:
 
 ```python
 from dobot_api_v3 import DobotRobot
@@ -23,10 +23,10 @@ with DobotRobot("192.168.5.1") as robot:
     robot.startup(speed=40)
 
     # Set digital output port 1 to HIGH
-    print(robot.dashboard.do_execute(1, 1))
+    print(robot.do_execute(1, 1))
 
     # Set tool digital output port 1 to HIGH
-    print(robot.dashboard.tool_do_execute(1, 1))
+    print(robot.tool_do_execute(1, 1))
 ```
 
 **Expected output:**
@@ -42,10 +42,10 @@ with DobotRobot("192.168.5.1") as robot:
 
 ```python
     # Read digital input port 1
-    print(robot.dashboard.di(1))
+    print(robot.di(1))
 
     # Read tool digital input port 1
-    print(robot.dashboard.tool_di(1))
+    print(robot.tool_di(1))
 ```
 
 **Expected output:**
@@ -59,7 +59,7 @@ with DobotRobot("192.168.5.1") as robot:
 
 ```python
     # Set analog output port 1 to 5.0 V
-    print(robot.dashboard.ao_execute(1, 5.0))
+    print(robot.ao_execute(1, 5.0))
 ```
 
 **Expected output:**
@@ -75,16 +75,16 @@ a holding register, then close the session:
 
 ```python
     # Create a Modbus TCP connection (slave at 192.168.1.100:502, ID 1, non-RTU)
-    print(robot.dashboard.modbus_create("192.168.1.100", 502, 1, 0))
+    print(robot.modbus_create("192.168.1.100", 502, 1, 0))
 
     # Read one holding register at address 3095 as U16
-    print(robot.dashboard.get_hold_regs(0, 3095, 1, "U16"))
+    print(robot.get_hold_regs(0, 3095, 1, "U16"))
 
     # Write value 1 to holding register at address 3095
-    print(robot.dashboard.set_hold_regs(0, 3095, 1, "{1}", "U16"))
+    print(robot.set_hold_regs(0, 3095, 1, "{1}", "U16"))
 
     # Close the Modbus connection
-    print(robot.dashboard.modbus_close(0))
+    print(robot.modbus_close(0))
 ```
 
 **Expected output:**

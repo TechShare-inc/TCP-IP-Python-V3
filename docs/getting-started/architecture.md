@@ -43,7 +43,7 @@ dobot_api_v3/
 ├── feedback.py           ← DobotApiFeedback (binary packet reader)
 ├── error_monitor.py      ← RobotErrorMonitor (alarm polling)
 ├── i18n_manager.py       ← AlarmI18n (localized alarm metadata)
-├── _forward.py           ← @forward_to decorator for DobotRobot
+├── _codegen.py           ← code generator for DobotRobot forwarding methods
 ├── utils.py              ← DynParam, ToolDynParam, Pose type aliases
 ├── commands/
 │   ├── __init__.py       ← re-exports DobotApiDashboard, DobotApiMove

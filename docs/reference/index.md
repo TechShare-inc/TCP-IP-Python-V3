@@ -18,6 +18,7 @@ reference notes.
 | Symbol | Module | Description |
 |---|---|---|
 | `DobotRobot` | `robot` | Unified high-level entry point (recommended) |
+| `DobotApi` | `base` | Base TCP socket class (low-level) |
 | `DobotApiDashboard` | `commands.dashboard` | Dashboard command connection (mixin-composed) |
 | `DobotApiMove` | `commands.move` | Motion command connection (mixin-composed) |
 | `DobotApiFeedback` | `feedback` | Feedback stream reader |
