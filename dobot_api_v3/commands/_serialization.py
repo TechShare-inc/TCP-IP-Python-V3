@@ -3,8 +3,23 @@
 from __future__ import annotations
 
 import re
+from typing import TYPE_CHECKING
 
 from ..utils import Pose
+
+if TYPE_CHECKING:
+    from typing import Protocol
+
+    class _HasSendRecv(Protocol):
+        """Structural contract: concrete class must supply ``send_recv_msg``."""
+
+        def send_recv_msg(self, string: str) -> str:
+            """Send one command and return the decoded reply."""
+            ...
+
+    _MixinBase = _HasSendRecv
+else:
+    _MixinBase = object
 
 # ---------------------------------------------------------------------------
 # Compiled regexes — duplicated from responses.py so the mixin layer does
@@ -71,22 +86,23 @@ def _parse_raw(raw: str) -> tuple[int, int, str]:
     return error_code, command_id, payload
 
 
-class _SerializationMixin:
+class _SerializationMixin(_MixinBase):
     """Provides formatting, command-building, and response-parsing helpers.
 
-    This mixin also declares a ``send_recv_msg`` stub so that type checkers
-    see the method on all dashboard mixins (the real implementation is
-    provided by :class:`~dobot_api_v3.base.DobotApi` through Python MRO at
-    runtime).
+    All ``_recv_*`` helpers call ``self.send_recv_msg``, which is **not**
+    defined on this mixin at runtime.  It is provided by
+    :class:`~dobot_api_v3.base.DobotApi` and reached naturally via the MRO
+    of the concrete classes (:class:`~dobot_api_v3.commands.DobotApiDashboard`
+    and :class:`~dobot_api_v3.commands.DobotApiMove`) where ``DobotApi``
+    appears after all mixins::
+
+        DobotApiDashboard → _SystemMixin → … → _SerializationMixin → DobotApi
+
+    For static analysis, ``_MixinBase`` is bound to the ``_HasSendRecv``
+    :class:`~typing.Protocol` under ``TYPE_CHECKING``, giving type checkers
+    visibility of ``send_recv_msg`` without injecting a runtime stub that
+    would shadow ``DobotApi.send_recv_msg`` in the MRO.
     """
-
-    # ------------------------------------------------------------------ #
-    # Runtime stub — overridden by DobotApi in the final MRO.             #
-    # ------------------------------------------------------------------ #
-
-    def send_recv_msg(self, string: str) -> str:  # pragma: no cover
-        """Provided by DobotApi via MRO; not called directly on mixin."""
-        raise NotImplementedError("Provided by DobotApi via MRO")
 
     # ------------------------------------------------------------------ #
     # Response-parsing helpers                                             #
