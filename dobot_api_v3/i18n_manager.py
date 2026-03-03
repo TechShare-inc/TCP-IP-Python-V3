@@ -20,6 +20,9 @@ class AlarmI18n:
     LANGUAGE_ALIASES = {"zh_cn": "zh_CN"}
     SERVO_ID_MIN = 8000
 
+    # Class-level flag: i18n global state is shared, so setup must run once.
+    _initialized: bool = False
+
     def __init__(self, default_language: str = "en") -> None:
         """Initialize the i18n backend and set the active language.
 
@@ -30,24 +33,25 @@ class AlarmI18n:
         Raises:
             ValueError: If ``default_language`` is not supported.
         """
-        self._initialized = False
         self._setup_i18n()
         self.set_language(default_language)
 
     def _setup_i18n(self) -> None:
         """Configure the ``python-i18n`` backend and locale path once."""
-        if self._initialized:
+        if AlarmI18n._initialized:
             return
         locale_path = Path(__file__).parent / "locales"
         if not locale_path.exists():
             logger.warning(f"Locales directory not found: {locale_path}")
             return
-        i18n.load_path.append(str(locale_path))
+        locale_path_str = str(locale_path)
+        if locale_path_str not in i18n.load_path:
+            i18n.load_path.append(locale_path_str)
         i18n.set("file_format", "yml")
         i18n.set("fallback", "en")
         i18n.set("error_on_missing_translation", False)
         i18n.set("skip_locale_root_data", True)
-        self._initialized = True
+        AlarmI18n._initialized = True
 
     def set_language(self, language: str) -> None:
         """Set the active language for alarm translation.
