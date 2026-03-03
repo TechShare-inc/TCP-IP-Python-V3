@@ -7,20 +7,6 @@ from typing import TYPE_CHECKING
 
 from ..utils import Pose
 
-if TYPE_CHECKING:
-    from typing import Protocol
-
-    class _HasSendRecv(Protocol):
-        """Structural contract: concrete class must supply ``send_recv_msg``."""
-
-        def send_recv_msg(self, string: str) -> str:
-            """Send one command and return the decoded reply."""
-            ...
-
-    _MixinBase = _HasSendRecv
-else:
-    _MixinBase = object
-
 # ---------------------------------------------------------------------------
 # Compiled regexes — duplicated from responses.py so the mixin layer does
 # not depend on the response-dataclass module (which will be deprecated).
@@ -86,7 +72,7 @@ def _parse_raw(raw: str) -> tuple[int, int, str]:
     return error_code, command_id, payload
 
 
-class _SerializationMixin(_MixinBase):
+class _SerializationMixin:
     """Provides formatting, command-building, and response-parsing helpers.
 
     All ``_recv_*`` helpers call ``self.send_recv_msg``, which is **not**
@@ -98,11 +84,20 @@ class _SerializationMixin(_MixinBase):
 
         DobotApiDashboard → _SystemMixin → … → _SerializationMixin → DobotApi
 
-    For static analysis, ``_MixinBase`` is bound to the ``_HasSendRecv``
-    :class:`~typing.Protocol` under ``TYPE_CHECKING``, giving type checkers
-    visibility of ``send_recv_msg`` without injecting a runtime stub that
-    would shadow ``DobotApi.send_recv_msg`` in the MRO.
+    The ``send_recv_msg`` declaration below is visible only to type checkers
+    (``TYPE_CHECKING`` guard), so it documents the dependency contract without
+    introducing a runtime stub that would shadow ``DobotApi.send_recv_msg``.
     """
+
+    if TYPE_CHECKING:  # pragma: no cover
+
+        def send_recv_msg(self, string: str) -> str:  # noqa: D102
+            """Send one command and return the decoded reply.
+
+            Satisfied at runtime by :class:`~dobot_api_v3.base.DobotApi`
+            via MRO; declared here only for static analysis.
+            """
+            ...
 
     # ------------------------------------------------------------------ #
     # Response-parsing helpers                                             #
