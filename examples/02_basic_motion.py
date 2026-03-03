@@ -16,8 +16,8 @@ def main() -> None:
     try:
         with DobotRobot(ip) as robot:
             robot.startup(speed=40)
-            print(robot.dashboard.acc_j(40))
-            print(robot.dashboard.speed_j(40))
+            print(robot.acc_j(40))
+            print(robot.speed_j(40))
 
             # Move to home pose using joint angles
             print(
@@ -27,8 +27,8 @@ def main() -> None:
             )
             robot.sync()
 
-            # Small relative movement from home pose (rel_joint_mov_j not forwarded — use robot.move)
-            print(robot.move.rel_joint_mov_j(15, 0, 0, 0, 0, 0))
+            # Small relative movement from home pose
+            print(robot.rel_joint_mov_j(15, 0, 0, 0, 0, 0))
             robot.sync()
 
             robot.shutdown()
