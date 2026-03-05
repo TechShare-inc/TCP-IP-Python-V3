@@ -33,7 +33,7 @@ from typing import Optional
 import numpy as np
 from loguru import logger
 
-from .base import FeedbackData
+from .dtypes import FeedbackData
 from .commands.dashboard import DobotApiDashboard
 from .commands.move import DobotApiMove
 from .error_monitor import RobotErrorMonitor

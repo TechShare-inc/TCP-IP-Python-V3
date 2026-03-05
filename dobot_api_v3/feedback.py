@@ -7,7 +7,8 @@ from typing import Optional
 
 import numpy as np
 
-from .base import DobotApi, FeedbackData, FeedbackDtype
+from .base import DobotApi
+from .dtypes import FeedbackData, FeedbackDtype
 
 
 class DobotApiFeedback(DobotApi):

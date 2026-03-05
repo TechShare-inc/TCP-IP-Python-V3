@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import pytest
 
-from dobot_api_v3.base import FeedbackData, FeedbackDtype
+from dobot_api_v3.dtypes import FeedbackData, FeedbackDtype
 from dobot_api_v3.commands.dashboard import DobotApiDashboard
 from dobot_api_v3.feedback import DobotApiFeedback
 from dobot_api_v3.robot import DobotRobot

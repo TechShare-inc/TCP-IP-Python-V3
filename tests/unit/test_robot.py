@@ -7,7 +7,8 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
-from dobot_api_v3.base import DobotApi, FeedbackData, FeedbackDtype
+from dobot_api_v3.base import DobotApi
+from dobot_api_v3.dtypes import FeedbackData, FeedbackDtype
 from dobot_api_v3.robot import DobotRobot
 
 pytestmark = pytest.mark.unit

@@ -75,17 +75,17 @@ class TestConcurrency:
 
         api.close()
 
-        assert not mismatches, (
-            "Response cross-talk detected (lock not working?):\n"
-            + "\n".join(mismatches)
-        )
+        assert (
+            not mismatches
+        ), "Response cross-talk detected (lock not working?):\n" + "\n".join(mismatches)
 
     def test_feedback_data_thread_isolation(
         self, stub: StubServer, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """DobotApiFeedback.feedback_data() must be callable from a dedicated thread
         without racing against dashboard commands on a different API instance."""
-        from dobot_api_v3.base import DobotApi, FeedbackDtype
+        from dobot_api_v3.base import DobotApi
+        from dobot_api_v3.dtypes import FeedbackDtype
         from dobot_api_v3.feedback import DobotApiFeedback
         import numpy as np
         from unittest.mock import MagicMock
