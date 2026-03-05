@@ -14,17 +14,8 @@ from typing import Optional
 
 from loguru import logger
 
-# ---------------------------------------------------------------------------
-# Backward-compatibility re-exports — the canonical definitions now live in
-# dobot_api_v3.dtypes.
-# ---------------------------------------------------------------------------
-from .dtypes import PROTOCOL_FIELD_MAP, FeedbackData, FeedbackDtype
-
 __all__ = [
     "DobotApi",
-    "FeedbackData",
-    "FeedbackDtype",
-    "PROTOCOL_FIELD_MAP",
 ]
 
 
@@ -106,17 +97,28 @@ class DobotApi:
     def wait_reply(self) -> str:
         """Receive and decode one robot reply frame.
 
+        Accumulates data from the socket until the Dobot protocol terminator
+        (``;``) is found, handling responses that arrive across multiple TCP
+        segments.
+
         Returns:
-            UTF-8 decoded response string, or an empty string if the socket
-            returns zero bytes.
+            UTF-8 decoded response string, or an empty string if the
+            connection is closed before any data arrives.
 
         Raises:
             RuntimeError: If the socket is not connected.
         """
         if self.socket_dobot is None:
             raise RuntimeError("Socket connection is not established")
-        data = self.socket_dobot.recv(1024)
-        data_str = "" if len(data) == 0 else data.decode("utf-8")
+        data = b""
+        while True:
+            chunk = self.socket_dobot.recv(1024)
+            if not chunk:
+                break
+            data += chunk
+            if b";" in chunk:
+                break
+        data_str = data.decode("utf-8") if data else ""
         self.log(f"Receive from {self.ip}:{self.port}: {data_str}")
         return data_str
 
