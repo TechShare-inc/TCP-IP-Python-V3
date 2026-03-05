@@ -147,6 +147,19 @@ def _collect_methods(cls: type, target_attr: str) -> list[str]:
             body = f"return self.{target_attr}.{name}({call})"
 
         lines.append(f"    def {name}{sig_str}:")
+        doc = inspect.getdoc(method)
+        if doc:
+            doc_lines = doc.splitlines()
+            if len(doc_lines) == 1:
+                lines.append(f'        """{doc_lines[0]}"""')
+            else:
+                lines.append(f'        """{doc_lines[0]}')
+                for dline in doc_lines[1:]:
+                    if dline:
+                        lines.append(f"        {dline}")
+                    else:
+                        lines.append("")
+                lines.append('        """')
         lines.append(f"        {body}")
         lines.append("")
 
