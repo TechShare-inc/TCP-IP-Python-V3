@@ -16,7 +16,7 @@ def main() -> None:
     ip = "192.168.5.1"
 
     with DobotRobot(ip, language="en") as robot:
-        # startup() runs: clear_error → power_on → wait → disable → enable → speed_factor
+        # startup() runs: clear_error -> power_on -> wait -> disable -> enable -> speed_factor
         robot.startup(speed=40)
 
         print("Robot mode:")

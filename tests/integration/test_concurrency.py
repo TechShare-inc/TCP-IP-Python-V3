@@ -1,4 +1,4 @@
-"""Integration tests — concurrency and thread-safety of send_recv_msg."""
+"""Integration tests -- concurrency and thread-safety of send_recv_msg."""
 
 from __future__ import annotations
 
@@ -47,7 +47,7 @@ class TestConcurrency:
         assert all(isinstance(r, str) and r for r in results)
 
     def test_responses_are_not_interleaved(self, stub: StubServer) -> None:
-        """Each thread's response must contain the command it sent — not a mix.
+        """Each thread's response must contain the command it sent -- not a mix.
 
         This verifies that the global lock prevents response cross-talk between
         concurrent callers.

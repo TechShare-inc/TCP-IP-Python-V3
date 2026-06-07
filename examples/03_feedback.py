@@ -24,7 +24,7 @@ def main() -> None:
     print(f"Starting {num_cycles} cycles of {cycle_time * 1000} ms...")
 
     with DobotRobot(ip) as robot:
-        # robot.feedback is lazy — port 30004 connects on first access here.
+        # robot.feedback is lazy -- port 30004 connects on first access here.
         feedback = robot.feedback
         start_time = time.perf_counter()
         next_time = start_time

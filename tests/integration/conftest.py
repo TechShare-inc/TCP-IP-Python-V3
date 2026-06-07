@@ -39,7 +39,7 @@ class _AnyPortApi(DobotApi):
 
 
 # ---------------------------------------------------------------------------
-# Module-scoped stub server — reused across all integration tests for speed.
+# Module-scoped stub server -- reused across all integration tests for speed.
 # ---------------------------------------------------------------------------
 
 

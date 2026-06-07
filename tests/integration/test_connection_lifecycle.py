@@ -1,4 +1,4 @@
-"""Integration tests — TCP connection lifecycle (connect, close, reconnect)."""
+"""Integration tests -- TCP connection lifecycle (connect, close, reconnect)."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ class TestBasicConnectClose:
 
 
 # ---------------------------------------------------------------------------
-# Repeated connect / close — socket leak detection
+# Repeated connect / close -- socket leak detection
 # ---------------------------------------------------------------------------
 
 

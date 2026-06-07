@@ -1,4 +1,4 @@
-"""HIL (hardware-in-the-loop) tests — require a real Dobot robot.
+"""HIL (hardware-in-the-loop) tests -- require a real Dobot robot.
 
 All tests in this module are automatically skipped unless the environment
 variable ``DOBOT_TEST_IP`` points to a reachable robot.
@@ -34,7 +34,7 @@ pytestmark = [pytest.mark.hil, requires_hardware]
 
 
 # ---------------------------------------------------------------------------
-# Dashboard — basic state queries (all return parsed types)
+# Dashboard -- basic state queries (all return parsed types)
 # ---------------------------------------------------------------------------
 
 
@@ -80,7 +80,7 @@ class TestDashboardHIL:
 
 
 # ---------------------------------------------------------------------------
-# Feedback — binary packet stream
+# Feedback -- binary packet stream
 # ---------------------------------------------------------------------------
 
 
@@ -145,7 +145,7 @@ class TestReconnectHIL:
 
 
 # ---------------------------------------------------------------------------
-# DobotRobot — unified wrapper on real hardware
+# DobotRobot -- unified wrapper on real hardware
 # ---------------------------------------------------------------------------
 
 

@@ -1,4 +1,4 @@
-"""Integration tests — TCP packet fragmentation and fault injection."""
+"""Integration tests -- TCP packet fragmentation and fault injection."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ class TestFragmentedResponse:
             result = api.send_recv_msg("EnableRobot()")
             # We only assert that we got *some* non-empty string back;
             # the full message may or may not be reassembled depending on
-            # recv buffer timing — this test verifies no crash.
+            # recv buffer timing -- this test verifies no crash.
             assert isinstance(result, str)
         finally:
             api.close()
@@ -70,7 +70,7 @@ class TestGarbageResponse:
             assert isinstance(result, str)
         except UnicodeDecodeError:
             pytest.fail(
-                "API raised UnicodeDecodeError on garbage response — "
+                "API raised UnicodeDecodeError on garbage response -- "
                 "consider adding error='replace' to recv decode."
             )
         finally:
