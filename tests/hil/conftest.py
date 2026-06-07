@@ -22,10 +22,8 @@ from typing import Generator
 
 import pytest
 
-from dobot_api_v3.commands.dashboard import DobotApiDashboard
-from dobot_api_v3.feedback import DobotApiFeedback
-from dobot_api_v3.commands.move import DobotApiMove
-from dobot_api_v3.robot import DobotRobot
+from dobot_api import DobotRobot
+from dobot_api.v3 import DobotApiDashboard, DobotApiFeedback, DobotApiMove
 
 # ---------------------------------------------------------------------------
 # Environment
@@ -91,5 +89,5 @@ def real_robot() -> Generator[DobotRobot, None, None]:
     """Live DobotRobot connected to the robot under test."""
     if not _ROBOT_IP:
         pytest.skip(_SKIP_REASON)
-    with DobotRobot(_ROBOT_IP) as robot:
+    with DobotRobot(_ROBOT_IP, protocol="v3") as robot:
         yield robot

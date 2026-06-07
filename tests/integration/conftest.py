@@ -7,7 +7,7 @@ from typing import Generator
 
 import pytest
 
-from dobot_api_v3.base import DobotApi
+from dobot_api.v3 import DobotApi
 from tests.integration.stub_server import (
     DelayedStubServer,
     FragmentedStubServer,

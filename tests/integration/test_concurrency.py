@@ -85,9 +85,7 @@ class TestConcurrency:
     ) -> None:
         """DobotApiFeedback.feedback_data() must be callable from a dedicated thread
         without racing against dashboard commands on a different API instance."""
-        from dobot_api_v3.base import DobotApi
-        from dobot_api_v3.dtypes import FeedbackDtype
-        from dobot_api_v3.feedback import DobotApiFeedback
+        from dobot_api.v3 import DobotApi, DobotApiFeedback, FeedbackDtype
         import numpy as np
         from unittest.mock import MagicMock
 

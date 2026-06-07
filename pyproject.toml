@@ -3,11 +3,11 @@ requires = ["uv_build>=0.10.0"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
-module-name = "dobot_api_v3"
+module-name = "dobot_api"
 [project]
-name = "dobot_api_v3"
-version = "3.0.0a3"
-description = "Dobot Robot API with V3-style modular architecture and V3 protocol semantics"
+name = "dobot-api"
+version = "4.0.0a0"
+description = "Unified Dobot Robot API wrapper for V3 and V4 TCP/IP protocol implementations"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
@@ -47,10 +47,10 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/TechShare-inc/TCP-IP-Python-V3"
-Repository = "https://github.com/TechShare-inc/TCP-IP-Python-V3"
-Documentation = "https://github.com/TechShare-inc/TCP-IP-Python-V3#readme"
-"Bug Tracker" = "https://github.com/TechShare-inc/TCP-IP-Python-V3/issues"
+Homepage = "https://github.com/TechShare-inc/ts-dexim-nova-inspire"
+Repository = "https://github.com/TechShare-inc/ts-dexim-nova-inspire"
+Documentation = "https://github.com/TechShare-inc/ts-dexim-nova-inspire#readme"
+"Bug Tracker" = "https://github.com/TechShare-inc/ts-dexim-nova-inspire/issues"
 
 [tool.ruff.lint]
 ignore = [
@@ -79,8 +79,8 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["dobot_api_v3"]
-omit = ["dobot_api_v3/__pycache__/*"]
+source = ["dobot_api"]
+omit = ["dobot_api/__pycache__/*"]
 
 [tool.coverage.report]
 show_missing = true

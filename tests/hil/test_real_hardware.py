@@ -20,10 +20,14 @@ from __future__ import annotations
 
 import pytest
 
-from dobot_api_v3.dtypes import FeedbackData, FeedbackDtype
-from dobot_api_v3.commands.dashboard import DobotApiDashboard
-from dobot_api_v3.feedback import DobotApiFeedback
-from dobot_api_v3.robot import DobotRobot
+from dobot_api import DobotRobot
+from dobot_api import FeedbackData as UnifiedFeedbackData
+from dobot_api.v3 import (
+    DobotApiDashboard,
+    DobotApiFeedback,
+    FeedbackData,
+    FeedbackDtype,
+)
 from tests.hil.conftest import requires_hardware
 
 pytestmark = [pytest.mark.hil, requires_hardware]
@@ -180,7 +184,7 @@ class TestDobotRobotHIL:
         """feedback_data() should lazily connect and return a FeedbackData."""
         data = real_robot.feedback_data()
         assert data is not None
-        assert isinstance(data, FeedbackData)
+        assert isinstance(data, UnifiedFeedbackData)
 
     def test_raw_feedback_data_returns_numpy(self, real_robot: DobotRobot) -> None:
         """raw_feedback_data() should return a structured NumPy array."""
