@@ -24,9 +24,9 @@ def _valid_buffer(**kwargs: object) -> bytes:
     return bytes(arr.tobytes()[:1440])
 
 
-assert (
-    FeedbackDtype.itemsize == 1440
-), f"FeedbackDtype size changed: expected 1440, got {FeedbackDtype.itemsize}"
+assert FeedbackDtype.itemsize == 1440, (
+    f"FeedbackDtype size changed: expected 1440, got {FeedbackDtype.itemsize}"
+)
 
 
 # ---------------------------------------------------------------------------

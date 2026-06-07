@@ -513,7 +513,13 @@ class DobotRobot:
         """
         return self.dashboard.emergency_stop()
 
-    def enable_robot(self, load: float = 0.0, center_x: float = 0.0, center_y: float = 0.0, center_z: float = 0.0) -> int:
+    def enable_robot(
+        self,
+        load: float = 0.0,
+        center_x: float = 0.0,
+        center_y: float = 0.0,
+        center_z: float = 0.0,
+    ) -> int:
         """Enable the robot with optional payload parameters.
 
         Args:
@@ -560,7 +566,9 @@ class DobotRobot:
         """
         return self.dashboard.get_error_id()
 
-    def get_hold_regs(self, id: int, addr: int, count: int, type_: str) -> tuple[float, ...]:
+    def get_hold_regs(
+        self, id: int, addr: int, count: int, type_: str
+    ) -> tuple[float, ...]:
         """Read hold register.
 
         Args:
@@ -588,7 +596,9 @@ class DobotRobot:
         """
         return self.dashboard.get_in_bits(offset1, offset2, offset3)
 
-    def get_in_regs(self, offset1: int, offset2: int, offset3: int, *dyn_params: DynParam) -> tuple[float, ...]:
+    def get_in_regs(
+        self, offset1: int, offset2: int, offset3: int, *dyn_params: DynParam
+    ) -> tuple[float, ...]:
         """Read input registers.
 
         Args:
@@ -659,7 +669,18 @@ class DobotRobot:
         """
         return self.dashboard.handle_traj_points(offset1)
 
-    def inverse_solution(self, offset1: float, offset2: float, offset3: float, offset4: float, offset5: float, offset6: float, user: int, tool: int, *dyn_params: DynParam) -> Pose:
+    def inverse_solution(
+        self,
+        offset1: float,
+        offset2: float,
+        offset3: float,
+        offset4: float,
+        offset5: float,
+        offset6: float,
+        user: int,
+        tool: int,
+        *dyn_params: DynParam,
+    ) -> Pose:
         """Run inverse kinematics from Cartesian pose to joint angles.
 
         Args:
@@ -676,7 +697,17 @@ class DobotRobot:
         Returns:
             Joint angles as ``(j1, j2, j3, j4, j5, j6)``.
         """
-        return self.dashboard.inverse_solution(offset1, offset2, offset3, offset4, offset5, offset6, user, tool, *dyn_params)
+        return self.dashboard.inverse_solution(
+            offset1,
+            offset2,
+            offset3,
+            offset4,
+            offset5,
+            offset6,
+            user,
+            tool,
+            *dyn_params,
+        )
 
     def lim_z(self, value: int) -> int:
         """Set maximum lifting height for door-type parameters.
@@ -750,7 +781,17 @@ class DobotRobot:
         """
         return self.dashboard.payload(weight, inertia)
 
-    def positive_solution(self, offset1: float, offset2: float, offset3: float, offset4: float, offset5: float, offset6: float, user: int, tool: int) -> Pose:
+    def positive_solution(
+        self,
+        offset1: float,
+        offset2: float,
+        offset3: float,
+        offset4: float,
+        offset5: float,
+        offset6: float,
+        user: int,
+        tool: int,
+    ) -> Pose:
         """Run forward kinematics from joint angles to Cartesian pose.
 
         Args:
@@ -766,7 +807,9 @@ class DobotRobot:
         Returns:
             Cartesian pose as ``(x, y, z, rx, ry, rz)``.
         """
-        return self.dashboard.positive_solution(offset1, offset2, offset3, offset4, offset5, offset6, user, tool)
+        return self.dashboard.positive_solution(
+            offset1, offset2, offset3, offset4, offset5, offset6, user, tool
+        )
 
     def power_on(self) -> int:
         """Power on the robot.
@@ -866,7 +909,9 @@ class DobotRobot:
         """
         return self.dashboard.set_collision_level(offset1)
 
-    def set_hold_regs(self, id: int, addr: int, count: int, table: str, type_: str | None = None) -> int:
+    def set_hold_regs(
+        self, id: int, addr: int, count: int, table: str, type_: str | None = None
+    ) -> int:
         """Write hold register.
 
         Args:
@@ -910,7 +955,9 @@ class DobotRobot:
         """
         return self.dashboard.set_safe_skin(offset1)
 
-    def set_terminal_485(self, offset1: int, offset2: int, offset3: str, offset4: int) -> int:
+    def set_terminal_485(
+        self, offset1: int, offset2: int, offset3: str, offset4: int
+    ) -> int:
         """Set terminal RS-485 parameters.
 
         Args:
@@ -1091,7 +1138,22 @@ class DobotRobot:
         return self.dashboard.wait(t)
 
     # -- move -------------------------------------------------------------
-    def arc(self, x1: float, y1: float, z1: float, a1: float, b1: float, c1: float, x2: float, y2: float, z2: float, a2: float, b2: float, c2: float, *dyn_params: DynParam) -> int:
+    def arc(
+        self,
+        x1: float,
+        y1: float,
+        z1: float,
+        a1: float,
+        b1: float,
+        c1: float,
+        x2: float,
+        y2: float,
+        z2: float,
+        a2: float,
+        b2: float,
+        c2: float,
+        *dyn_params: DynParam,
+    ) -> int:
         """Circular motion through an intermediate point.
 
         Args:
@@ -1112,9 +1174,27 @@ class DobotRobot:
         Returns:
             Command queue ID.
         """
-        return self.move.arc(x1, y1, z1, a1, b1, c1, x2, y2, z2, a2, b2, c2, *dyn_params)
+        return self.move.arc(
+            x1, y1, z1, a1, b1, c1, x2, y2, z2, a2, b2, c2, *dyn_params
+        )
 
-    def circle3(self, x1: float, y1: float, z1: float, a1: float, b1: float, c1: float, x2: float, y2: float, z2: float, a2: float, b2: float, c2: float, count: int, *dyn_params: DynParam) -> int:
+    def circle3(
+        self,
+        x1: float,
+        y1: float,
+        z1: float,
+        a1: float,
+        b1: float,
+        c1: float,
+        x2: float,
+        y2: float,
+        z2: float,
+        a2: float,
+        b2: float,
+        c2: float,
+        count: int,
+        *dyn_params: DynParam,
+    ) -> int:
         """Full-circle motion command.
 
         Args:
@@ -1136,9 +1216,20 @@ class DobotRobot:
         Returns:
             Command queue ID.
         """
-        return self.move.circle3(x1, y1, z1, a1, b1, c1, x2, y2, z2, a2, b2, c2, count, *dyn_params)
+        return self.move.circle3(
+            x1, y1, z1, a1, b1, c1, x2, y2, z2, a2, b2, c2, count, *dyn_params
+        )
 
-    def joint_mov_j(self, j1: float, j2: float, j3: float, j4: float, j5: float, j6: float, *dyn_params: DynParam) -> int:
+    def joint_mov_j(
+        self,
+        j1: float,
+        j2: float,
+        j3: float,
+        j4: float,
+        j5: float,
+        j6: float,
+        *dyn_params: DynParam,
+    ) -> int:
         """Joint motion interface (joint target).
 
         Args:
@@ -1162,7 +1253,16 @@ class DobotRobot:
         """
         self.move.jump()
 
-    def mov_j(self, x: float, y: float, z: float, rx: float, ry: float, rz: float, *dyn_params: DynParam) -> int:
+    def mov_j(
+        self,
+        x: float,
+        y: float,
+        z: float,
+        rx: float,
+        ry: float,
+        rz: float,
+        *dyn_params: DynParam,
+    ) -> int:
         """Joint motion interface (point-to-point motion mode).
 
         Args:
@@ -1183,7 +1283,16 @@ class DobotRobot:
         """
         return self.move.mov_j(x, y, z, rx, ry, rz, *dyn_params)
 
-    def mov_j_io(self, x: float, y: float, z: float, a: float, b: float, c: float, *dyn_params: DynParam) -> int:
+    def mov_j_io(
+        self,
+        x: float,
+        y: float,
+        z: float,
+        a: float,
+        b: float,
+        c: float,
+        *dyn_params: DynParam,
+    ) -> int:
         """Point-to-point motion with parallel digital output control.
 
         Args:
@@ -1200,7 +1309,16 @@ class DobotRobot:
         """
         return self.move.mov_j_io(x, y, z, a, b, c, *dyn_params)
 
-    def mov_l(self, x: float, y: float, z: float, rx: float, ry: float, rz: float, *dyn_params: DynParam) -> int:
+    def mov_l(
+        self,
+        x: float,
+        y: float,
+        z: float,
+        rx: float,
+        ry: float,
+        rz: float,
+        *dyn_params: DynParam,
+    ) -> int:
         """Linear motion interface.
 
         Args:
@@ -1221,7 +1339,16 @@ class DobotRobot:
         """
         return self.move.mov_l(x, y, z, rx, ry, rz, *dyn_params)
 
-    def mov_l_io(self, x: float, y: float, z: float, a: float, b: float, c: float, *dyn_params: DynParam) -> int:
+    def mov_l_io(
+        self,
+        x: float,
+        y: float,
+        z: float,
+        a: float,
+        b: float,
+        c: float,
+        *dyn_params: DynParam,
+    ) -> int:
         """Linear motion with parallel digital output control.
 
         Args:
@@ -1254,7 +1381,16 @@ class DobotRobot:
         """
         return self.move.move_jog(axis_id, *dyn_params)
 
-    def rel_joint_mov_j(self, offset1: float, offset2: float, offset3: float, offset4: float, offset5: float, offset6: float, *dyn_params: DynParam) -> int:
+    def rel_joint_mov_j(
+        self,
+        offset1: float,
+        offset2: float,
+        offset3: float,
+        offset4: float,
+        offset5: float,
+        offset6: float,
+        *dyn_params: DynParam,
+    ) -> int:
         """Relative motion along each joint axis (joint motion mode).
 
         Args:
@@ -1269,9 +1405,20 @@ class DobotRobot:
         Returns:
             Command queue ID.
         """
-        return self.move.rel_joint_mov_j(offset1, offset2, offset3, offset4, offset5, offset6, *dyn_params)
+        return self.move.rel_joint_mov_j(
+            offset1, offset2, offset3, offset4, offset5, offset6, *dyn_params
+        )
 
-    def rel_mov_j(self, offset1: float, offset2: float, offset3: float, offset4: float, offset5: float, offset6: float, *dyn_params: DynParam) -> int:
+    def rel_mov_j(
+        self,
+        offset1: float,
+        offset2: float,
+        offset3: float,
+        offset4: float,
+        offset5: float,
+        offset6: float,
+        *dyn_params: DynParam,
+    ) -> int:
         """Relative joint offset motion (point-to-point mode).
 
         Args:
@@ -1286,9 +1433,21 @@ class DobotRobot:
         Returns:
             Command queue ID.
         """
-        return self.move.rel_mov_j(offset1, offset2, offset3, offset4, offset5, offset6, *dyn_params)
+        return self.move.rel_mov_j(
+            offset1, offset2, offset3, offset4, offset5, offset6, *dyn_params
+        )
 
-    def rel_mov_j_tool(self, offset_x: float, offset_y: float, offset_z: float, offset_rx: float, offset_ry: float, offset_rz: float, tool: int, *dyn_params: ToolDynParam) -> int:
+    def rel_mov_j_tool(
+        self,
+        offset_x: float,
+        offset_y: float,
+        offset_z: float,
+        offset_rx: float,
+        offset_ry: float,
+        offset_rz: float,
+        tool: int,
+        *dyn_params: ToolDynParam,
+    ) -> int:
         """Relative joint motion along the tool coordinate system.
 
         Args:
@@ -1304,9 +1463,28 @@ class DobotRobot:
         Returns:
             Command queue ID.
         """
-        return self.move.rel_mov_j_tool(offset_x, offset_y, offset_z, offset_rx, offset_ry, offset_rz, tool, *dyn_params)
+        return self.move.rel_mov_j_tool(
+            offset_x,
+            offset_y,
+            offset_z,
+            offset_rx,
+            offset_ry,
+            offset_rz,
+            tool,
+            *dyn_params,
+        )
 
-    def rel_mov_j_user(self, offset_x: float, offset_y: float, offset_z: float, offset_rx: float, offset_ry: float, offset_rz: float, user: int, *dyn_params: DynParam) -> int:
+    def rel_mov_j_user(
+        self,
+        offset_x: float,
+        offset_y: float,
+        offset_z: float,
+        offset_rx: float,
+        offset_ry: float,
+        offset_rz: float,
+        user: int,
+        *dyn_params: DynParam,
+    ) -> int:
         """Relative joint motion along the user coordinate system.
 
         Args:
@@ -1322,9 +1500,20 @@ class DobotRobot:
         Returns:
             Command queue ID.
         """
-        return self.move.rel_mov_j_user(offset_x, offset_y, offset_z, offset_rx, offset_ry, offset_rz, user, *dyn_params)
+        return self.move.rel_mov_j_user(
+            offset_x,
+            offset_y,
+            offset_z,
+            offset_rx,
+            offset_ry,
+            offset_rz,
+            user,
+            *dyn_params,
+        )
 
-    def rel_mov_l(self, offset_x: float, offset_y: float, offset_z: float, *dyn_params: DynParam) -> int:
+    def rel_mov_l(
+        self, offset_x: float, offset_y: float, offset_z: float, *dyn_params: DynParam
+    ) -> int:
         """Relative Cartesian offset motion (linear mode).
 
         Args:
@@ -1338,7 +1527,17 @@ class DobotRobot:
         """
         return self.move.rel_mov_l(offset_x, offset_y, offset_z, *dyn_params)
 
-    def rel_mov_l_tool(self, offset_x: float, offset_y: float, offset_z: float, offset_rx: float, offset_ry: float, offset_rz: float, tool: int, *dyn_params: ToolDynParam) -> int:
+    def rel_mov_l_tool(
+        self,
+        offset_x: float,
+        offset_y: float,
+        offset_z: float,
+        offset_rx: float,
+        offset_ry: float,
+        offset_rz: float,
+        tool: int,
+        *dyn_params: ToolDynParam,
+    ) -> int:
         """Relative linear motion along the tool coordinate system.
 
         Args:
@@ -1354,9 +1553,28 @@ class DobotRobot:
         Returns:
             Command queue ID.
         """
-        return self.move.rel_mov_l_tool(offset_x, offset_y, offset_z, offset_rx, offset_ry, offset_rz, tool, *dyn_params)
+        return self.move.rel_mov_l_tool(
+            offset_x,
+            offset_y,
+            offset_z,
+            offset_rx,
+            offset_ry,
+            offset_rz,
+            tool,
+            *dyn_params,
+        )
 
-    def rel_mov_l_user(self, offset_x: float, offset_y: float, offset_z: float, offset_rx: float, offset_ry: float, offset_rz: float, user: int, *dyn_params: DynParam) -> int:
+    def rel_mov_l_user(
+        self,
+        offset_x: float,
+        offset_y: float,
+        offset_z: float,
+        offset_rx: float,
+        offset_ry: float,
+        offset_rz: float,
+        user: int,
+        *dyn_params: DynParam,
+    ) -> int:
         """Relative linear motion along the user coordinate system.
 
         Args:
@@ -1372,9 +1590,29 @@ class DobotRobot:
         Returns:
             Command queue ID.
         """
-        return self.move.rel_mov_l_user(offset_x, offset_y, offset_z, offset_rx, offset_ry, offset_rz, user, *dyn_params)
+        return self.move.rel_mov_l_user(
+            offset_x,
+            offset_y,
+            offset_z,
+            offset_rx,
+            offset_ry,
+            offset_rz,
+            user,
+            *dyn_params,
+        )
 
-    def servo_j(self, j1: float, j2: float, j3: float, j4: float, j5: float, j6: float, t: float = 0.1, lookahead_time: float = 50.0, gain: float = 500.0) -> int:
+    def servo_j(
+        self,
+        j1: float,
+        j2: float,
+        j3: float,
+        j4: float,
+        j5: float,
+        j6: float,
+        t: float = 0.1,
+        lookahead_time: float = 50.0,
+        gain: float = 500.0,
+    ) -> int:
         """Dynamic following in joint space.
 
         Args:
@@ -1393,7 +1631,9 @@ class DobotRobot:
         """
         return self.move.servo_j(j1, j2, j3, j4, j5, j6, t, lookahead_time, gain)
 
-    def servo_js(self, j1: float, j2: float, j3: float, j4: float, j5: float, j6: float) -> int:
+    def servo_js(
+        self, j1: float, j2: float, j3: float, j4: float, j5: float, j6: float
+    ) -> int:
         """Dynamic following in joint space (simplified form).
 
         Args:
@@ -1409,7 +1649,9 @@ class DobotRobot:
         """
         return self.move.servo_js(j1, j2, j3, j4, j5, j6)
 
-    def servo_p(self, x: float, y: float, z: float, a: float, b: float, c: float) -> int:
+    def servo_p(
+        self, x: float, y: float, z: float, a: float, b: float, c: float
+    ) -> int:
         """Dynamic following in Cartesian space.
 
         Args:
