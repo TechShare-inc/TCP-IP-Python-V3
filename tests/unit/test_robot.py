@@ -280,8 +280,8 @@ class TestStartup:
             robot.startup(power_on_wait=5.0)
         assert 5.0 in sleep_calls
 
-    def test_startup_default_wait_is_15(self, mock_robot: tuple) -> None:
-        """Default power_on_wait (15s) is used when errors are present."""
+    def test_startup_default_wait_is_20(self, mock_robot: tuple) -> None:
+        """Default power_on_wait (20s) is used when errors are present."""
         robot, _, _ = mock_robot
         sleep_calls: list[float] = []
         with (
@@ -289,7 +289,7 @@ class TestStartup:
             patch("time.sleep", side_effect=lambda t: sleep_calls.append(t)),
         ):
             robot.startup()
-        assert 15.0 in sleep_calls
+        assert 20.0 in sleep_calls
 
     def test_startup_no_sleep_without_errors(self, mock_robot: tuple) -> None:
         """When no errors are detected, time.sleep is never called."""

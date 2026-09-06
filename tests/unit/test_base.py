@@ -118,7 +118,10 @@ class TestSendRecvMsg:
         self, mock_base: DobotApi, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """lock.acquire must be called before send and lock.release after recv."""
-        mock_base.socket_dobot.recv.return_value = b"ok"  # type: ignore[union-attr]
+        # Include the protocol terminator so wait_reply() completes. Returning
+        # an unterminated chunk forever makes the mock deadlock the test rather
+        # than exercising the lock boundary.
+        mock_base.socket_dobot.recv.return_value = b"ok;"  # type: ignore[union-attr]
         call_order: list[str] = []
 
         real_lock = threading.Lock()
